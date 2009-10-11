@@ -97,6 +97,18 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 1:
 		onEndStream();
 		break;
+	case 2:
+		if ( name == "auth" )
+		{
+			startElement("success");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+			endElement("success");
+			flush();
+			resetParser();
+			resetWriter();
+			deep = 0;
+			return;
+		}
 	default:
 		cout << "onEndElement(" << name << ")" << endl;
 	}
@@ -123,6 +135,9 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			addElement("mechanism", "PLAIN");
 		endElement("mechanisms");
+		startElement("register");
+			setAttribute("xmlns", "http://jabber.org/features/iq-register");
+		endElement("register");
 	endElement("stream:features");
 /*
 <starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"/>
