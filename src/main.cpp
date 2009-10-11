@@ -2,6 +2,7 @@
 #include <iostream>
 #include <nanosoft/netdaemon.h>
 #include <xmppserver.h>
+#include <myconsole.h>
 
 using namespace std;
 
@@ -22,6 +23,10 @@ int main()
 	
 	// добавляем сервер в демона
 	daemon.addObject(&server);
+	
+	// консоль управления сервером
+	MyConsole console(&daemon, 0);
+	daemon.addObject(&console);
 	
 	// запускаем демона
 	return daemon.run();

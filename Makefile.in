@@ -34,8 +34,8 @@ HOST = @host@
 HOST_OS = @host_os@
 
 .PHONY: all install
-maward: $(srcdir)/main.cpp xmppserver.o xmppstream.o
-	$(CXX) $(srcdir)/main.cpp xmppserver.o xmppstream.o $(LDFLAGS) $(LIBS) -o maward
+maward: $(srcdir)/main.cpp xmppserver.o xmppstream.o myconsole.o
+	$(CXX) $(srcdir)/main.cpp xmppserver.o xmppstream.o myconsole.o $(LDFLAGS) $(LIBS) -o maward
 
 # modules
 
@@ -44,6 +44,9 @@ xmppserver.o: $(srcdir)/xmppserver.cpp $(srcdir)/include/xmppserver.h
 
 xmppstream.o: $(srcdir)/xmppstream.cpp $(srcdir)/include/xmppstream.h
 	$(CXX) -c $(srcdir)/xmppstream.cpp -o xmppstream.o
+
+myconsole.o: $(srcdir)/myconsole.cpp $(srcdir)/include/myconsole.h
+	$(CXX) -c $(srcdir)/myconsole.cpp -o myconsole.o
 
 # CLEAN
 
