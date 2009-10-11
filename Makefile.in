@@ -1,0 +1,48 @@
+
+srcdir = @srcdir@/src
+
+config = ./src/include/config.h
+
+LDFLAGS = @LDFLAGS@
+CXXFLAGS = @CXXFLAGS@ -I./src/include
+CXX = @CXX@ $(CXXFLAGS)
+CC = @CC@ $(CFLAGS)
+AR = @AR@
+RANLIB = @RANLIB@
+INSTALL = @INSTALL@
+MKDIR = @MKDIR@
+LIBS = @LIBS@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+includedir = @includedir@
+
+PREFIX = $(DESTDIR)$(prefix)
+EPREFIX = $(DESTDIR)$(exec_prefix)
+BINDIR = $(DESTDIR)$(bindir)
+INCLUDEDIR = $(DESTDIR)$(includedir)
+LIBDIR = $(DESTDIR)$(libdir)
+
+INSTALL_BIN = $(INSTALL) -m755
+INSTALL_INC = $(INSTALL) -m644
+INSTALL_LIB = $(INSTALL) -m644
+
+BUILD = @build@
+HOST = @host@
+HOST_OS = @host_os@
+
+.PHONY: all install
+maward: $(srcdir)/main.cpp
+	$(CXX) $(srcdir)/main.cpp $(LDFLAGS) $(LIBS) -o maward
+
+# CLEAN
+
+.PHONY: clean distclean
+
+distclean: clean
+	rm -f Makefile *.log  $(config) config.status
+
+clean:
+	rm -f *.o maward

@@ -1,0 +1,63 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.61)
+AC_INIT(mawar, 0.1, BUG-REPORT-ADDRESS)
+#AC_CONFIG_SRCDIR([parse_url.c])
+AC_CONFIG_AUX_DIR(autoconf)
+AC_CONFIG_HEADER([src/include/config.h])
+
+AC_CANONICAL_HOST
+
+NETWORK_LIBS=""
+
+case "$host_os" in
+linux)
+	AC_DEFINE(UNIX, 1)
+	;;
+mingw32)
+	AC_DEFINE(WINDOWS, 1)
+	AC_CHECK_LIB(ws2_32, main, [NETWORK_LIBS="$NETWORK_LIBS -lws2_32"], [AC_MSG_ERROR([ws2_32 library not found])])
+	;;
+esac
+
+AC_SUBST(NETWORK_LIBS)
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_CHECK_TOOL(AR, ar, ar)
+AC_CHECK_TOOL(RANLIB, ranlib, ranlib)
+AC_CHECK_TOOL(MKDIR, mkdir, mkdir)
+
+AC_LANG_CPLUSPLUS
+
+AC_CHECK_LIB(stdc++, main)
+
+AC_ARG_WITH(expat, AS_HELP_STRING([--with-expat=PREFIX], [expat XML parser]), [
+		CXXFLAGS="$CXXFLAGS -I$withval/include"
+		LDFLAGS="$LDFLAGS -L$withval/lib"
+	])
+AC_CHECK_LIB(expat, main, [], [AC_ERROR(expat library required)])
+
+AC_ARG_WITH(pthread, AS_HELP_STRING([--with-pthread=PREFIX], [pthread]), [
+		CXXFLAGS="$CXXFLAGS -I$withval/include"
+		LDFLAGS="$LDFLAGS -L$withval/lib"
+	])
+AC_CHECK_LIB(pthread, main, [], [AC_ERROR(pthread library is required)])
+
+AC_ARG_WITH(nanosoft, AS_HELP_STRING([--with-nanosoft=PREFIX], [prefix to nanosoft libraries]), [
+		CXXFLAGS="$CXXFLAGS -I$withval/include"
+		LDFLAGS="$LDFLAGS -L$withval/lib"
+	])
+AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
+AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
+
+
+# Checks for header files.
+
+# Checks for typedefs, structures, and compiler characteristics.
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
