@@ -72,6 +72,7 @@ void XMPPStream::onShutdown()
 void XMPPStream::onStartElement(const std::string &name, const attributtes_t &attributes)
 {
 	depth ++;
+	cout << "onStartElement: " << name << " depth: " << depth << endl;
 	switch ( depth )
 	{
 	case 1:
@@ -141,8 +142,8 @@ void XMPPStream::onAuthStanza(ATXmlTag *tag)
 	
 	resetWriter();
 	state = authorized;
+	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
 	resetParser();
-	depth = 0;
 }
 
 /**
