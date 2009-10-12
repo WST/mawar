@@ -32,10 +32,9 @@ XMPPStream::~XMPPStream()
 */
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
-	//cout << string(data, len) << endl;
 	int r = write(data, len);
 	if ( r != len ) onError("write fault");
-	cout << "written: " << string(data, len) << endl;
+	cout << "written: \033[22;34m" << string(data, len) << "\033[0m\n";
 }
 
 /**
