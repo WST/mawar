@@ -12,7 +12,7 @@ using namespace std;
 /**
 * Конструктор потока
 */
-XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024), state(init)
+XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024)
 {
 	depth = 0;
 	builder = new ATTagBuilder();
@@ -34,7 +34,7 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 	//cout << string(data, len) << endl;
 	int r = write(data, len);
 	if ( r != len ) onError("write fault");
-	cout << "written: \033[01;34m" << string(data, len) << "\033[0m\n";
+	cout << "written: " << string(data, len) << endl;
 }
 
 /**
@@ -107,16 +107,14 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 2:
 		builder->endElement(name);
 		onStanza(builder->fetchResult());
-		builder->clear();
 		if ( name == "auth" )
 		{
 			startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			endElement("success");
 			flush();
-			resetWriter();
-			state = authorized;
 			resetParser();
+			resetWriter();
 			depth = 0;
 			return;
 		}
@@ -151,8 +149,6 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	setAttribute("xml:lang", "en");
 	
 	startElement("stream:features");
-	if ( state == init )
-	{
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			addElement("mechanism", "PLAIN");
@@ -160,16 +156,6 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 		startElement("register");
 			setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		endElement("register");
-	}
-	else
-	{
-		startElement("bind");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
-		endElement("bind");
-		startElement("session");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
-		endElement("session");
-	}
 	endElement("stream:features");
 /*
 <starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"/>

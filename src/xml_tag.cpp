@@ -28,6 +28,7 @@ ATXmlTag::~ATXmlTag() {
 	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
 		delete *it;
 	}
+	
 	for(nodes_list_t::iterator it = childnodes.begin(); it != childnodes.end(); it++) {
 		delete *it;
 	}

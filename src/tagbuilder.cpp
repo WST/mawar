@@ -3,11 +3,11 @@
 #include <xml_tag.h>
 
 ATTagBuilder::ATTagBuilder() {
-	
+
 }
 
-void ATTagBuilder::clear() {
-	delete presult;
+ATTagBuilder::~ATTagBuilder() {
+	
 }
 
 void ATTagBuilder::startElement(const std::string &name, const attributtes_t &attributes, unsigned short int depth) {
@@ -29,5 +29,7 @@ void ATTagBuilder::endElement(const std::string &name) {
 }
 
 ATXmlTag *ATTagBuilder::fetchResult() {
-	return presult;
+	ATXmlTag *retval = presult;
+	presult = 0;
+	return retval;
 }
