@@ -120,6 +120,7 @@ void XMPPStream::onEndElement(const std::string &name)
 			depth = 0;
 			return;
 		}
+		break;
 	default:
 		builder->endElement(name);
 		cout << "onEndElement(" << name << ")" << endl;
