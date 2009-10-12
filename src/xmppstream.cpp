@@ -13,7 +13,7 @@ using namespace std;
 */
 XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024)
 {
-	deep = 0;
+	depth = 0;
 }
 
 /**
@@ -68,8 +68,8 @@ void XMPPStream::onShutdown()
 */
 void XMPPStream::onStartElement(const std::string &name, const attributtes_t &attributes)
 {
-	deep ++;
-	switch ( deep )
+	depth ++;
+	switch ( depth )
 	{
 	case 1:
 		onStartStream(name, attributes);
@@ -92,7 +92,7 @@ void XMPPStream::onCharacterData(const std::string &cdata)
 */
 void XMPPStream::onEndElement(const std::string &name)
 {
-	switch (deep)
+	switch (depth)
 	{
 	case 1:
 		onEndStream();
@@ -106,13 +106,13 @@ void XMPPStream::onEndElement(const std::string &name)
 			flush();
 			resetParser();
 			resetWriter();
-			deep = 0;
+			depth = 0;
 			return;
 		}
 	default:
 		cout << "onEndElement(" << name << ")" << endl;
 	}
-	deep --;
+	depth --;
 }
 
 /**

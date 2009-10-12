@@ -18,7 +18,7 @@ private:
 	/**
 	* Глубина обрабатываемого тега
 	*/
-	int deep;
+	int depth;
 	
 protected:
 	/**
