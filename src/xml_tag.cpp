@@ -82,7 +82,13 @@ void ATXmlTag::insertCharacterData(std::string cdata) {
 }
 
 std::string ATXmlTag::getCharacterData() {
-	return ""; // TODO
+	std::string cdata = "";
+	for(nodes_list_t::iterator it = childnodes.begin(); it != childnodes.end(); it++) {
+		if ( (*it)->type == TCharacterData ) {
+			cdata += (*it)->cdata;
+		}
+	}
+	return cdata;
 }
 
 std::string ATXmlTag::asString() {

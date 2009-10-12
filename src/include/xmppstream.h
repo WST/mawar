@@ -91,6 +91,11 @@ public:
 	* Обработчик станзы
 	*/
 	virtual void onStanza(ATXmlTag *tag);
+	
+	/**
+	* Обработчик авторизации
+	*/
+	virtual void onAuthStanza(ATXmlTag *tag);
 };
 
 #endif // MAWAR_XMPPSTREAM_H

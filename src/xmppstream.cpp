@@ -2,6 +2,7 @@
 #include <xmppstream.h>
 #include <xmppserver.h>
 #include <tagbuilder.h>
+#include <nanosoft/base64.h>
 
 // for debug only
 #include <string>
@@ -108,18 +109,6 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 2:
 		builder->endElement(name);
 		onStanza(builder->fetchResult());
-		if ( name == "auth" )
-		{
-			startElement("success");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-			endElement("success");
-			flush();
-			resetWriter();
-			state = authorized;
-			resetParser();
-			depth = 0;
-			return;
-		}
 		break;
 	default:
 		builder->endElement(name);
@@ -134,6 +123,27 @@ void XMPPStream::onEndElement(const std::string &name)
 void XMPPStream::onStanza(ATXmlTag *tag)
 {
 	cout << "stanza: " << tag->name() << endl;
+	if ( tag->name() == "auth" ) onAuthStanza(tag);
+	else ; // ...
+}
+
+/**
+* Обработчик авторизации
+*/
+void XMPPStream::onAuthStanza(ATXmlTag *tag)
+{
+	string password = nanosoft::base64_decode(tag->getCharacterData());
+	//cout << "auth password: " << password << endl;
+	
+	startElement("success");
+		setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+	endElement("success");
+	flush();
+	
+	resetWriter();
+	state = authorized;
+	resetParser();
+	depth = 0;
 }
 
 /**
@@ -152,7 +162,7 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	setAttribute("xml:lang", "en");
 	
 	startElement("stream:features");
-	if ( state = init )
+	if ( state == init )
 	{
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
