@@ -114,8 +114,9 @@ void XMPPStream::onEndElement(const std::string &name)
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			endElement("success");
 			flush();
-			resetParser();
 			resetWriter();
+			state = authorized;
+			resetParser();
 			depth = 0;
 			return;
 		}
@@ -150,6 +151,8 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	setAttribute("xml:lang", "en");
 	
 	startElement("stream:features");
+	if ( state = init )
+	{
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			addElement("mechanism", "PLAIN");
@@ -157,19 +160,17 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 		startElement("register");
 			setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		endElement("register");
+	}
+	else
+	{
+		startElement("bind");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
+		endElement("bind");
+		startElement("session");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
+		endElement("session");
+	}
 	endElement("stream:features");
-/*
-<starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"/>
-<compression xmlns="http://jabber.org/features/compress">
-<method>zlib</method>
-</compression>
-<mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl">
-<mechanism>DIGEST-MD5</mechanism>
-<mechanism>PLAIN</mechanism>
-</mechanisms>
-<register xmlns="http://jabber.org/features/iq-register"/>
-</stream:features>
-*/
 	flush();
 }
 
