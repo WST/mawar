@@ -28,6 +28,8 @@ private:
 	*/
 	int depth;
 	
+	enum {init, authorized} state;
+	
 protected:
 	/**
 	* Запись XML
