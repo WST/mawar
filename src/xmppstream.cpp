@@ -13,7 +13,7 @@ using namespace std;
 /**
 * Конструктор потока
 */
-XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024)
+XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024), state(init)
 {
 	depth = 0;
 	builder = new ATTagBuilder();
