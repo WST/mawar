@@ -125,3 +125,16 @@ bool ATXmlTag::hasAttribute(std::string attribute_name) {
 std::string ATXmlTag::getAttribute(std::string attribute_name) {
 	return attributes.find(attribute_name)->second;
 }
+
+bool ATXmlTag::hasChild(std::string tag_name) {
+	return (bool) getChild(tag_name);
+}
+
+ATXmlTag *ATXmlTag::getChild(std::string tag_name) {
+	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
+		if((*it)->name() == tag_name) {
+			return *it;
+		}
+	}
+	return 0;
+}

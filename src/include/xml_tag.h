@@ -30,6 +30,8 @@ class ATXmlTag
 		std::string asString();
 		bool hasAttribute(std::string attribute_name);
 		std::string getAttribute(std::string attribute_name);
+		bool hasChild(std::string tag_name);
+		ATXmlTag *getChild(std::string tag_name);
 	
 	private:
 		std::string tag_name;
