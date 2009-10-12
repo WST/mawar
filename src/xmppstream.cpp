@@ -1,6 +1,7 @@
 
 #include <xmppstream.h>
 #include <xmppserver.h>
+#include <tagbuilder.h>
 
 // for debug only
 #include <string>
@@ -14,6 +15,7 @@ using namespace std;
 XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024)
 {
 	depth = 0;
+	builder = new ATTagBuilder();
 }
 
 /**
@@ -21,6 +23,7 @@ XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(
 */
 XMPPStream::~XMPPStream()
 {
+	delete builder;
 }
 
 /**
@@ -74,7 +77,11 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 	case 1:
 		onStartStream(name, attributes);
 		break;
-	default:
+	case 2: // начало станзы
+		builder->startElement(name, attributes, depth);
+	break;
+	default: // добавить тег в станзу
+		builder->startElement(name, attributes, depth);
 		cout << "onStartElement(" << name << ")" << endl;
 	}
 }
@@ -98,6 +105,9 @@ void XMPPStream::onEndElement(const std::string &name)
 		onEndStream();
 		break;
 	case 2:
+		builder->endElement(name);
+		onStanza(builder->fetchResult());
+		builder->clear();
 		if ( name == "auth" )
 		{
 			startElement("success");
@@ -110,9 +120,18 @@ void XMPPStream::onEndElement(const std::string &name)
 			return;
 		}
 	default:
+		builder->endElement(name);
 		cout << "onEndElement(" << name << ")" << endl;
 	}
 	depth --;
+}
+
+/**
+* Обработчик станз
+*/
+void XMPPStream::onStanza(ATXmlTag *tag)
+{
+	cout << "stanza: " << tag->name() << endl;
 }
 
 /**
@@ -125,7 +144,7 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
-	setAttribute("id", "123456");
+	setAttribute("id", "123456"); // Требования к id — непредсказуемость и уникальность
 	setAttribute("from", "localhost");
 	setAttribute("version", "1.0");
 	setAttribute("xml:lang", "en");

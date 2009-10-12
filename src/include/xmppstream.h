@@ -3,6 +3,9 @@
 
 #include <nanosoft/asyncxmlstream.h>
 #include <nanosoft/xmlwriter.h>
+#include <xml_types.h>
+#include <tagbuilder.h>
+#include <xml_tag.h>
 
 /**
 * Класс XMPP-поток
@@ -14,6 +17,11 @@ private:
 	* Ссылка на сервер
 	*/
 	class XMPPServer *server;
+	
+	/**
+	* Построитель дерева тегов
+	*/
+	ATTagBuilder *builder;
 	
 	/**
 	* Глубина обрабатываемого тега
@@ -76,6 +84,11 @@ public:
 	* Обработчик закрытия тега
 	*/
 	virtual void onEndElement(const std::string &name);
+	
+	/**
+	* Обработчик станзы
+	*/
+	virtual void onStanza(ATXmlTag *tag);
 };
 
 #endif // MAWAR_XMPPSTREAM_H
