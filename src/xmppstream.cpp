@@ -123,7 +123,8 @@ void XMPPStream::onEndElement(const std::string &name)
 void XMPPStream::onStanza(ATXmlTag *tag)
 {
 	cout << "stanza: " << tag->name() << endl;
-	if ( tag->name() == "auth" ) onAuthStanza(tag);
+	if ( tag->name() == "iq" ) onIqStanza(tag);
+	else if ( tag->name() == "auth" ) onAuthStanza(tag);
 	else ; // ...
 }
 
@@ -133,7 +134,7 @@ void XMPPStream::onStanza(ATXmlTag *tag)
 void XMPPStream::onAuthStanza(ATXmlTag *tag)
 {
 	string password = nanosoft::base64_decode(tag->getCharacterData());
-	//cout << "auth password: " << password << endl;
+	cout << "auth password: " << password << endl;
 	
 	startElement("success");
 		setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
@@ -145,6 +146,26 @@ void XMPPStream::onAuthStanza(ATXmlTag *tag)
 	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
 	resetParser();
 }
+
+/**
+* Обработчик iq-станзы
+*/
+void XMPPStream::onIqStanza(ATXmlTag *iq)
+{
+	cout << "iq: " << iq->asString() << endl;
+	startElement("iq");
+		setAttribute("type", "result");
+		setAttribute("id", iq->getAttribute("id"));
+		startElement("bind");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
+			startElement("jid");
+				characterData("alex@localhost/bar");
+			endElement("jid");
+		endElement("bind");
+	endElement("iq");
+	flush();
+}
+
 
 /**
 * Событие: начало потока
@@ -177,9 +198,11 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 		startElement("bind");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 		endElement("bind");
+		/*
 		startElement("session");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
 		endElement("session");
+		*/
 	}
 	endElement("stream:features");
 	flush();
