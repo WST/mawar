@@ -28,6 +28,12 @@ void ATTagBuilder::endElement(const std::string &name) {
 	}
 }
 
+void ATTagBuilder::characterData(const std::string &cdata) {
+	if(!stack.empty()) {
+		stack.top()->insertCharacterData(cdata);
+	}
+}
+
 ATXmlTag *ATTagBuilder::fetchResult() {
 	ATXmlTag *retval = presult;
 	presult = 0;

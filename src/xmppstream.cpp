@@ -91,6 +91,7 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 */
 void XMPPStream::onCharacterData(const std::string &cdata)
 {
+	builder->characterData(cdata);
 	cout << "cdata: " << cdata << endl;
 }
 

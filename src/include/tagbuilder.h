@@ -10,6 +10,7 @@ class ATTagBuilder
 		~ATTagBuilder();
 		void startElement(const std::string &name, const attributtes_t &attributes, unsigned short int depth);
 		void endElement(const std::string &name);
+		void characterData(const std::string &cdata);
 		ATXmlTag *fetchResult();
 	
 	private:
