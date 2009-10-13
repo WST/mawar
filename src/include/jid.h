@@ -15,10 +15,10 @@ class JID
 		std::string username();
 	
 	private:
-		std::string jid_bare = "";
-		std::string jid_hostname = "";
-		std::string jid_resource = "";
-		std::string jid_username = "";
+		std::string jid_bare;
+		std::string jid_hostname;
+		std::string jid_resource;
+		std::string jid_username;
 };
 
 #endif
