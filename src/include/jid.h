@@ -13,8 +13,10 @@ class JID
 		std::string hostname();
 		std::string resource();
 		std::string username();
+		std::string full();
 	
 	private:
+		std::string jid_full;
 		std::string jid_bare;
 		std::string jid_hostname;
 		std::string jid_resource;

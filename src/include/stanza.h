@@ -3,6 +3,7 @@
 #define MAWAR_STANZA_H
 
 #include <xml_tag.h>
+#include <jid.h>
 
 class Stanza
 {
@@ -10,6 +11,8 @@ class Stanza
 		Stanza(ATXmlTag *tag);
 		~Stanza();
 		ATXmlTag *tag();
+		JID *from();
+		JID *to();
 	
 	private:
 		ATXmlTag *stanza_tag;
