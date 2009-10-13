@@ -106,10 +106,13 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 1:
 		onEndStream();
 		break;
-	case 2:
+	case 2: {
 		builder->endElement(name);
-		onStanza(builder->fetchResult());
+		Stanza *s = new Stanza(builder->fetchResult());
+		onStanza(s);
+		delete s; // Внимание — станза удаляется здесь
 		break;
+	}
 	default:
 		builder->endElement(name);
 		cout << "onEndElement(" << name << ")" << endl;
@@ -120,21 +123,25 @@ void XMPPStream::onEndElement(const std::string &name)
 /**
 * Обработчик станз
 */
-void XMPPStream::onStanza(ATXmlTag *tag)
+void XMPPStream::onStanza(Stanza *stanza)
 {
-	cout << "stanza: " << tag->name() << endl;
-	if ( tag->name() == "iq" ) onIqStanza(tag);
-	else if ( tag->name() == "auth" ) onAuthStanza(tag);
+	cout << "stanza: " << stanza->tag()->name() << endl;
+	if ( stanza->tag()->name() == "iq" ) onIqStanza(stanza);
+	else if ( stanza->tag()->name() == "auth" ) onAuthStanza(stanza);
 	else ; // ...
 }
 
 /**
 * Обработчик авторизации
 */
-void XMPPStream::onAuthStanza(ATXmlTag *tag)
+void XMPPStream::onAuthStanza(Stanza *stanza)
 {
-	string password = nanosoft::base64_decode(tag->getCharacterData());
-	cout << "auth password: " << password << endl;
+	string password = nanosoft::base64_decode(stanza->tag()->getCharacterData());
+	
+	//ATXmlTag *reply = new ATXmlTag("success");
+	//reply->setNameSpace("urn:ietf:params:xml:ns:xmpp-sasl");
+	// отправить reply
+	// delete reply;
 	
 	startElement("success");
 		setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
@@ -150,9 +157,9 @@ void XMPPStream::onAuthStanza(ATXmlTag *tag)
 /**
 * Обработчик iq-станзы
 */
-void XMPPStream::onIqStanza(ATXmlTag *iq)
+void XMPPStream::onIqStanza(Stanza *stanza)
 {
-	cout << "iq: " << iq->asString() << endl;
+	/*
 	startElement("iq");
 		setAttribute("type", "result");
 		setAttribute("id", iq->getAttribute("id"));
@@ -164,6 +171,7 @@ void XMPPStream::onIqStanza(ATXmlTag *iq)
 		endElement("bind");
 	endElement("iq");
 	flush();
+	*/
 }
 
 

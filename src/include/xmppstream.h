@@ -6,6 +6,7 @@
 #include <xml_types.h>
 #include <tagbuilder.h>
 #include <xml_tag.h>
+#include <stanza.h>
 
 /**
 * Класс XMPP-поток
@@ -90,17 +91,17 @@ public:
 	/**
 	* Обработчик станзы
 	*/
-	virtual void onStanza(ATXmlTag *tag);
+	virtual void onStanza(Stanza *stanza);
 	
 	/**
 	* Обработчик авторизации
 	*/
-	virtual void onAuthStanza(ATXmlTag *tag);
+	virtual void onAuthStanza(Stanza *stanza);
 	
 	/**
 	* Обработчик iq-станзы
 	*/
-	virtual void onIqStanza(ATXmlTag *tag);
+	virtual void onIqStanza(Stanza *stanza);
 };
 
 #endif // MAWAR_XMPPSTREAM_H
