@@ -139,7 +139,7 @@ void XMPPStream::onAuthStanza(Stanza *stanza)
 	string password = nanosoft::base64_decode(stanza->tag()->getCharacterData());
 	
 	//ATXmlTag *reply = new ATXmlTag("success");
-	//reply->setNameSpace("urn:ietf:params:xml:ns:xmpp-sasl");
+	//reply->setNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-sasl");
 	// отправить reply
 	// delete reply;
 	
