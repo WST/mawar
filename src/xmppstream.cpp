@@ -161,6 +161,13 @@ void XMPPStream::onAuthStanza(Stanza *stanza)
 */
 void XMPPStream::onIqStanza(Stanza *stanza)
 {
+	if(stanza->tag()->hasChild("query") && stanza->type() == "get") {
+		// Входящие запросы информации
+		std::string query_xmlns = stanza->tag()->getChild("query")->getAttribute("xmlns");
+		if(query_xmlns == "jabber:iq:version") {
+			// Отправить версию сервера
+		}
+	}
 	/*
 	startElement("iq");
 		setAttribute("type", "result");

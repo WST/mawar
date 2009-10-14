@@ -13,6 +13,7 @@ class Stanza
 		ATXmlTag *tag();
 		JID *from();
 		JID *to();
+		std::string type();
 	
 	private:
 		ATXmlTag *stanza_tag;

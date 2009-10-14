@@ -28,3 +28,11 @@ JID *Stanza::to() {
 		return 0;
 	}
 }
+
+std::string Stanza::type() {
+	if(stanza_tag->hasAttribute("type")) {
+		return stanza_tag->getAttribute("type");
+	} else {
+		return std::string("");
+	}
+}
