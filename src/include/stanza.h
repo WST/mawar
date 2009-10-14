@@ -14,6 +14,8 @@ class Stanza
 		JID *from();
 		JID *to();
 		std::string type();
+		
+		static Stanza serverVersion(JID server, JID reply_to, std::string id);
 	
 	private:
 		ATXmlTag *stanza_tag;

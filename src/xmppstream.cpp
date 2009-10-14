@@ -166,6 +166,7 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 		std::string query_xmlns = stanza->tag()->getChild("query")->getAttribute("xmlns");
 		if(query_xmlns == "jabber:iq:version") {
 			// Отправить версию сервера
+			// send(Stanza::serverVersion(сервер, stanza->from(), stanza->id()));
 		}
 	}
 	/*

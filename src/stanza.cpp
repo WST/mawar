@@ -36,3 +36,23 @@ std::string Stanza::type() {
 		return std::string("");
 	}
 }
+
+Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
+	ATXmlTag iq("iq");
+		iq.insertAttribute("from", server.bare());
+		iq.insertAttribute("to", reply_to.full());
+		iq.insertAttribute("type", "result");
+		iq.insertAttribute("id", id);
+		ATXmlTag query("query");
+			query.setDefaultNameSpaceAttribute("jabber:iq:version");
+				ATXmlTag name("name");
+				ATXmlTag version("version");
+				ATXmlTag os("os");
+	
+	query.insertChildElement(&name);
+	query.insertChildElement(&version);
+	query.insertChildElement(&os);
+	iq.insertChildElement(&query);
+	
+	return Stanza(&iq);
+}
