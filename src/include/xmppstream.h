@@ -102,6 +102,16 @@ public:
 	* Обработчик iq-станзы
 	*/
 	virtual void onIqStanza(Stanza *stanza);
+	
+	/**
+	* Обработчик message-станзы
+	*/
+	virtual void onMessageStanza(Stanza *stanza);
+	
+	/**
+	* Обработчик presence-станзы
+	*/
+	virtual void onPresenceStanza(Stanza *stanza);
 };
 
 #endif // MAWAR_XMPPSTREAM_H

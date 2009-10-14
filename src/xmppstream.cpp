@@ -126,8 +126,10 @@ void XMPPStream::onEndElement(const std::string &name)
 void XMPPStream::onStanza(Stanza *stanza)
 {
 	cout << "stanza: " << stanza->tag()->name() << endl;
-	if ( stanza->tag()->name() == "iq" ) onIqStanza(stanza);
-	else if ( stanza->tag()->name() == "auth" ) onAuthStanza(stanza);
+	if (stanza->tag()->name() == "iq") onIqStanza(stanza);
+	else if (stanza->tag()->name() == "auth") onAuthStanza(stanza);
+	else if (stanza->tag()->name() == "message") onMessageStanza(stanza);
+	else if (stanza->tag()->name() == "presence") onPresenceStanza(stanza);
 	else ; // ...
 }
 
@@ -172,6 +174,16 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 	endElement("iq");
 	flush();
 	*/
+}
+
+void XMPPStream::onMessageStanza(Stanza *stanza)
+{
+	// TODO
+}
+
+void XMPPStream::onPresenceStanza(Stanza *stanza)
+{
+	// TODO
 }
 
 

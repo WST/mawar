@@ -12,6 +12,8 @@ JID::JID(std::string jid_text) {
 	if(pos != -1) {
 		jid_hostname = jid_text.substr(0, pos);
 		jid_resource = jid_text.substr(pos + 1);
+	} else {
+		jid_hostname = jid_text;
 	}
 	jid_bare = jid_username + "@" + jid_hostname;
 }
