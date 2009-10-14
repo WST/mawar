@@ -9,6 +9,7 @@
 #include <iostream>
 
 using namespace std;
+using namespace nanosoft;
 
 /**
 * Конструктор потока
@@ -128,6 +129,7 @@ void XMPPStream::onStanza(Stanza *stanza)
 	cout << "stanza: " << stanza->tag()->name() << endl;
 	if (stanza->tag()->name() == "iq") onIqStanza(stanza);
 	else if (stanza->tag()->name() == "auth") onAuthStanza(stanza);
+	else if (stanza->tag()->name() == "response" ) onResponseStanza(stanza);
 	else if (stanza->tag()->name() == "message") onMessageStanza(stanza);
 	else if (stanza->tag()->name() == "presence") onPresenceStanza(stanza);
 	else ; // ...
@@ -138,22 +140,58 @@ void XMPPStream::onStanza(Stanza *stanza)
 */
 void XMPPStream::onAuthStanza(Stanza *stanza)
 {
-	string password = nanosoft::base64_decode(stanza->tag()->getCharacterData());
+	string mechanism = stanza->tag()->getAttribute("mechanism");
+	cout << "mechanism: " << mechanism << endl;
 	
-	//ATXmlTag *reply = new ATXmlTag("success");
-	//reply->setNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-sasl");
-	// отправить reply
-	// delete reply;
-	
-	startElement("success");
-		setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-	endElement("success");
-	flush();
-	
-	resetWriter();
-	state = authorized;
-	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
-	resetParser();
+	sasl = server->start("xmpp", "localhost", mechanism);
+	onSASLStep(string());
+}
+
+/**
+* Обработка этапа авторизации SASL
+*/
+void XMPPStream::onSASLStep(const std::string &input)
+{
+	string output;
+	switch ( server->step(sasl, input, output) )
+	{
+	case SASLServer::ok:
+		//username = server->getUsername(sasl);
+		//cout << "authorized: " << username << "@localhost" << endl;
+		server->close(sasl);
+		startElement("success");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+		endElement("success");
+		flush();
+		resetWriter();
+		state = authorized;
+		depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
+		resetParser();
+		break;
+	case SASLServer::next:
+		startElement("challenge");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+			characterData(base64_encode(output));
+		endElement("challenge");
+		flush();
+		break;
+	case SASLServer::error:
+		server->close(sasl);
+		startElement("failure");
+			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+			addElement("temporary-auth-failure", "");
+		endElement("failure");
+		flush();
+		break;
+	}
+}
+
+/**
+* Обработчик авторизации: ответ клиента
+*/
+void XMPPStream::onResponseStanza(Stanza *stanza)
+{
+	onSASLStep(base64_decode(stanza->tag()->getCharacterData()));
 }
 
 /**
@@ -161,6 +199,19 @@ void XMPPStream::onAuthStanza(Stanza *stanza)
 */
 void XMPPStream::onIqStanza(Stanza *stanza)
 {
+	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
+		/*startElement("iq");
+			setAttribute("type", "result");
+			setAttribute("id", stanza->tag()->getAttribute("id"));
+			startElement("bind");
+				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
+				startElement("jid");
+					TODO characterData("alex@localhost/bar");
+				endElement("jid");
+			endElement("bind");
+		endElement("iq");
+		flush();*/
+	}
 	if(stanza->tag()->hasChild("query") && stanza->type() == "get") {
 		// Входящие запросы информации
 		std::string query_xmlns = stanza->tag()->getChild("query")->getAttribute("xmlns");
@@ -169,19 +220,6 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 			// send(Stanza::serverVersion(сервер, stanza->from(), stanza->id()));
 		}
 	}
-	/*
-	startElement("iq");
-		setAttribute("type", "result");
-		setAttribute("id", iq->getAttribute("id"));
-		startElement("bind");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
-			startElement("jid");
-				characterData("alex@localhost/bar");
-			endElement("jid");
-		endElement("bind");
-	endElement("iq");
-	flush();
-	*/
 }
 
 void XMPPStream::onMessageStanza(Stanza *stanza)
@@ -215,7 +253,11 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	{
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-			addElement("mechanism", "PLAIN");
+			SASLServer::mechanisms_t list = server->getMechanisms();
+			for(SASLServer::mechanisms_t::const_iterator pos = list.begin(); pos != list.end(); ++pos)
+			{
+				addElement("mechanism", *pos);
+			}
 		endElement("mechanisms");
 		startElement("register");
 			setAttribute("xmlns", "http://jabber.org/features/iq-register");

@@ -3,6 +3,7 @@
 
 #include <nanosoft/asyncxmlstream.h>
 #include <nanosoft/xmlwriter.h>
+#include <nanosoft/gsaslserver.h>
 #include <xml_types.h>
 #include <tagbuilder.h>
 #include <xml_tag.h>
@@ -29,7 +30,17 @@ private:
 	*/
 	int depth;
 	
+	/**
+	* Сеанс авторизации SASL
+	*/
+	GSASLSession *sasl;
+	
 	enum {init, authorized} state;
+	
+	/**
+	* Логин авторизованного пользователя
+	*/
+	//std::string userLogin;
 	
 protected:
 	/**
@@ -97,6 +108,16 @@ public:
 	* Обработчик авторизации
 	*/
 	virtual void onAuthStanza(Stanza *stanza);
+	
+	/**
+	* Обработка этапа авторизации SASL
+	*/
+	virtual void onSASLStep(const std::string &input);
+	
+	/**
+	* Обработчик авторизации: ответ клиента
+	*/
+	virtual void onResponseStanza(Stanza *stanza);
 	
 	/**
 	* Обработчик iq-станзы

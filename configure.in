@@ -54,6 +54,12 @@ AC_ARG_WITH(nanosoft, AS_HELP_STRING([--with-nanosoft=PREFIX], [prefix to nanoso
 AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
 AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
 
+AC_ARG_WITH(gsasl, AS_HELP_STRING([--with-gsasl=PREFIX], [GNU SASL library]), [
+		CPPFLAGS="$CPPFLAGS  -I$withval/include"
+		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
+	])
+# TODO AC_CHECK_HEADER(gsasl.h, [], [AC_ERROR(GNU SASL library required)])
+AC_CHECK_LIB(gsasl, main, [], [AC_ERROR(GNU SASL library required)])
 
 # Checks for header files.
 

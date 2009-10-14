@@ -3,6 +3,7 @@
 #include <nanosoft/netdaemon.h>
 #include <xmppserver.h>
 #include <myconsole.h>
+#include <nanosoft/gsaslserver.h>
 
 using namespace std;
 

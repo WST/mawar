@@ -3,15 +3,16 @@ srcdir = @srcdir@/src
 
 config = ./src/include/config.h
 
+CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
-CXXFLAGS = @CXXFLAGS@ -I./src/include
+CXXFLAGS = @CXXFLAGS@ $(CPPFLAGS) -I./src/include -I/opt/gsasl/include
 CXX = @CXX@ $(CXXFLAGS)
 CC = @CC@ $(CFLAGS)
 AR = @AR@
 RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 MKDIR = @MKDIR@
-LIBS = @LIBS@
+LIBS = @LIBS@ -lgsasl
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
