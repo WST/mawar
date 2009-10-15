@@ -2,7 +2,6 @@
 #include <jid.h>
 
 JID::JID(std::string jid_text) {
-	jid_full = jid_text;
 	int pos = jid_text.find("@");
 	if(pos != -1) {
 		jid_username = jid_text.substr(0, pos);
@@ -15,7 +14,6 @@ JID::JID(std::string jid_text) {
 	} else {
 		jid_hostname = jid_text;
 	}
-	jid_bare = jid_username + "@" + jid_hostname;
 }
 
 JID::~JID() {
@@ -23,11 +21,24 @@ JID::~JID() {
 }
 
 std::string JID::full() {
-	return jid_full;
+	std::string retval;
+	if(!jid_username.empty()) {
+		retval += jid_username;
+	}
+	retval += jid_hostname;
+	if(!jid_resource.empty()) {
+		retval += jid_resource;
+	}
+	return retval;
 }
 
 std::string JID::bare() {
-	return jid_bare;
+	std::string retval;
+	if(!jid_username.empty()) {
+		retval += jid_username;
+	}
+	retval += jid_hostname;
+	return retval;
 }
 
 std::string JID::hostname() {
@@ -40,4 +51,16 @@ std::string JID::resource() {
 
 std::string JID::username() {
 	return jid_username;
+}
+
+void JID::setHostname(std::string hostname) {
+	jid_hostname = hostname;
+}
+
+void JID::setResource(std::string resource) {
+	jid_resource = resource;
+}
+
+void JID::setUsername(std::string username) {
+	jid_username = username;
 }

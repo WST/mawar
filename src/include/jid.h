@@ -14,10 +14,11 @@ class JID
 		std::string resource();
 		std::string username();
 		std::string full();
+		void setHostname(std::string hostname);
+		void setResource(std::string resource);
+		void setUsername(std::string username);
 	
 	private:
-		std::string jid_full;
-		std::string jid_bare;
 		std::string jid_hostname;
 		std::string jid_resource;
 		std::string jid_username;
