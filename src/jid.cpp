@@ -23,11 +23,11 @@ JID::~JID() {
 std::string JID::full() {
 	std::string retval;
 	if(!jid_username.empty()) {
-		retval += jid_username;
+		retval += jid_username + "@";
 	}
 	retval += jid_hostname;
 	if(!jid_resource.empty()) {
-		retval += jid_resource;
+		retval += "/" + jid_resource;
 	}
 	return retval;
 }
@@ -35,7 +35,7 @@ std::string JID::full() {
 std::string JID::bare() {
 	std::string retval;
 	if(!jid_username.empty()) {
-		retval += jid_username;
+		retval += jid_username + "@";
 	}
 	retval += jid_hostname;
 	return retval;
