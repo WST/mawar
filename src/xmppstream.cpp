@@ -56,6 +56,7 @@ void XMPPStream::onWrite()
 */
 void XMPPStream::onShutdown()
 {
+	server->onOffline(this);
 	AsyncXMLStream::onShutdown();
 	XMLWriter::flush();
 	cerr << "[TestStream]: peer shutdown connection" << endl;
@@ -73,7 +74,6 @@ void XMPPStream::onShutdown()
 void XMPPStream::onStartElement(const std::string &name, const attributtes_t &attributes)
 {
 	depth ++;
-	cout << "onStartElement: " << name << " depth: " << depth << endl;
 	switch ( depth )
 	{
 	case 1:
@@ -84,7 +84,6 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 	break;
 	default: // добавить тег в станзу
 		builder->startElement(name, attributes, depth);
-		cout << "onStartElement(" << name << ")" << endl;
 	}
 }
 
@@ -94,7 +93,6 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 void XMPPStream::onCharacterData(const std::string &cdata)
 {
 	builder->characterData(cdata);
-	cout << "cdata: " << cdata << endl;
 }
 
 /**
@@ -116,7 +114,6 @@ void XMPPStream::onEndElement(const std::string &name)
 	}
 	default:
 		builder->endElement(name);
-		cout << "onEndElement(" << name << ")" << endl;
 	}
 	depth --;
 }
@@ -141,7 +138,6 @@ void XMPPStream::onStanza(Stanza *stanza)
 void XMPPStream::onAuthStanza(Stanza *stanza)
 {
 	string mechanism = stanza->tag()->getAttribute("mechanism");
-	cout << "host: " << host << ", mechanism: " << mechanism << endl;
 	
 	sasl = server->start("xmpp", host, mechanism);
 	onSASLStep(string());
@@ -157,7 +153,6 @@ void XMPPStream::onSASLStep(const std::string &input)
 	{
 	case SASLServer::ok:
 		username = server->getUsername(sasl);
-		cout << "authorized: " << username << "@" << host << endl;
 		server->close(sasl);
 		startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
@@ -192,7 +187,6 @@ void XMPPStream::onSASLStep(const std::string &input)
 void XMPPStream::onResponseStanza(Stanza *stanza)
 {
 	onSASLStep(base64_decode(stanza->tag()->getCharacterData()));
-	cout << "onResponseStanza exit" << endl;
 }
 
 /**
@@ -212,15 +206,14 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 	}
 	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
 		resource  = stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo";
+		server->onOnline(this);
 		startElement("iq");
 			setAttribute("type", "result");
 			setAttribute("id", stanza->tag()->getAttribute("id"));
 			startElement("bind");
 				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 				startElement("jid");
-					string jid = username + "@" + host + "/" + resource;
-					cout << "bind jid: " << jid << endl;
-					characterData(jid);
+					characterData( jid() );
 				endElement("jid");
 			endElement("bind");
 		endElement("iq");
@@ -247,7 +240,6 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 							setAttribute("subscription", "both");
 							addElement("group", "Friends");
 						endElement("item");
-						cout << "user: " << *pos << endl;
 					}
 				endElement("query");
 			endElement("iq");
@@ -286,7 +278,6 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	if ( state == init )
 	{
 		host = attributes.find("to")->second;
-		cout << "connect to vhost: " << host << endl;
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			SASLServer::mechanisms_t list = server->getMechanisms();
@@ -317,6 +308,16 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 */
 void XMPPStream::onEndStream()
 {
-	cout << "session closed" << endl;
+	cerr << "session closed" << endl;
 	endElement("stream:stream");
+}
+
+/**
+* JID потока
+* TODO докостылизация в класс JID
+* Наверное лучше просто добапить публичное поле JID jid
+*/
+std::string XMPPStream::jid()
+{
+	return username + "@" + host + "/" + resource;
 }

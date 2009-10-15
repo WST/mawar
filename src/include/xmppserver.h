@@ -7,6 +7,8 @@
 #include <nanoini.h>
 #include <string>
 
+class XMPPStream;
+
 /**
 * Класс XMPP сервера
 */
@@ -56,6 +58,17 @@ public:
 	* Обработчик события: подключение клиента
 	*/
 	AsyncObject* onAccept();
+	
+	/**
+	* Событие появления нового онлайнера
+	* @param stream поток
+	*/
+	void onOnline(XMPPStream *stream);
+	
+	/**
+	* Событие ухода пользователя в офлайн
+	*/
+	void onOffline(XMPPStream *stream);
 	
 	/**
 	* Вернуть пароль пользователя по логину и vhost

@@ -78,9 +78,7 @@ struct online_balon_t
 */
 static int users_callback(ini_p ini, const char *section, const char *key, const char *value, void *balon)
 {
-	cout << "vhost: " << section << ", user: " << key << endl;
 	static_cast< XMPPServer::users_t* >(balon)->push_back(string(key) + "@" + section);
-	cout << "next\n";
 	return 0;
 }
 
@@ -89,9 +87,7 @@ static int users_callback(ini_p ini, const char *section, const char *key, const
 */
 static int users_vhosts_callback(ini_p ini, const char *section, void *balon)
 {
-	cout << "vhost: " << section << endl;
 	ini_section_map(ini, section, users_callback, balon);
-	cout << "next section\n";
 	return 0;
 }
 
@@ -101,8 +97,24 @@ static int users_vhosts_callback(ini_p ini, const char *section, void *balon)
 */
 XMPPServer::users_t XMPPServer::getUserList()
 {
-	cout << "XMPPServer::getUserList()" << endl;
 	XMPPServer::users_t list;
 	ini_map(users, users_vhosts_callback, &list);
 	return list;
+}
+
+/**
+* Событие появления нового онлайнера
+* @param stream поток
+*/
+void XMPPServer::onOnline(XMPPStream *stream)
+{
+	cout << stream->jid() << " is online :-)\n";
+}
+
+/**
+* Событие ухода пользователя в офлайн
+*/
+void XMPPServer::onOffline(XMPPStream *stream)
+{
+	cout << stream->jid() << " is offline :-(\n";
 }
