@@ -2,6 +2,7 @@
 #include <xmppserver.h>
 #include <xmppstream.h>
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -43,8 +44,6 @@ AsyncObject* XMPPServer::onAccept()
 * Вернуть пароль пользователя по логину и vhost
 * TODO декостылизация...
 */
-using namespace std;
-#include <iostream>
 std::string XMPPServer::getUserPassword(const std::string &vhost, const std::string &login)
 {
 	const char *pwd = ini_get(users, vhost.c_str(), login.c_str(), "");

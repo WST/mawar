@@ -141,9 +141,9 @@ void XMPPStream::onStanza(Stanza *stanza)
 void XMPPStream::onAuthStanza(Stanza *stanza)
 {
 	string mechanism = stanza->tag()->getAttribute("mechanism");
-	cout << "mechanism: " << mechanism << endl;
+	cout << "host: " << host << ", mechanism: " << mechanism << endl;
 	
-	sasl = server->start("xmpp", "localhost", mechanism);
+	sasl = server->start("xmpp", host, mechanism);
 	onSASLStep(string());
 }
 
@@ -156,8 +156,8 @@ void XMPPStream::onSASLStep(const std::string &input)
 	switch ( server->step(sasl, input, output) )
 	{
 	case SASLServer::ok:
-		//username = server->getUsername(sasl);
-		//cout << "authorized: " << username << "@localhost" << endl;
+		username = server->getUsername(sasl);
+		cout << "authorized: " << username << "@" << host << endl;
 		server->close(sasl);
 		startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
@@ -192,6 +192,7 @@ void XMPPStream::onSASLStep(const std::string &input)
 void XMPPStream::onResponseStanza(Stanza *stanza)
 {
 	onSASLStep(base64_decode(stanza->tag()->getCharacterData()));
+	cout << "onResponseStanza exit" << endl;
 }
 
 /**
@@ -200,17 +201,20 @@ void XMPPStream::onResponseStanza(Stanza *stanza)
 void XMPPStream::onIqStanza(Stanza *stanza)
 {
 	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
-		/*startElement("iq");
+		resource  = stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo";
+		startElement("iq");
 			setAttribute("type", "result");
 			setAttribute("id", stanza->tag()->getAttribute("id"));
 			startElement("bind");
 				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 				startElement("jid");
-					TODO characterData("alex@localhost/bar");
+					string jid = username + "@" + host + "/" + resource;
+					cout << "bind jid: " << jid << endl;
+					characterData(jid);
 				endElement("jid");
 			endElement("bind");
 		endElement("iq");
-		flush();*/
+		flush();
 	}
 	if(stanza->tag()->hasChild("query") && stanza->type() == "get") {
 		// Входящие запросы информации
@@ -251,6 +255,8 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	startElement("stream:features");
 	if ( state == init )
 	{
+		host = attributes.find("to")->second;
+		cout << "connect to vhost: " << host << endl;
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			SASLServer::mechanisms_t list = server->getMechanisms();

@@ -39,8 +39,21 @@ private:
 	
 	/**
 	* Логин авторизованного пользователя
+	* TODO заменить на JID
 	*/
-	//std::string userLogin;
+	std::string username;
+	
+	/**
+	* Хост
+	* TODO заменить на JID
+	*/
+	std::string host;
+	
+	/**
+	* Ресурс
+	* TODO заменить на JID
+	*/
+	std::string resource;
 	
 protected:
 	/**
