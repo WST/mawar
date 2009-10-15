@@ -10,7 +10,7 @@ ATTagBuilder::~ATTagBuilder() {
 	
 }
 
-void ATTagBuilder::startElement(const std::string &name, const attributtes_t &attributes, unsigned short int depth) {
+void ATTagBuilder::startElement(const std::string &name, const attributes_t &attributes, unsigned short int depth) {
 	if(stack.empty()) {
 		stack.push(new ATXmlTag(name, attributes, 0, depth));
 	} else {

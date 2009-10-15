@@ -11,7 +11,7 @@
 class ATXmlTag
 {
 	public:
-		ATXmlTag(std::string name, attributtes_t tag_attributes, ATXmlTag *p, unsigned short int depth);
+		ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth);
 		ATXmlTag(std::string name);
 		~ATXmlTag();
 		std::string name();
@@ -32,12 +32,14 @@ class ATXmlTag
 		std::string getAttribute(std::string attribute_name);
 		bool hasChild(std::string tag_name);
 		ATXmlTag *getChild(std::string tag_name);
+		nodes_list_t getChildNodes();
+		attributes_t getAttributes();
 	
 	private:
 		std::string tag_name;
 		std::string tag_cdata;
 		unsigned short int tag_depth;
-		attributtes_t attributes;
+		attributes_t attributes;
 		tags_list_t children;
 		nodes_list_t childnodes;
 		ATXmlTag *parent;

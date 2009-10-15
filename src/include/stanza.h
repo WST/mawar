@@ -11,11 +11,13 @@ class Stanza
 		Stanza(ATXmlTag *tag);
 		~Stanza();
 		ATXmlTag *tag();
-		JID *from();
-		JID *to();
+		JID from();
+		JID to();
 		std::string type();
+		std::string id();
 		
 		static Stanza serverVersion(JID server, JID reply_to, std::string id);
+		static Stanza badRequest(JID server, JID reply_to, std::string id);
 	
 	private:
 		ATXmlTag *stanza_tag;

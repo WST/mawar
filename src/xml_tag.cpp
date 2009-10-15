@@ -2,7 +2,7 @@
 #include <xml_tag.h>
 #include <iostream>
 
-ATXmlTag::ATXmlTag(std::string name, attributtes_t tag_attributes, ATXmlTag *p, unsigned short int depth) {
+ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth) {
 	tag_cdata = "";
 	parent = p;
 	tag_depth = depth;
@@ -97,7 +97,7 @@ std::string ATXmlTag::asString() {
 		xml += prefix + ":";
 	}
     xml += tag_name;
-	for(attributtes_t::iterator it = attributes.begin(); it != attributes.end(); it++) {
+	for(attributes_t::iterator it = attributes.begin(); it != attributes.end(); it++) {
 		xml += " " + it->first + std::string("=\"") + it->second + std::string("\"");
 	}
     if(childnodes.empty()) {
@@ -132,6 +132,10 @@ std::string ATXmlTag::getAttribute(std::string attribute_name) {
 	return attributes.find(attribute_name)->second;
 }
 
+attributes_t ATXmlTag::getAttributes() {
+	return attributes;
+}
+
 bool ATXmlTag::hasChild(std::string tag_name) {
 	return (bool) getChild(tag_name);
 }
@@ -143,4 +147,8 @@ ATXmlTag *ATXmlTag::getChild(std::string tag_name) {
 		}
 	}
 	return 0;
+}
+
+nodes_list_t ATXmlTag::getChildNodes() {
+	return childnodes;
 }

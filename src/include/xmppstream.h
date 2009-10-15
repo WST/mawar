@@ -84,10 +84,8 @@ public:
 	
 	/**
 	* JID потока
-	* TODO докостылизация в класс JID
-	* Наверное лучше просто добапить публичное поле JID jid
 	*/
-	std::string jid();
+	JID jid();
 	
 	/**
 	* Событие готовности к записи
@@ -153,6 +151,9 @@ public:
 	* Обработчик presence-станзы
 	*/
 	virtual void onPresenceStanza(Stanza *stanza);
+	
+	void sendTag(ATXmlTag * tag);
+	void sendStanza(Stanza * stanza);
 };
 
 #endif // MAWAR_XMPPSTREAM_H

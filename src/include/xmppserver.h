@@ -38,6 +38,12 @@ public:
 	* TODO декостылизация...
 	*/
 	typedef std::vector<std::string> users_t;
+
+	/**
+	* TODO декостылизация...
+	* (добавил WST)
+	*/
+	typedef std::map<std::string, XMPPStream*> sessions_t;
 	
 	/**
 	* Ссылка на демона
@@ -81,6 +87,7 @@ public:
 	* TODO временый костыль для временного ростера
 	*/
 	users_t getUserList();
+	sessions_t onliners;
 };
 
 #endif // MAWAR_XMPPSERVER_H

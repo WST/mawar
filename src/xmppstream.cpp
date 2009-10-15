@@ -194,30 +194,30 @@ void XMPPStream::onResponseStanza(Stanza *stanza)
 */
 void XMPPStream::onIqStanza(Stanza *stanza)
 {
-	if(stanza->tag()->hasChild("session") && (stanza->type() == "set" || stanza->type() == "get")) {
-		startElement("iq");
-			setAttribute("type", "result");
-			setAttribute("id", stanza->tag()->getAttribute("id"));
-			startElement("session");
-				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
-			endElement("session");
-		endElement("iq");
-		flush();
-	}
 	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
 		resource  = stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo";
-		server->onOnline(this);
 		startElement("iq");
 			setAttribute("type", "result");
 			setAttribute("id", stanza->tag()->getAttribute("id"));
 			startElement("bind");
 				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 				startElement("jid");
-					characterData( jid() );
+					characterData(jid().full());
 				endElement("jid");
 			endElement("bind");
 		endElement("iq");
 		flush();
+	}
+	if(stanza->tag()->hasChild("session") && stanza->type() == "set") {
+		startElement("iq");
+			setAttribute("id", stanza->tag()->getAttribute("id"));
+			setAttribute("type", "result");
+			startElement("session");
+				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
+			endElement("session");
+		endElement("iq");
+		flush();
+		server->onOnline(this);
 	}
 	if(stanza->tag()->hasChild("query") && stanza->type() == "get") {
 		// Входящие запросы информации
@@ -244,18 +244,33 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 				endElement("query");
 			endElement("iq");
 			flush();
+		} else {
+		    // Неизвестный запрос
+			//Stanza s = Stanza::badRequest(JID(""), stanza->from(), stanza->id());
+		    //sendStanza(&s);
 		}
 	}
 }
 
 void XMPPStream::onMessageStanza(Stanza *stanza)
 {
-	// TODO
+	// stanza->to() всегда по умолчанию не содержит ресурса.
+	// Поэтому пока что список онлайнеров хранится без ресурсов
+	// Это костыль :)
+	stanza->tag()->insertAttribute("from", jid().bare());
+	if(server->onliners.find(stanza->to().bare()) != server->onliners.end()) {
+		server->onliners[stanza->to().bare()]->sendStanza(stanza);
+	} else {
+		cout << "Offline message for: " << stanza->to().bare() << endl;
+	}
 }
 
 void XMPPStream::onPresenceStanza(Stanza *stanza)
 {
-	// TODO
+	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
+		stanza->tag()->insertAttribute("to", it->first);
+		it->second->sendStanza(stanza);
+	}
 }
 
 
@@ -295,9 +310,11 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 		startElement("bind");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 		endElement("bind");
+		/*
 		startElement("session");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
 		endElement("session");
+		*/
 	}
 	endElement("stream:features");
 	flush();
@@ -314,10 +331,31 @@ void XMPPStream::onEndStream()
 
 /**
 * JID потока
-* TODO докостылизация в класс JID
-* Наверное лучше просто добапить публичное поле JID jid
 */
-std::string XMPPStream::jid()
+JID XMPPStream::jid()
 {
-	return username + "@" + host + "/" + resource;
+	return JID(username + "@" + host + "/" + resource);
+}
+
+void XMPPStream::sendTag(ATXmlTag * tag) {
+	startElement(tag->name());
+	attributes_t attributes = tag->getAttributes();
+	for(attributes_t::iterator it = attributes.begin(); it != attributes.end(); it++) {
+		setAttribute(it->first, it->second);
+	}
+	nodes_list_t nodes = tag->getChildNodes();
+	for(nodes_list_t::iterator it = nodes.begin(); it != nodes.end(); it++) {
+		if((*it)->type == TTag) {
+			sendTag((*it)->tag);
+		} else {
+			characterData((*it)->cdata);
+		}
+	}
+	endElement(tag->name());
+	flush();
+	// send(tag->asString()); — так будет куда проще…
+}
+
+void XMPPStream::sendStanza(Stanza * stanza) {
+	sendTag(stanza->tag());
 }

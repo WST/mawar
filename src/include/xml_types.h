@@ -27,7 +27,7 @@ class ATXmlNode {
 	std::string cdata;
 };
 
-typedef std::map<std::string, std::string> attributtes_t;
+typedef std::map<std::string, std::string> attributes_t;
 typedef std::stack<ATXmlTag*> tags_stack_t;
 typedef std::list<ATXmlTag*> tags_list_t;
 typedef std::list<ATXmlNode*> nodes_list_t;
