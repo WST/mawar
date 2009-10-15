@@ -26,8 +26,8 @@ int main()
 	daemon.addObject(&server);
 	
 	// консоль управления сервером
-	MyConsole console(&daemon, 0);
-	daemon.addObject(&console);
+	//MyConsole console(&daemon, 0);
+	//daemon.addObject(&console);
 	
 	// запускаем демона
 	return daemon.run();
