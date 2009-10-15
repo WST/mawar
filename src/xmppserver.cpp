@@ -64,3 +64,45 @@ bool XMPPServer::onSASLAuthorize(const std::string &username, const std::string 
 	string userPassword = getUserPassword(username, realm);
 	return userPassword != "" && userPassword == password;
 }
+
+/**
+* TODO временый костыль для временного ростера
+*/
+struct online_balon_t
+{
+	XMPPServer::users_t users;
+};
+
+/**
+* TODO временый костыль для временного ростера
+*/
+static int users_callback(ini_p ini, const char *section, const char *key, const char *value, void *balon)
+{
+	cout << "vhost: " << section << ", user: " << key << endl;
+	static_cast< XMPPServer::users_t* >(balon)->push_back(string(key) + "@" + section);
+	cout << "next\n";
+	return 0;
+}
+
+/**
+* TODO временый костыль для временного ростера
+*/
+static int users_vhosts_callback(ini_p ini, const char *section, void *balon)
+{
+	cout << "vhost: " << section << endl;
+	ini_section_map(ini, section, users_callback, balon);
+	cout << "next section\n";
+	return 0;
+}
+
+/**
+* Вернуть список всех онлайнеров
+* TODO временый костыль для временного ростера
+*/
+XMPPServer::users_t XMPPServer::getUserList()
+{
+	cout << "XMPPServer::getUserList()" << endl;
+	XMPPServer::users_t list;
+	ini_map(users, users_vhosts_callback, &list);
+	return list;
+}

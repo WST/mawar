@@ -200,6 +200,16 @@ void XMPPStream::onResponseStanza(Stanza *stanza)
 */
 void XMPPStream::onIqStanza(Stanza *stanza)
 {
+	if(stanza->tag()->hasChild("session") && (stanza->type() == "set" || stanza->type() == "get")) {
+		startElement("iq");
+			setAttribute("type", "result");
+			setAttribute("id", stanza->tag()->getAttribute("id"));
+			startElement("session");
+				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
+			endElement("session");
+		endElement("iq");
+		flush();
+	}
 	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
 		resource  = stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo";
 		startElement("iq");
@@ -222,6 +232,26 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 		if(query_xmlns == "jabber:iq:version") {
 			// Отправить версию сервера
 			// send(Stanza::serverVersion(сервер, stanza->from(), stanza->id()));
+		} else if (query_xmlns == "jabber:iq:roster") {
+			startElement("iq");
+				setAttribute("type", "result");
+				setAttribute("id", stanza->tag()->getAttribute("id"));
+				startElement("query");
+					setAttribute("xmlns", "jabber:iq:roster");
+					XMPPServer::users_t users = server->getUserList();
+					for(XMPPServer::users_t::iterator pos = users.begin(); pos != users.end(); ++pos)
+					{
+						startElement("item");
+							setAttribute("jid", *pos);
+							setAttribute("name", *pos);
+							setAttribute("subscription", "both");
+							addElement("group", "Friends");
+						endElement("item");
+						cout << "user: " << *pos << endl;
+					}
+				endElement("query");
+			endElement("iq");
+			flush();
 		}
 	}
 }
@@ -274,11 +304,9 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 		startElement("bind");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 		endElement("bind");
-		/*
 		startElement("session");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
 		endElement("session");
-		*/
 	}
 	endElement("stream:features");
 	flush();

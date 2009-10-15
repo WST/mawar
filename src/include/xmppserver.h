@@ -33,6 +33,11 @@ protected:
 	
 public:
 	/**
+	* TODO декостылизация...
+	*/
+	typedef std::vector<std::string> users_t;
+	
+	/**
 	* Ссылка на демона
 	*/
 	NetDaemon *daemon;
@@ -54,9 +59,15 @@ public:
 	
 	/**
 	* Вернуть пароль пользователя по логину и vhost
-	* TODO декостылизация...
+	* TODO декостылизация... хм... а может и так пойдет :-)
 	*/
 	std::string getUserPassword(const std::string &vhost, const std::string &login);
+	
+	/**
+	* Вернуть список всех пользователей сервера
+	* TODO временый костыль для временного ростера
+	*/
+	users_t getUserList();
 };
 
 #endif // MAWAR_XMPPSERVER_H
