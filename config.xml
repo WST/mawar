@@ -1,14 +1,16 @@
 <?xml version="1.0" ?>
 <maward>
+
 	<limits>
 		<workers>3</workers>
 		<c2s_sessions>1000</c2s_sessions>
 	</limits>
+	<listen>
+				<c2s>5222</c2s>
+	</listen>
+	
 	<hosts>
 		<host name="shamangrad.net">
-			<listen>
-				<c2s>5222</c2s>
-			</listen>
 			<storage engine="mysql">
 				<server>localhost</server>
 				<username>mawar</username>
