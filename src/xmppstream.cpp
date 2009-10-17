@@ -265,6 +265,16 @@ void XMPPStream::onMessageStanza(Stanza *stanza) {
 	
 	it = server->onliners.find(stanza->to().bare());
 	if(it != server->onliners.end()) {
+		// Проверить, есть ли ресурс, если он указан
+		JID to = stanza->to();
+		if(to.resource() != "") {
+			jt = it->second.find(to.resource());
+			if(jt != it->second.end()) {
+				jt->second->sendStanza(stanza);
+				return;
+			}
+			// Не отправили на выбранный ресурс, смотрим дальше…
+		}
 		std::list<XMPPStream *> sendto_list;
 		std::list<XMPPStream *>::iterator kt;
 		int max_priority = 0;
