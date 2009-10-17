@@ -252,8 +252,8 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 	}
 }
 
-int XMPPStream::priority() {
-	return resource_priority;
+ClientPresence XMPPStream::presence() {
+	return client_presence;
 }
 
 void XMPPStream::onMessageStanza(Stanza *stanza) {
@@ -265,9 +265,19 @@ void XMPPStream::onMessageStanza(Stanza *stanza) {
 	
 	it = server->onliners.find(stanza->to().bare());
 	if(it != server->onliners.end()) {
+		std::list<XMPPStream *> sendto_list;
+		std::list<XMPPStream *>::iterator kt;
+		int max_priority = 0;
 		for(jt = it->second.begin(); jt != it->second.end(); jt++) {
-			// Отправить нужно на ресурс(ы) с наибольшим приоритетом, пока шлю на все.
-			jt->second->sendStanza(stanza);
+			if(jt->second->presence().priority == max_priority) {
+				sendto_list.push_back(jt->second);
+			} else if(jt->second->presence().priority > max_priority) {
+				sendto_list.clear();
+				sendto_list.push_back(jt->second);
+			}
+		}
+		for(kt = sendto_list.begin() ; kt != sendto_list.end(); kt++) {
+			(*kt)->sendStanza(stanza);
 		}
 	} else {
 		cout << "Offline message for: " << stanza->to().bare() << endl;
@@ -276,7 +286,8 @@ void XMPPStream::onMessageStanza(Stanza *stanza) {
 
 void XMPPStream::onPresenceStanza(Stanza *stanza)
 {
-	resource_priority = 0; // TODO
+	client_presence.priority = atoi(stanza->tag()->getChildValue("priority", "0").c_str()); // TODO
+	client_presence.status_text = stanza->tag()->getChildValue("status", "");
 	
 	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
 		stanza->tag()->insertAttribute("to", it->first);

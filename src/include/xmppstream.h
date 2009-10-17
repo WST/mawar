@@ -9,6 +9,12 @@
 #include <xml_tag.h>
 #include <stanza.h>
 
+struct ClientPresence {
+	// ещё собственно статус (XA, Availabe, DND…)
+	std::string status_text;
+	int priority;
+};
+
 /**
 * Класс XMPP-поток
 */
@@ -39,7 +45,7 @@ private:
 	
 	JID client_jid;
 	
-	int resource_priority;
+	ClientPresence client_presence;
 	
 protected:
 	/**
@@ -76,7 +82,7 @@ public:
 	/**
 	* Приоритет ресурса
 	*/
-	int priority();
+	ClientPresence presence();
 	
 	/**
 	* Событие готовности к записи
