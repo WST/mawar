@@ -9,6 +9,7 @@ class ConfigFile
 {
 	public:
 		ConfigFile(const std::string &filename);
+		void reload();
 		
 		// limits
 		unsigned short int workers();
@@ -18,9 +19,9 @@ class ConfigFile
 		unsigned int c2s();
 	
 	private:
-		unsigned short int config_workers;
-		unsigned long int config_c2s_sessions;
-		unsigned int config_c2s;
+		ATXmlTag *config_tag;
+		ATXmlTag *current;
+		std::string config_filename;
 };
 
 #endif

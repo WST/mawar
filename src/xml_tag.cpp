@@ -152,3 +152,11 @@ ATXmlTag *ATXmlTag::getChild(std::string tag_name) {
 nodes_list_t ATXmlTag::getChildNodes() {
 	return childnodes;
 }
+
+std::string ATXmlTag::getChildValue(std::string tag_name, std::string default_value) {
+  return hasChild(tag_name) ? getChild(tag_name)->getCharacterData() : default_value;
+}
+
+std::string ATXmlTag::getAttribute(std::string name, std::string default_value) {
+  return hasAttribute(name) ? getAttribute(name) : default_value;
+}

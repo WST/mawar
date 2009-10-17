@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <maward>
-
+	
 	<limits>
 		<workers>3</workers>
 		<c2s_sessions>1000</c2s_sessions>

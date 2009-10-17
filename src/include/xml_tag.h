@@ -34,6 +34,8 @@ class ATXmlTag
 		ATXmlTag *getChild(std::string tag_name);
 		nodes_list_t getChildNodes();
 		attributes_t getAttributes();
+		std::string getAttribute(std::string name, std::string default_value);
+		std::string getChildValue(std::string tag_name, std::string default_value);
 	
 	private:
 		std::string tag_name;
