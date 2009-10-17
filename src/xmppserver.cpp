@@ -108,8 +108,10 @@ XMPPServer::users_t XMPPServer::getUserList()
 */
 void XMPPServer::onOnline(XMPPStream *stream)
 {
-	onliners[stream->jid().bare()] = stream;
-	cout << stream->jid().bare() << " is online :-)\n";
+	std::map<std::string, XMPPStream*> res;
+	res[stream->jid().resource()] = stream;
+	onliners[stream->jid().bare()] = res;
+	cout << stream->jid().full() << " is online :-)\n";
 }
 
 /**
@@ -117,6 +119,9 @@ void XMPPServer::onOnline(XMPPStream *stream)
 */
 void XMPPServer::onOffline(XMPPStream *stream)
 {
-	onliners.erase(stream->jid().bare());
-	cout << stream->jid().bare() << " is offline :-(\n";
+	onliners[stream->jid().bare()].erase(stream->jid().resource());
+	if(onliners[stream->jid().bare()].empty()) {
+		onliners.erase(stream->jid().bare());
+	}
+	cout << stream->jid().full() << " is offline :-(\n";
 }

@@ -16,6 +16,10 @@ JID::JID(std::string jid_text) {
 	}
 }
 
+JID::JID() {
+	
+}
+
 JID::~JID() {
 	
 }

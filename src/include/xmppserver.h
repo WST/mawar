@@ -43,7 +43,8 @@ public:
 	* TODO декостылизация...
 	* (добавил WST)
 	*/
-	typedef std::map<std::string, XMPPStream*> sessions_t;
+	typedef std::map<std::string, XMPPStream *> reslist_t;
+	typedef std::map<std::string, reslist_t> sessions_t;
 	
 	/**
 	* Ссылка на демона

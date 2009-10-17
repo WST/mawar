@@ -8,6 +8,7 @@ class JID
 {
 	public:
 		JID(std::string jid_text);
+		JID();
 		~JID();
 		std::string bare();
 		std::string hostname();

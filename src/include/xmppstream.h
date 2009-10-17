@@ -37,23 +37,9 @@ private:
 	
 	enum {init, authorized} state;
 	
-	/**
-	* Логин авторизованного пользователя
-	* TODO заменить на JID
-	*/
-	std::string username;
+	JID client_jid;
 	
-	/**
-	* Хост
-	* TODO заменить на JID
-	*/
-	std::string host;
-	
-	/**
-	* Ресурс
-	* TODO заменить на JID
-	*/
-	std::string resource;
+	int resource_priority;
 	
 protected:
 	/**
@@ -86,6 +72,11 @@ public:
 	* JID потока
 	*/
 	JID jid();
+
+	/**
+	* Приоритет ресурса
+	*/
+	int priority();
 	
 	/**
 	* Событие готовности к записи

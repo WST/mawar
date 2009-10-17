@@ -139,7 +139,7 @@ void XMPPStream::onAuthStanza(Stanza *stanza)
 {
 	string mechanism = stanza->tag()->getAttribute("mechanism");
 	
-	sasl = server->start("xmpp", host, mechanism);
+	sasl = server->start("xmpp", client_jid.hostname(), mechanism);
 	onSASLStep(string());
 }
 
@@ -152,7 +152,7 @@ void XMPPStream::onSASLStep(const std::string &input)
 	switch ( server->step(sasl, input, output) )
 	{
 	case SASLServer::ok:
-		username = server->getUsername(sasl);
+		client_jid.setUsername(server->getUsername(sasl));
 		server->close(sasl);
 		startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
@@ -195,7 +195,7 @@ void XMPPStream::onResponseStanza(Stanza *stanza)
 void XMPPStream::onIqStanza(Stanza *stanza)
 {
 	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
-		resource  = stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo";
+		client_jid.setResource(stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo");
 		startElement("iq");
 			setAttribute("type", "result");
 			setAttribute("id", stanza->tag()->getAttribute("id"));
@@ -252,14 +252,23 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 	}
 }
 
-void XMPPStream::onMessageStanza(Stanza *stanza)
-{
-	// stanza->to() всегда по умолчанию не содержит ресурса.
-	// Поэтому пока что список онлайнеров хранится без ресурсов
-	// Это костыль :)
-	stanza->tag()->insertAttribute("from", jid().bare());
-	if(server->onliners.find(stanza->to().bare()) != server->onliners.end()) {
-		server->onliners[stanza->to().bare()]->sendStanza(stanza);
+int XMPPStream::priority() {
+	return resource_priority;
+}
+
+void XMPPStream::onMessageStanza(Stanza *stanza) {
+	stanza->tag()->insertAttribute("from", jid().full());
+	
+	XMPPServer::sessions_t::iterator it;
+	XMPPServer::reslist_t reslist;
+	XMPPServer::reslist_t::iterator jt;
+	
+	it = server->onliners.find(stanza->to().bare());
+	if(it != server->onliners.end()) {
+		for(jt = it->second.begin(); jt != it->second.end(); jt++) {
+			// Отправить нужно на ресурс(ы) с наибольшим приоритетом, пока шлю на все.
+			jt->second->sendStanza(stanza);
+		}
 	} else {
 		cout << "Offline message for: " << stanza->to().bare() << endl;
 	}
@@ -267,9 +276,13 @@ void XMPPStream::onMessageStanza(Stanza *stanza)
 
 void XMPPStream::onPresenceStanza(Stanza *stanza)
 {
+	resource_priority = 0; // TODO
+	
 	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
 		stanza->tag()->insertAttribute("to", it->first);
-		it->second->sendStanza(stanza);
+		for(XMPPServer::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
+			jt->second->sendStanza(stanza);
+		}
 	}
 }
 
@@ -292,7 +305,7 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	startElement("stream:features");
 	if ( state == init )
 	{
-		host = attributes.find("to")->second;
+		client_jid.setHostname(attributes.find("to")->second);
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			SASLServer::mechanisms_t list = server->getMechanisms();
@@ -334,7 +347,7 @@ void XMPPStream::onEndStream()
 */
 JID XMPPStream::jid()
 {
-	return JID(username + "@" + host + "/" + resource);
+	return client_jid;
 }
 
 void XMPPStream::sendTag(ATXmlTag * tag) {
@@ -352,10 +365,10 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 		}
 	}
 	endElement(tag->name());
-	flush();
 	// send(tag->asString()); — так будет куда проще…
 }
 
 void XMPPStream::sendStanza(Stanza * stanza) {
 	sendTag(stanza->tag());
+	flush();
 }
