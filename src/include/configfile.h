@@ -3,11 +3,12 @@
 #define MAWAR_CONFIGFILE_H
 
 #include <xml_tag.h>
+#include <string>
 
 class ConfigFile
 {
 	public:
-		ConfigFile(std::string filename);
+		ConfigFile(const std::string &filename);
 		
 		// limits
 		unsigned short int workers();

@@ -6,7 +6,7 @@
 		<c2s_sessions>1000</c2s_sessions>
 	</limits>
 	<listen>
-				<c2s>5222</c2s>
+		<c2s>5222</c2s>
 	</listen>
 	
 	<hosts>

@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <attagparser.h>
 
-ConfigFile::ConfigFile(std::string filename) {
-	ATXmlTag *tag = parse_xml_file("config.xml");
+ConfigFile::ConfigFile(const std::string &filename) {
+	ATXmlTag *tag = parse_xml_file(filename);
 	if(!tag) {
 		// ошибка!
 	}
