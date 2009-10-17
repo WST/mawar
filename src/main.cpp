@@ -5,28 +5,24 @@
 #include <myconsole.h>
 #include <nanosoft/gsaslserver.h>
 #include <xml_tag.h>
-#include <attagparser.h>
+#include <configfile.h>
 
 using namespace std;
 
 int main()
 {
-	ATXmlTag *config = parse_xml_file("config.xml");
-	if ( config )
-	{
-		// TODO
-	}
-	delete config;
+	// Конфигурация
+	ConfigFile *config = new ConfigFile("config.xml");
 	
 	// демон управляющий воркерами вводом-выводом
-	NetDaemon daemon(10000);
-	daemon.setWorkerCount(2);
+	NetDaemon daemon(config->c2s_sessions());
+	daemon.setWorkerCount(config->workers());
 	
 	// XMPP-сервер
 	XMPPServer server(&daemon);
 	
-	// подключемся к 5222 порту - подключения клиентов
-	server.bind(5222);
+	// подключемся к c2s-порту из конфига
+	server.bind(config->c2s());
 	
 	// не более 10 ожидающих соединений
 	server.listen(10);

@@ -42,6 +42,7 @@ MAWAR_OBJECTS+=attagparser.o
 MAWAR_OBJECTS+=tagbuilder.o
 MAWAR_OBJECTS+=stanza.o
 MAWAR_OBJECTS+=jid.o
+MAWAR_OBJECTS+=configfile.o
 
 .PHONY: all install
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS)
@@ -72,6 +73,9 @@ stanza.o: $(srcdir)/stanza.cpp $(srcdir)/include/stanza.h
 
 jid.o: $(srcdir)/jid.cpp $(srcdir)/include/jid.h
 	$(CXX) -c $(srcdir)/jid.cpp -o jid.o
+
+configfile.o: $(srcdir)/configfile.cpp $(srcdir)/include/configfile.h
+	$(CXX) -c $(srcdir)/configfile.cpp -o configfile.o
 
 # CLEAN
 
