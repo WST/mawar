@@ -290,7 +290,7 @@ void XMPPStream::onMessageStanza(Stanza *stanza) {
 			cout << "Offline message for: " << stanza->to().bare() << endl;
 			return;
 		}
-		for(kt = sendto_list.begin() ; kt != sendto_list.end(); kt++) {
+		for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++) {
 			(*kt)->sendStanza(stanza);
 		}
 	} else {
@@ -305,6 +305,7 @@ void XMPPStream::onPresenceStanza(Stanza *stanza)
 	
 	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
 		stanza->tag()->insertAttribute("to", it->first);
+		stanza->tag()->insertAttribute("from", client_jid.full());
 		for(XMPPServer::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
 			jt->second->sendStanza(stanza);
 		}
