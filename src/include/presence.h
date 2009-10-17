@@ -24,11 +24,11 @@ struct ClientPresence {
 		if(show == "free") show = Free;
 	};
 	std::string getShow() {
-		if(show == Available) return "available";
-		if(show == Unavailable) return "unavailable";
-		if(show == XA) return "xa";
-		if(show == DND) return "dnd";
-		if(show == Free) return "free";
+		if(show == Available) return std::string("available");
+		if(show == Unavailable) return std::string("unavailable");
+		if(show == XA) return std::string("xa");
+		if(show == DND) return std::string("dnd");
+		if(show == Free) return std::string("free");
 	}
 };
 
