@@ -4,11 +4,20 @@
 #include <xmppserver.h>
 #include <myconsole.h>
 #include <nanosoft/gsaslserver.h>
+#include <xml_tag.h>
+#include <attagparser.h>
 
 using namespace std;
 
 int main()
 {
+	ATXmlTag *config = parse_xml_file("config.xml");
+	if ( config )
+	{
+		// TODO
+	}
+	delete config;
+	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(10000);
 	daemon.setWorkerCount(2);

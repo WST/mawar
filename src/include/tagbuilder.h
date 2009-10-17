@@ -12,7 +12,15 @@ class ATTagBuilder
 		void endElement(const std::string &name);
 		void characterData(const std::string &cdata);
 		ATXmlTag *fetchResult();
-	
+		
+		/**
+		* Сброс билдера
+		*
+		* Удаляет незавершенный тег и сбарсывает все внутренние
+		* структуры к начальному состоянию для обработки нового
+		* тега
+		*/
+		void reset();
 	private:
 		tags_stack_t stack;
 		ATXmlTag *presult;

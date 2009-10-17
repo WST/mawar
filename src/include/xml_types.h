@@ -3,7 +3,7 @@
 #define AT_XML_TYPES_H
 
 #include <string>
-#include <stack>
+#include <vector>
 #include <map>
 #include <list>
 
@@ -28,7 +28,7 @@ class ATXmlNode {
 };
 
 typedef std::map<std::string, std::string> attributes_t;
-typedef std::stack<ATXmlTag*> tags_stack_t;
+typedef std::vector<ATXmlTag*> tags_stack_t;
 typedef std::list<ATXmlTag*> tags_list_t;
 typedef std::list<ATXmlNode*> nodes_list_t;
 
