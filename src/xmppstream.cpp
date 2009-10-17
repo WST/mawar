@@ -276,6 +276,10 @@ void XMPPStream::onMessageStanza(Stanza *stanza) {
 				sendto_list.push_back(jt->second);
 			}
 		}
+		if(sendto_list.empty()) {
+			return;
+			cout << "Offline message for: " << stanza->to().bare() << endl;
+		}
 		for(kt = sendto_list.begin() ; kt != sendto_list.end(); kt++) {
 			(*kt)->sendStanza(stanza);
 		}
