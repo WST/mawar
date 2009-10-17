@@ -244,10 +244,22 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 				endElement("query");
 			endElement("iq");
 			flush();
+			
+			// Ниже идёт костыль — рассылка присутствий от всех онлайнеров
+			// TODO: конечно же, декостылизация ;)
+			Stanza *roster_presence;
+			for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
+				for(XMPPServer::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
+					roster_presence = Stanza::presence(jt->second->jid(), jid(), jt->second->presence());
+					sendStanza(roster_presence);
+					delete roster_presence;
+				}
+			}
 		} else {
 		    // Неизвестный запрос
-			//Stanza s = Stanza::badRequest(JID(""), stanza->from(), stanza->id());
-		    //sendStanza(&s);
+			Stanza *s = Stanza::badRequest(client_jid.hostname(), stanza->from(), stanza->id());
+		    sendStanza(s);
+			delete s;
 		}
 	}
 }
@@ -302,6 +314,7 @@ void XMPPStream::onPresenceStanza(Stanza *stanza)
 {
 	client_presence.priority = atoi(stanza->tag()->getChildValue("priority", "0").c_str()); // TODO
 	client_presence.status_text = stanza->tag()->getChildValue("status", "");
+	client_presence.setShow(stanza->tag()->getChildValue("show", "Available"));
 	
 	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
 		stanza->tag()->insertAttribute("to", it->first);

@@ -8,12 +8,7 @@
 #include <tagbuilder.h>
 #include <xml_tag.h>
 #include <stanza.h>
-
-struct ClientPresence {
-	// ещё собственно статус (XA, Availabe, DND…)
-	std::string status_text;
-	int priority;
-};
+#include <presence.h>
 
 /**
 * Класс XMPP-поток
