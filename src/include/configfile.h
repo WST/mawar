@@ -20,6 +20,8 @@ class ConfigFile
 	
 	private:
 		ATXmlTag *config_tag;
+		ATXmlTag *listen;
+		ATXmlTag *limits;
 		ATXmlTag *current;
 		std::string config_filename;
 };
