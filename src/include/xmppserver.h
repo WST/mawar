@@ -33,6 +33,14 @@ protected:
 	*/
 	virtual bool onSASLAuthorize(const std::string &username, const std::string &realm, const std::string &password);
 	
+	/**
+	* Сигнал завершения работы
+	*
+	* Объект должен закрыть файловый дескриптор
+	* и освободить все занимаемые ресурсы
+	*/
+	virtual void onTerminate();
+	
 public:
 	/**
 	* TODO декостылизация...
@@ -76,6 +84,16 @@ public:
 	* Событие ухода пользователя в офлайн
 	*/
 	void onOffline(XMPPStream *stream);
+	
+	/**
+	* Сигнал завершения
+	*/
+	void onSigTerm();
+	
+	/**
+	* Сигнал HUP
+	*/
+	void onSigHup();
 	
 	/**
 	* Вернуть пароль пользователя по логину и vhost

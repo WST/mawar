@@ -69,6 +69,24 @@ void XMPPStream::onShutdown()
 }
 
 /**
+* Сигнал завершения работы
+*
+* Объект должен закрыть файловый дескриптор
+* и освободить все занимаемые ресурсы
+*/
+void XMPPStream::onTerminate()
+{
+	//server->onOffline(this);
+	XMLWriter::flush();
+	cerr << "[TestStream]: terminating connection" << endl;
+	if ( shutdown(fd, SHUT_RDWR) != 0 )
+	{
+		stderror();
+	}
+	delete this;
+}
+
+/**
 * Обработчик открытия тега
 */
 void XMPPStream::onStartElement(const std::string &name, const attributtes_t &attributes)
@@ -153,7 +171,7 @@ void XMPPStream::onSASLStep(const std::string &input)
 	{
 	case SASLServer::ok:
 		client_jid.setUsername(server->getUsername(sasl));
-		server->close(sasl);
+		server->GSASLServer::close(sasl);
 		startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 		endElement("success");
@@ -171,7 +189,7 @@ void XMPPStream::onSASLStep(const std::string &input)
 		flush();
 		break;
 	case SASLServer::error:
-		server->close(sasl);
+		server->GSASLServer::close(sasl);
 		startElement("failure");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			addElement("temporary-auth-failure", "");
