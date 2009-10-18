@@ -36,7 +36,24 @@ private:
 	*/
 	GSASLSession *sasl;
 	
-	enum {init, authorized} state;
+	enum state_t {
+		/**
+		* Начальное состояние - инициализация и авторизация
+		*/
+		init,
+		
+		/**
+		* Авторизован - авторизовался и готов работать
+		*/
+		authorized,
+		
+		/**
+		* Завершение - сервер завершает свою работу,
+		* соединение готовиться к закрытию, нужно
+		* корректно попрощаться с клиентом
+		*/
+		terminating
+	} state;
 	
 	JID client_jid;
 	
@@ -153,7 +170,7 @@ public:
 	virtual void onPresenceStanza(Stanza *stanza);
 	
 	void sendTag(ATXmlTag * tag);
-	void sendStanza(Stanza * stanza);
+	bool sendStanza(Stanza * stanza);
 };
 
 #endif // MAWAR_XMPPSTREAM_H

@@ -40,7 +40,7 @@ void MyConsole::onRead()
 	string cmd = trim(string(buf, r));
 	if ( cmd == "quit" )
 	{
-		daemon->terminate(0);
+		daemon->terminate();
 	}
 }
 

@@ -56,15 +56,14 @@ void XMPPStream::onWrite()
 */
 void XMPPStream::onShutdown()
 {
-	server->onOffline(this);
-	AsyncXMLStream::onShutdown();
-	XMLWriter::flush();
-	cerr << "[TestStream]: peer shutdown connection" << endl;
-	if ( shutdown(fd, SHUT_RDWR) != 0 )
-	{
-		stderror();
+	cerr << "[XMPPStream]: peer shutdown connection" << endl;
+	if ( state != terminating ) {
+		AsyncXMLStream::onShutdown();
+		server->onOffline(this);
+		XMLWriter::flush();
 	}
 	server->daemon->removeObject(this);
+	shutdown(READ | WRITE);
 	delete this;
 }
 
@@ -76,14 +75,16 @@ void XMPPStream::onShutdown()
 */
 void XMPPStream::onTerminate()
 {
-	//server->onOffline(this);
-	XMLWriter::flush();
-	cerr << "[TestStream]: terminating connection" << endl;
-	if ( shutdown(fd, SHUT_RDWR) != 0 )
-	{
-		stderror();
-	}
-	delete this;
+	if ( state == terminating ) return;
+	state = terminating;
+	
+	cerr << "[XMPPStream]: terminating connection..." << endl;
+	
+	server->onOffline(this);
+	endElement("stream:stream");
+	flush();
+	
+	shutdown(WRITE);
 }
 
 /**
@@ -428,7 +429,12 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 	// send(tag->asString()); — так будет куда проще…
 }
 
-void XMPPStream::sendStanza(Stanza * stanza) {
+bool XMPPStream::sendStanza(Stanza * stanza) {
+	if ( state == terminating ) {
+		cerr << "XMPPStream::sendStanza(): connection terminating..." << endl;
+		return false;
+	}
 	sendTag(stanza->tag());
 	flush();
+	return true;
 }

@@ -22,7 +22,6 @@ XMPPServer::XMPPServer(NetDaemon *d): daemon(d),
 XMPPServer::~XMPPServer()
 {
 	ini_close(users);
-	onError("TODO: cleanup in XMPPServer::~XMPPServer");
 }
 
 /**
@@ -73,10 +72,8 @@ bool XMPPServer::onSASLAuthorize(const std::string &username, const std::string 
 */
 void XMPPServer::onTerminate()
 {
-	// TODO декостылизация
-	// это просто заглушка, сейчас сервер сам
-	// себя удаляет на onSigTerm()
-	onError("XMPPServer::onTerminate(): не может быть o_O");
+	onError("XMPPServer::onTerminate()...");
+	daemon->removeObject(this);
 }
 
 /**
@@ -145,14 +142,8 @@ void XMPPServer::onOffline(XMPPStream *stream)
 */
 void XMPPServer::onSigTerm()
 {
-	cerr << "\n[XMPPServer]: onSigTerm() enter\nclose server socket\n";
-	daemon->removeObject(this);
-	if ( shutdown(fd, SHUT_RDWR) < 0 ) stderror();
-	if ( ::close(fd) < 0 ) stderror();
-	else fd = 0;
-	//AsyncServer::close();
-	//delete this;
-	daemon->terminate(0);
+	cerr << "\n[XMPPServer]: onSigTerm() enter\n";
+	daemon->terminate();
 	cerr << "[XMPPServer]: onSigTerm() leave\n";
 }
 
@@ -161,5 +152,5 @@ void XMPPServer::onSigTerm()
 */
 void XMPPServer::onSigHup()
 {
-	cerr << "[XMPPServer]: TODO XMPPServer::onSigHup\n";
+	//cerr << "[XMPPServer]: TODO XMPPServer::onSigHup\n";
 }

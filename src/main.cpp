@@ -65,5 +65,9 @@ int main()
 	sigaction(SIGINT, &sa, 0);
 	
 	// запускаем демона
-	return daemon.run();
+	daemon.run();
+	
+	delete server;
+	
+	return 0;
 }
