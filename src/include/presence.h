@@ -10,6 +10,10 @@ struct ClientPresence {
 	enum show_t {Available, Unavailable, XA, DND, Free} show;
 	std::string status_text;
 	int priority;
+	
+	ClientPresence(): show(Available), status_text(), priority(0) {
+	}
+	
 	std::string getPriority() {
 		char buf[40];
 		sprintf(buf, "%d", priority);

@@ -51,21 +51,12 @@ Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
 }
 
 Stanza Stanza::presence(JID from, JID to, ClientPresence p) {
-	ATXmlTag *presence = new ATXmlTag("presence");
-		ATXmlTag *show = new ATXmlTag("show");
-			show->insertCharacterData(p.getShow());
-		ATXmlTag *priority = new ATXmlTag("priority");
-			priority->insertCharacterData(p.getPriority());
-		ATXmlTag *status = new ATXmlTag("status");
-			status->insertCharacterData(p.status_text);
-		
-		presence->insertChildElement(show);
-		presence->insertChildElement(priority);
-		presence->insertChildElement(status);
-		
-		presence->insertAttribute("from", from.full());
-		presence->insertAttribute("to", to.full());
-	
+	Stanza presence = new ATXmlTag("presence");
+	presence->setAttribute("from", from.full());
+	presence->setAttribute("to", to.full());
+	presence["show"] = p.getShow();
+	presence["priority"] = p.getPriority();
+	presence["status"] = p.status_text;
 	return presence;
 }
 
@@ -84,7 +75,7 @@ Stanza Stanza::streamError(const std::string &condition, const std::string &mess
 	
 	if ( message != "" ) {
 		error["text"] = message;
-		if( lang != "" ) error["text"]->setAttribute("xml:lang", lang);
+		if ( lang != "" ) error["text"]->setAttribute("xml:lang", lang);
 	}
 	
 	return error;

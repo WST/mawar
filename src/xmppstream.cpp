@@ -284,11 +284,10 @@ void XMPPStream::onIqStanza(Stanza stanza)
 			
 			// Ниже идёт костыль — рассылка присутствий от всех онлайнеров
 			// TODO: конечно же, декостылизация ;)
-			
-			Stanza roster_presence;
 			for(XMPPServer::sessions_t::const_iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
 				for(XMPPServer::reslist_t::const_iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
-					roster_presence = Stanza::presence(jt->second->jid(), jid(), jt->second->presence());
+					cout << "presence " << jt->second->presence().getPriority() << " from " << jt->second->jid().full() << " to " << jid().full() << endl;
+					Stanza roster_presence = Stanza::presence(jt->second->jid(), jid(), jt->second->presence());
 					sendStanza(roster_presence);
 					delete roster_presence;
 				}
