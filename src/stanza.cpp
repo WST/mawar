@@ -1,61 +1,33 @@
 
 #include <stanza.h>
 
-Stanza::Stanza(ATXmlTag *tag) {
-	stanza_tag = tag;
-}
-
-Stanza::~Stanza() {
-	delete stanza_tag;
-}
-
-ATXmlTag *Stanza::tag() {
-	return stanza_tag;
-}
-
 JID Stanza::from() {
-	if(stanza_tag->hasAttribute("from")) {
-		return JID(stanza_tag->getAttribute("from"));
-	} else {
-		return JID("");
-	}
+	return JID( tag->getAttribute("from", "") );
 }
 
 JID Stanza::to() {
-	if(stanza_tag->hasAttribute("to")) {
-		return JID(stanza_tag->getAttribute("to"));
-	} else {
-		return JID("");
-	}
+	return JID( tag->getAttribute("to", "") );
 }
 
 std::string Stanza::type() {
-	if(stanza_tag->hasAttribute("type")) {
-		return stanza_tag->getAttribute("type");
-	} else {
-		return std::string("");
-	}
+	return tag->getAttribute("type", "");
 }
 
 std::string Stanza::id() {
-	if(stanza_tag->hasAttribute("id")) {
-		return stanza_tag->getAttribute("id");
-	} else {
-		return std::string("");
-	}
+	return tag->getAttribute("id", "");
 }
 
-Stanza *Stanza::badRequest(JID server, JID reply_to, std::string id) {
+Stanza Stanza::badRequest(JID server, JID reply_to, std::string id) {
 	// <iq from="admin@underjabber.net.ru" type="error" xml:lang="ru-RU" to="admin@underjabber.net.ru/home" >
 	// <error type="modify" code="400" >
 	//	<bad-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
 	//	</error>
 	// </iq>
 	ATXmlTag *iq = new ATXmlTag("iq");
-	return new Stanza(iq); // тег будет удалён в деструкторе станзы
+	return iq; // тег будет удалён в деструкторе станзы
 }
 
-Stanza *Stanza::serverVersion(JID server, JID reply_to, std::string id) {
+Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
 	ATXmlTag *iq = new ATXmlTag("iq");
 		iq->insertAttribute("from", server.bare());
 		iq->insertAttribute("to", reply_to.full());
@@ -75,10 +47,10 @@ Stanza *Stanza::serverVersion(JID server, JID reply_to, std::string id) {
 	query->insertChildElement(os);
 	iq->insertChildElement(query);
 	
-	return new Stanza(iq);
+	return iq;
 }
 
-Stanza *Stanza::presence(JID from, JID to, ClientPresence p) {
+Stanza Stanza::presence(JID from, JID to, ClientPresence p) {
 	ATXmlTag *presence = new ATXmlTag("presence");
 		ATXmlTag *show = new ATXmlTag("show");
 			show->insertCharacterData(p.getShow());
@@ -94,7 +66,7 @@ Stanza *Stanza::presence(JID from, JID to, ClientPresence p) {
 		presence->insertAttribute("from", from.full());
 		presence->insertAttribute("to", to.full());
 	
-	return new Stanza(presence);
+	return presence;
 }
 
 /**
@@ -104,18 +76,16 @@ Stanza *Stanza::presence(JID from, JID to, ClientPresence p) {
 * @param lang язык
 * @return сформированная станза
 */
-Stanza* Stanza::streamError(const std::string &condition, const std::string &message, const std::string &lang)
+Stanza Stanza::streamError(const std::string &condition, const std::string &message, const std::string &lang)
 {
-	ATXmlTag *error = new ATXmlTag("stream:error");
+	Stanza error = new ATXmlTag("stream:error");
 	error->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-streams");
-	error->insertChildElement( new ATXmlTag(condition) );
+	error[condition];
 	
 	if ( message != "" ) {
-		ATXmlTag * text = new ATXmlTag("text");
-		if( lang != "" ) text->insertAttribute("xml:lang", lang);
-		text->insertCharacterData(message);
-		error->insertChildElement(text);
+		error["text"] = message;
+		if( lang != "" ) error["text"]->setAttribute("xml:lang", lang);
 	}
 	
-	return new Stanza(error);
+	return error;
 }

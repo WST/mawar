@@ -34,15 +34,47 @@ class ATXmlTag
 		void setNameSpaceAttribute(std::string name, std::string value);
 		std::string getNameSpace();
 		std::string asString();
-		bool hasAttribute(std::string attribute_name);
-		std::string getAttribute(std::string attribute_name);
 		bool hasChild(std::string tag_name);
 		ATXmlTag *getChild(std::string tag_name);
 		nodes_list_t getChildNodes();
 		attributes_t getAttributes();
-		std::string getAttribute(std::string name, std::string default_value);
 		
 		// === новые методы ===
+		
+		/**
+		* Проверить существование атрибута
+		* @param name имя атрибута
+		* @return TRUE - атрибут есть, FALSE - атрибута нет
+		*/
+		bool hasAttribute(const std::string &name);
+		
+		/**
+		* Вернуть значение атрибута
+		* @param name имя атрибута
+		* @param default_value значение по умолчанию если атрибута нет
+		* @return значение атрибута
+		*/
+		const std::string& getAttribute(const std::string &name, const std::string &default_value = "");
+		
+		/**
+		* Установить значение атрибута
+		*
+		* Если атрибут уже есть, то сменить его значение
+		* Если атрибута нет, то добавить атрибут с указанным значением
+		*
+		* @param name имя атрибута
+		* @param value новое значение атрибута
+		*/
+		void setAttribute(const std::string &name, const std::string &value);
+		
+		/**
+		* Удалить атрибут
+		*
+		* Если атрибута нет, то ничего не делать - это не ошибка
+		*
+		* @param name имя удаляемого атрибута
+		*/
+		void removeAttribute(const std::string &name);
 		
 		/**
 		* Вернуть значение узла
@@ -115,6 +147,11 @@ class ATXmlTag
 		* @note требуется для findNext
 		*/
 		bool hasChild(ATXmlTag *tag);
+		
+		/**
+		* Удалить всех потомков
+		*/
+		void clear();
 		
 	private:
 		std::string tag_name;

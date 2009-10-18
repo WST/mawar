@@ -28,13 +28,7 @@ ATXmlTag::ATXmlTag(std::string name) {
 }
 
 ATXmlTag::~ATXmlTag() {
-	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
-		delete *it;
-	}
-	
-	for(nodes_list_t::iterator it = childnodes.begin(); it != childnodes.end(); it++) {
-		delete *it;
-	}
+	clear();
 }
 
 ATXmlTag *ATXmlTag::getParent() {
@@ -128,14 +122,6 @@ std::string ATXmlTag::asString() {
 	return xml;
 }
 
-bool ATXmlTag::hasAttribute(std::string attribute_name) {
-	return attributes.find(attribute_name) != attributes.end();
-}
-
-std::string ATXmlTag::getAttribute(std::string attribute_name) {
-	return attributes.find(attribute_name)->second;
-}
-
 attributes_t ATXmlTag::getAttributes() {
 	return attributes;
 }
@@ -161,8 +147,52 @@ std::string ATXmlTag::getChildValue(std::string tag_name, std::string default_va
   return hasChild(tag_name) ? getChild(tag_name)->getCharacterData() : default_value;
 }
 
-std::string ATXmlTag::getAttribute(std::string name, std::string default_value) {
-  return hasAttribute(name) ? getAttribute(name) : default_value;
+/**
+* Проверить существование атрибута
+* @param name имя атрибута
+* @return TRUE - атрибут есть, FALSE - атрибута нет
+*/
+bool ATXmlTag::hasAttribute(const std::string &name)
+{
+	return attributes.find(name) != attributes.end();
+}
+
+/**
+* Вернуть значение атрибута
+* @param name имя атрибута
+* @param default_value значение по умолчанию если атрибута нет
+* @return значение атрибута
+*/
+const std::string& ATXmlTag::getAttribute(const std::string &name, const std::string &default_value)
+{
+	attributes_t::iterator attr = attributes.find(name);
+	return attr != attributes.end() ? attr->second : default_value;
+}
+
+/**
+* Установить значение атрибута
+*
+* Если атрибут уже есть, то сменить его значение
+* Если атрибута нет, то добавить атрибут с указанным значением
+*
+* @param name имя атрибута
+* @param value новое значение атрибута
+*/
+void ATXmlTag::setAttribute(const std::string &name, const std::string &value)
+{
+	attributes[name] = value;
+}
+
+/**
+* Удалить атрибут
+*
+* Если атрибута нет, то ничего не делать - это не ошибка
+*
+* @param name имя удаляемого атрибута
+*/
+void ATXmlTag::removeAttribute(const std::string &name)
+{
+	attributes.erase(name);
 }
 
 /**
@@ -349,4 +379,20 @@ bool ATXmlTag::hasChild(ATXmlTag *tag)
 		tag = tag->parent;
 	}
 	return false;
+}
+
+/**
+* Удалить всех потомков
+*/
+void ATXmlTag::clear()
+{
+	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
+		delete *it;
+	}
+	children.clear();
+	
+	for(nodes_list_t::iterator it = childnodes.begin(); it != childnodes.end(); it++) {
+		delete *it;
+	}
+	childnodes.clear();
 }

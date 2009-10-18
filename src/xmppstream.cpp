@@ -144,7 +144,7 @@ void XMPPStream::onEndElement(const std::string &name)
 		break;
 	case 2: {
 		builder->endElement(name);
-		Stanza *s = new Stanza(builder->fetchResult());
+		Stanza s = builder->fetchResult();
 		onStanza(s);
 		delete s; // Внимание — станза удаляется здесь
 		break;
@@ -158,25 +158,23 @@ void XMPPStream::onEndElement(const std::string &name)
 /**
 * Обработчик станз
 */
-void XMPPStream::onStanza(Stanza *stanza)
+void XMPPStream::onStanza(Stanza stanza)
 {
-	cout << "stanza: " << stanza->tag()->name() << endl;
-	if (stanza->tag()->name() == "iq") onIqStanza(stanza);
-	else if (stanza->tag()->name() == "auth") onAuthStanza(stanza);
-	else if (stanza->tag()->name() == "response" ) onResponseStanza(stanza);
-	else if (stanza->tag()->name() == "message") onMessageStanza(stanza);
-	else if (stanza->tag()->name() == "presence") onPresenceStanza(stanza);
+	cout << "stanza: " << stanza->name() << endl;
+	if (stanza->name() == "iq") onIqStanza(stanza);
+	else if (stanza->name() == "auth") onAuthStanza(stanza);
+	else if (stanza->name() == "response" ) onResponseStanza(stanza);
+	else if (stanza->name() == "message") onMessageStanza(stanza);
+	else if (stanza->name() == "presence") onPresenceStanza(stanza);
 	else ; // ...
 }
 
 /**
 * Обработчик авторизации
 */
-void XMPPStream::onAuthStanza(Stanza *stanza)
+void XMPPStream::onAuthStanza(Stanza stanza)
 {
-	string mechanism = stanza->tag()->getAttribute("mechanism");
-	
-	sasl = server->start("xmpp", client_jid.hostname(), mechanism);
+	sasl = server->start("xmpp", client_jid.hostname(), stanza->getAttribute("mechanism"));
 	onSASLStep(string());
 }
 
@@ -221,21 +219,21 @@ void XMPPStream::onSASLStep(const std::string &input)
 /**
 * Обработчик авторизации: ответ клиента
 */
-void XMPPStream::onResponseStanza(Stanza *stanza)
+void XMPPStream::onResponseStanza(Stanza stanza)
 {
-	onSASLStep(base64_decode(stanza->tag()->getCharacterData()));
+	onSASLStep(base64_decode(stanza));
 }
 
 /**
 * Обработчик iq-станзы
 */
-void XMPPStream::onIqStanza(Stanza *stanza)
+void XMPPStream::onIqStanza(Stanza stanza)
 {
-	if(stanza->tag()->hasChild("bind") && (stanza->type() == "set" || stanza->type() == "get")) {
-		client_jid.setResource(stanza->type() == "set" ? stanza->tag()->getChild("bind")->getChild("resource")->getCharacterData() : "foo");
+	if(stanza->hasChild("bind") && (stanza.type() == "set" || stanza.type() == "get")) {
+		client_jid.setResource(stanza.type() == "set" ? string(stanza["bind"]["resource"]) : "foo");
 		startElement("iq");
 			setAttribute("type", "result");
-			setAttribute("id", stanza->tag()->getAttribute("id"));
+			setAttribute("id", stanza->getAttribute("id"));
 			startElement("bind");
 				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 				startElement("jid");
@@ -245,9 +243,9 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 		endElement("iq");
 		flush();
 	}
-	if(stanza->tag()->hasChild("session") && stanza->type() == "set") {
+	if(stanza->hasChild("session") && stanza.type() == "set") {
 		startElement("iq");
-			setAttribute("id", stanza->tag()->getAttribute("id"));
+			setAttribute("id", stanza->getAttribute("id"));
 			setAttribute("type", "result");
 			startElement("session");
 				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
@@ -256,18 +254,18 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 		flush();
 		server->onOnline(this);
 	}
-	if(stanza->tag()->hasChild("query") && stanza->type() == "get") {
+	if(stanza->hasChild("query") && stanza.type() == "get") {
 		// Входящие запросы информации
-		std::string query_xmlns = stanza->tag()->getChild("query")->getAttribute("xmlns");
+		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		if(query_xmlns == "jabber:iq:version") {
 			// Отправить версию сервера
-			Stanza *s = Stanza::serverVersion(client_jid.hostname(), stanza->from(), stanza->id());
+			Stanza s = Stanza::serverVersion(client_jid.hostname(), stanza.from(), stanza.id());
 		    sendStanza(s);
 			delete s;
 		} else if (query_xmlns == "jabber:iq:roster") {
 			startElement("iq");
 				setAttribute("type", "result");
-				setAttribute("id", stanza->tag()->getAttribute("id"));
+				setAttribute("id", stanza->getAttribute("id"));
 				startElement("query");
 					setAttribute("xmlns", "jabber:iq:roster");
 					XMPPServer::users_t users = server->getUserList();
@@ -287,7 +285,7 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 			// Ниже идёт костыль — рассылка присутствий от всех онлайнеров
 			// TODO: конечно же, декостылизация ;)
 			
-			Stanza *roster_presence;
+			Stanza roster_presence;
 			for(XMPPServer::sessions_t::const_iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
 				for(XMPPServer::reslist_t::const_iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
 					roster_presence = Stanza::presence(jt->second->jid(), jid(), jt->second->presence());
@@ -297,7 +295,7 @@ void XMPPStream::onIqStanza(Stanza *stanza)
 			}
 		} else {
 		    // Неизвестный запрос
-			Stanza *s = Stanza::badRequest(client_jid.hostname(), stanza->from(), stanza->id());
+			Stanza s = Stanza::badRequest(client_jid.hostname(), stanza.from(), stanza.id());
 		    sendStanza(s);
 			delete s;
 		}
@@ -308,17 +306,17 @@ ClientPresence XMPPStream::presence() {
 	return client_presence;
 }
 
-void XMPPStream::onMessageStanza(Stanza *stanza) {
-	stanza->tag()->insertAttribute("from", jid().full());
+void XMPPStream::onMessageStanza(Stanza stanza) {
+	stanza->setAttribute("from", jid().full());
 	
 	XMPPServer::sessions_t::iterator it;
 	XMPPServer::reslist_t reslist;
 	XMPPServer::reslist_t::iterator jt;
 	
-	it = server->onliners.find(stanza->to().bare());
+	it = server->onliners.find(stanza.to().bare());
 	if(it != server->onliners.end()) {
 		// Проверить, есть ли ресурс, если он указан
-		JID to = stanza->to();
+		JID to = stanza.to();
 		if(to.resource() != "") {
 			jt = it->second.find(to.resource());
 			if(jt != it->second.end()) {
@@ -339,26 +337,26 @@ void XMPPStream::onMessageStanza(Stanza *stanza) {
 			}
 		}
 		if(sendto_list.empty()) {
-			cout << "Offline message for: " << stanza->to().bare() << endl;
+			cout << "Offline message for: " << stanza.to().bare() << endl;
 			return;
 		}
 		for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++) {
 			(*kt)->sendStanza(stanza);
 		}
 	} else {
-		cout << "Offline message for: " << stanza->to().bare() << endl;
+		cout << "Offline message for: " << stanza.to().bare() << endl;
 	}
 }
 
-void XMPPStream::onPresenceStanza(Stanza *stanza)
+void XMPPStream::onPresenceStanza(Stanza stanza)
 {
-	client_presence.priority = atoi(stanza->tag()->getChildValue("priority", "0").c_str()); // TODO
-	client_presence.status_text = stanza->tag()->getChildValue("status", "");
-	client_presence.setShow(stanza->tag()->getChildValue("show", "Available"));
+	client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
+	client_presence.status_text = stanza->getChildValue("status", "");
+	client_presence.setShow(stanza->getChildValue("show", "Available"));
 	
 	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
-		stanza->tag()->insertAttribute("to", it->first);
-		stanza->tag()->insertAttribute("from", client_jid.full());
+		stanza->setAttribute("to", it->first);
+		stanza->setAttribute("from", client_jid.full());
 		for(XMPPServer::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
 			jt->second->sendStanza(stanza);
 		}
@@ -385,7 +383,7 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	{
 		vhost = server->getHostByName(attributes.find("to")->second);
 		if ( vhost == 0 ) {
-			Stanza *error = Stanza::streamError("host-unknown", "Неизвестный хост", "ru");
+			Stanza error = Stanza::streamError("host-unknown", "Неизвестный хост", "ru");
 			sendStanza(error);
 			delete error;
 			terminate();
@@ -459,12 +457,12 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 	// send(tag->asString()); — так будет куда проще…
 }
 
-bool XMPPStream::sendStanza(Stanza * stanza) {
+bool XMPPStream::sendStanza(Stanza stanza) {
 	if ( state == terminating ) {
 		cerr << "XMPPStream::sendStanza(): connection terminating..." << endl;
 		return false;
 	}
-	sendTag(stanza->tag());
+	sendTag(stanza);
 	flush();
 	return true;
 }

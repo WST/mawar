@@ -9,7 +9,47 @@
 #include <signal.h>
 #include <string.h>
 
+#include <taghelper.h>
+
 using namespace std;
+
+/**
+* Пример использования некоторых фишек TagHelper
+*
+* Расскоментируй вызов в main() чтобы поигаться
+*/
+void test_TagHelper()
+{
+	// создаем тег foo
+	TagHelper tag = new ATXmlTag("foo");
+	
+	// устанавливаем в нем атрибут bar=test
+	tag->setAttribute("bar", "test");
+	
+	// записываем в него текст (если есть потомки, то они удаляются)
+	tag = "Hello world";
+	
+	// добавить тег проще пареной репы :-)
+	tag["message"] = "Hello world";
+	
+	// добавить стразу два вложенных тега <iq><bind> тоже просто:
+	tag["iq/bind"] = ":-)";
+	
+	// добавить ещё текста? :-)
+	tag += "bla bla bla";
+	
+	// здесь мы не копируем объект, мы берем ссылку/указатель
+	TagHelper iq = tag["iq"];
+	iq["session"]->setAttribute("id", "12345");
+	
+	cout << "iq: " << iq->asString() << endl;
+	
+	cout << "foo: " << tag->asString() << endl;
+	
+
+	// и даже удаляется :-]
+	delete tag;
+}
 
 // XMPP-сервер
 XMPPServer *server;
@@ -36,6 +76,8 @@ int main()
 {
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
+	
+	//test_TagHelper();
 	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());

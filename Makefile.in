@@ -38,6 +38,7 @@ MAWAR_OBJECTS=xmppserver.o
 MAWAR_OBJECTS+=xmppstream.o
 MAWAR_OBJECTS+=myconsole.o
 MAWAR_OBJECTS+=xml_tag.o
+MAWAR_OBJECTS+=taghelper.o
 MAWAR_OBJECTS+=attagparser.o
 MAWAR_OBJECTS+=tagbuilder.o
 MAWAR_OBJECTS+=stanza.o
@@ -62,6 +63,9 @@ myconsole.o: $(srcdir)/myconsole.cpp $(srcdir)/include/myconsole.h
 
 xml_tag.o: $(srcdir)/xml_tag.cpp $(srcdir)/include/xml_tag.h $(srcdir)/include/xml_types.h
 	$(CXX) -c $(srcdir)/xml_tag.cpp -o xml_tag.o
+
+taghelper.o: $(srcdir)/taghelper.cpp $(srcdir)/include/taghelper.h $(srcdir)/include/xml_tag.h $(srcdir)/include/xml_types.h
+	$(CXX) -c $(srcdir)/taghelper.cpp -o taghelper.o
 
 attagparser.o: $(srcdir)/attagparser.cpp $(srcdir)/include/attagparser.h
 	$(CXX) -c $(srcdir)/attagparser.cpp -o attagparser.o

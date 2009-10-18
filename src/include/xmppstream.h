@@ -142,12 +142,12 @@ public:
 	/**
 	* Обработчик станзы
 	*/
-	virtual void onStanza(Stanza *stanza);
+	virtual void onStanza(Stanza stanza);
 	
 	/**
 	* Обработчик авторизации
 	*/
-	virtual void onAuthStanza(Stanza *stanza);
+	virtual void onAuthStanza(Stanza stanza);
 	
 	/**
 	* Обработка этапа авторизации SASL
@@ -157,25 +157,25 @@ public:
 	/**
 	* Обработчик авторизации: ответ клиента
 	*/
-	virtual void onResponseStanza(Stanza *stanza);
+	virtual void onResponseStanza(Stanza stanza);
 	
 	/**
 	* Обработчик iq-станзы
 	*/
-	virtual void onIqStanza(Stanza *stanza);
+	virtual void onIqStanza(Stanza stanza);
 	
 	/**
 	* Обработчик message-станзы
 	*/
-	virtual void onMessageStanza(Stanza *stanza);
+	virtual void onMessageStanza(Stanza stanza);
 	
 	/**
 	* Обработчик presence-станзы
 	*/
-	virtual void onPresenceStanza(Stanza *stanza);
+	virtual void onPresenceStanza(Stanza stanza);
 	
 	void sendTag(ATXmlTag * tag);
-	bool sendStanza(Stanza * stanza);
+	bool sendStanza(Stanza stanza);
 	
 	/**
 	* Завершить сессию
