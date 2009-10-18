@@ -48,3 +48,19 @@ unsigned int ConfigFile::c2s() {
 	}
 	return atoi(CONFIG_C2S);
 }
+
+/**
+* Вернуть первый виртуальный хост
+*/
+VirtualHostConfig ConfigFile::firstHost()
+{
+	return config_tag->find("hosts/host");
+}
+
+/**
+* Вернуть следующий виртуальный хост
+*/
+VirtualHostConfig ConfigFile::nextHost(VirtualHostConfig from)
+{
+	return config_tag->findNext("hosts/host", from.config);
+}

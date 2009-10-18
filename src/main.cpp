@@ -37,12 +37,17 @@ int main()
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
 	
+	for(VirtualHostConfig vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost))
+	{
+		cout << "vhost: " << vhost.hostname() << endl;
+	}
+	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
 	daemon.setWorkerCount(config->workers());
 	
 	// XMPP-сервер
-	server = new XMPPServer(&daemon);
+	server = new XMPPServer(&daemon, config);
 	
 	// подключемся к c2s-порту из конфига
 	server->bind(config->c2s());

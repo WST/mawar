@@ -1,6 +1,9 @@
 
 #include <xml_tag.h>
 #include <iostream>
+#include <string.h>
+
+using namespace std;
 
 ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth) {
 	tag_cdata = "";
@@ -52,6 +55,7 @@ unsigned short int ATXmlTag::getDepth() {
 
 void ATXmlTag::insertChildElement(ATXmlTag *tag) {
 	ATXmlNode *node = new ATXmlNode(TTag, tag);
+	tag->parent = this;
 	children.push_back(tag);
 	childnodes.push_back(node);
 }
@@ -159,4 +163,190 @@ std::string ATXmlTag::getChildValue(std::string tag_name, std::string default_va
 
 std::string ATXmlTag::getAttribute(std::string name, std::string default_value) {
   return hasAttribute(name) ? getAttribute(name) : default_value;
+}
+
+/**
+* Вернуть первого потомка
+*/
+ATXmlTag* ATXmlTag::firstChild()
+{
+	tags_list_t::iterator iter = children.begin();
+	return iter != children.end() ? *iter : 0;
+}
+
+/**
+* Вернуть следующего потомка следующего за тегом from
+*/
+ATXmlTag* ATXmlTag::nextChild(ATXmlTag *from)
+{
+	for(tags_list_t::iterator iter = children.begin(); iter != children.end(); ++iter)
+	{
+		if ( *iter == from )
+		{
+			++iter;
+			return iter != children.end() ? *iter : 0;
+		}
+	}
+	return 0;
+}
+
+/**
+* Вернуть первого потомка с именем name
+*/
+ATXmlTag* ATXmlTag::firstChild(const char *name)
+{
+	for(tags_list_t::iterator iter = children.begin(); iter != children.end(); ++iter)
+	{
+		if ( (*iter)->name() == name ) return *iter;
+	}
+	return 0;
+}
+
+/**
+* Вернуть первого потомка с именем name
+*/
+ATXmlTag* ATXmlTag::firstChild(const std::string &name)
+{
+	return firstChild(name.c_str());
+}
+
+/**
+* Вернуть следующего потока с именем name следующего за тегом from
+*/
+ATXmlTag* ATXmlTag::nextChild(const char *name, ATXmlTag *from)
+{
+	for(tags_list_t::iterator iter = children.begin(); iter != children.end(); ++iter)
+	{
+		if ( *iter == from )
+		{
+			for(++iter; iter != children.end(); ++iter)
+			{
+				if ( (*iter)->name() == name ) return *iter;
+			}
+			return 0;
+		}
+	}
+	return 0;
+}
+
+/**
+* Вернуть следующего потока с именем name следующего за тегом from
+*/
+ATXmlTag* ATXmlTag::nextChild(const std::string &name, ATXmlTag *from)
+{
+	return nextChild(name.c_str(), from);
+}
+
+/**
+* Вернуть первый дочерний узел, какого бы типа он ни был
+*/
+ATXmlNode* ATXmlTag::firstChildNode()
+{
+	nodes_list_t::iterator iter = childnodes.begin();
+	return iter != childnodes.end() ? *iter : 0;
+}
+
+/**
+* Вернуть следующий дочерний узел, какого бы типа он ни был
+*/
+ATXmlNode* ATXmlTag::nextChildNode(ATXmlNode* from)
+{
+	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
+	{
+		if ( *iter == from )
+		{
+			++iter;
+			return iter != childnodes.end() ? *iter : 0;
+		}
+	}
+	return 0;
+}
+
+/**
+* Найти первого потомка по указанному пути
+*/
+ATXmlTag* ATXmlTag::find(const char *path)
+{
+	const char *remain = strchr(path, '/');
+	if ( remain == 0 ) return firstChild(path);
+	
+	// TODO выделять строку во временном буфере
+	string name(path, remain++);
+	
+	for(ATXmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
+	{
+		ATXmlTag *result = child->find(remain);
+		if ( result ) return result;
+	}
+	
+	return 0;
+}
+
+/**
+* Найти первого потомка по указанному пути
+*/
+ATXmlTag* ATXmlTag::find(const std::string &path)
+{
+	return find(path.c_str());
+}
+
+/**
+* Найти следующий узел
+* @param path путь к узлу
+* @return найденый узел или 0 если узлов больше нет
+*/
+ATXmlTag* ATXmlTag::findNext(const char *path, ATXmlTag *from)
+{
+	const char *remain = strchr(path, '/');
+	if ( remain == 0 ) return nextChild(path, from);
+	
+	// TODO выделять строку во временном буфере
+	string name(path, remain++);
+	
+	ATXmlTag *parent = from->parent;
+	
+	for(ATXmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
+	{
+		if ( child->hasChild(from) )
+		{
+			ATXmlTag *result = child->findNext(remain, from);
+			if ( result ) return result;
+			
+			child = nextChild(name.c_str(), child);
+			for(; child; child = nextChild(name.c_str(), child))
+			{
+				ATXmlTag *result = child->find(remain);
+				if ( result ) return result;
+			}
+			
+			return 0;
+		}
+	}
+	
+	return 0;
+}
+
+/**
+* Найти следующий узел
+* @param path путь к узлу
+* @return найденый узел или 0 если узлов больше нет
+*/
+ATXmlTag* ATXmlTag::findNext(const std::string &path, ATXmlTag *from)
+{
+	return findNext(path.c_str(), from);
+}
+
+/**
+* Проверить имеет ли потомка
+* @note требуется для findNext
+*/
+bool ATXmlTag::hasChild(ATXmlTag *tag)
+{
+	// тег не является своим родителем
+	if ( tag == this ) return false;
+	while ( tag ) {
+		if ( tag->parent == this ) return true;
+		tag = tag->parent;
+	}
+	return false;
 }
