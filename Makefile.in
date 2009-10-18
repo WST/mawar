@@ -43,6 +43,7 @@ MAWAR_OBJECTS+=tagbuilder.o
 MAWAR_OBJECTS+=stanza.o
 MAWAR_OBJECTS+=jid.o
 MAWAR_OBJECTS+=configfile.o
+MAWAR_OBJECTS+=virtualhost.o
 
 .PHONY: all install
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS)
@@ -76,6 +77,9 @@ jid.o: $(srcdir)/jid.cpp $(srcdir)/include/jid.h
 
 configfile.o: $(srcdir)/configfile.cpp $(srcdir)/include/configfile.h
 	$(CXX) -c $(srcdir)/configfile.cpp -o configfile.o
+
+virtualhost.o: $(srcdir)/virtualhost.cpp $(srcdir)/include/virtualhost.h $(srcdir)/include/xmppserver.h
+	$(CXX) -c $(srcdir)/virtualhost.cpp -o virtualhost.o
 
 # CLEAN
 

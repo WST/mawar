@@ -20,7 +20,16 @@ class Stanza
 		static Stanza *serverVersion(JID server, JID reply_to, std::string id);
 		static Stanza *badRequest(JID server, JID reply_to, std::string id);
 		static Stanza *presence(JID from, JID to, ClientPresence p);
-	
+		
+		/**
+		* Stream errors (RFC 3920, 4.7)
+		* @param condition имя тега ошибки
+		* @param message поясняющий текст
+		* @param lang язык
+		* @return сформированная станза
+		*/
+		static Stanza *streamError(const std::string &condition, const std::string &message = "", const std::string &lang = "");
+		
 	private:
 		ATXmlTag *stanza_tag;
 };

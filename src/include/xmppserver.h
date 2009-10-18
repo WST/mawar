@@ -4,10 +4,12 @@
 #include <nanosoft/netdaemon.h>
 #include <nanosoft/asyncserver.h>
 #include <nanosoft/gsaslserver.h>
+#include <configfile.h>
 #include <nanoini.h>
 #include <string>
 
 class XMPPStream;
+class VirtualHost;
 
 /**
 * Класс XMPP сервера
@@ -53,6 +55,11 @@ public:
 	*/
 	typedef std::map<std::string, XMPPStream *> reslist_t;
 	typedef std::map<std::string, reslist_t> sessions_t;
+	
+	/**
+	* Список виртуальных хостов
+	*/
+	typedef std::map<std::string, VirtualHost*> vhosts_t;
 	
 	/**
 	* Ссылка на демона
@@ -107,6 +114,24 @@ public:
 	*/
 	users_t getUserList();
 	sessions_t onliners;
+	
+	/**
+	* Вернуть виртуальный хост по имени
+	* @param name имя искомого хоста
+	* @return виртуальный хост или 0 если такого хоста нет
+	*/
+	VirtualHost* getHostByName(const std::string &name);
+	
+	/**
+	* Добавить виртуальный хост
+	*/
+	void addHost(const std::string &name, VirtualHostConfig config);
+	
+private:
+	/**
+	* Список виртуальных хостов
+	*/
+	vhosts_t vhosts;
 };
 
 #endif // MAWAR_XMPPSERVER_H

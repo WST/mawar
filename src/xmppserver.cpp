@@ -1,6 +1,8 @@
 
 #include <xmppserver.h>
 #include <xmppstream.h>
+#include <virtualhost.h>
+#include <configfile.h>
 #include <string>
 #include <iostream>
 
@@ -21,7 +23,15 @@ XMPPServer::XMPPServer(NetDaemon *d): daemon(d),
 */
 XMPPServer::~XMPPServer()
 {
+	// костыли тоже надо удалять
 	ini_close(users);
+	
+	// delete virtual hosts
+	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+	{
+		delete iter->second;
+	}
+	vhosts.clear();
 }
 
 /**
@@ -153,4 +163,23 @@ void XMPPServer::onSigTerm()
 void XMPPServer::onSigHup()
 {
 	//cerr << "[XMPPServer]: TODO XMPPServer::onSigHup\n";
+}
+
+/**
+* Вернуть виртуальный хост по имени
+* @param name имя искомого хоста
+* @return виртуальный хост или 0 если такого хоста нет
+*/
+VirtualHost* XMPPServer::getHostByName(const std::string &name)
+{
+	vhosts_t::const_iterator iter = vhosts.find(name);
+	return iter != vhosts.end() ? iter->second : 0;
+}
+
+/**
+* Добавить виртуальный хост
+*/
+void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
+{
+	vhosts[name] = new VirtualHost(this, name, config);
 }

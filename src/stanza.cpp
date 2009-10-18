@@ -96,3 +96,26 @@ Stanza *Stanza::presence(JID from, JID to, ClientPresence p) {
 	
 	return new Stanza(presence);
 }
+
+/**
+* Stream errors (RFC 3920, 4.7)
+* @param condition имя тега ошибки
+* @param message поясняющий текст
+* @param lang язык
+* @return сформированная станза
+*/
+Stanza* Stanza::streamError(const std::string &condition, const std::string &message, const std::string &lang)
+{
+	ATXmlTag *error = new ATXmlTag("stream:error");
+	error->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-streams");
+	error->insertChildElement( new ATXmlTag(condition) );
+	
+	if ( message != "" ) {
+		ATXmlTag * text = new ATXmlTag("text");
+		if( lang != "" ) text->insertAttribute("xml:lang", lang);
+		text->insertCharacterData(message);
+		error->insertChildElement(text);
+	}
+	
+	return new Stanza(error);
+}

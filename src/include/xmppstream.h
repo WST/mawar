@@ -22,6 +22,11 @@ private:
 	class XMPPServer *server;
 	
 	/**
+	* Виртуальный хост
+	*/
+	class VirtualHost *vhost;
+	
+	/**
 	* Построитель дерева тегов
 	*/
 	ATTagBuilder *builder;
@@ -171,6 +176,11 @@ public:
 	
 	void sendTag(ATXmlTag * tag);
 	bool sendStanza(Stanza * stanza);
+	
+	/**
+	* Завершить сессию
+	*/
+	void terminate();
 };
 
 #endif // MAWAR_XMPPSTREAM_H

@@ -1,6 +1,7 @@
 
 #include <xmppstream.h>
 #include <xmppserver.h>
+#include <virtualhost.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
 
@@ -14,9 +15,11 @@ using namespace nanosoft;
 /**
 * Конструктор потока
 */
-XMPPStream::XMPPStream(XMPPServer *srv, int sock): AsyncXMLStream(sock), server(srv), XMLWriter(1024), state(init)
+XMPPStream::XMPPStream(XMPPServer *srv, int sock):
+	AsyncXMLStream(sock), XMLWriter(1024),
+	server(srv), vhost(0),
+	state(init), depth(0)
 {
-	depth = 0;
 	builder = new ATTagBuilder();
 }
 
@@ -68,6 +71,30 @@ void XMPPStream::onShutdown()
 }
 
 /**
+* Завершить сессию
+*/
+void XMPPStream::terminate()
+{
+	cerr << "[XMPPStream]: terminating connection..." << endl;
+	
+	switch ( state )
+	{
+	case terminating:
+		return;
+	case authorized:
+		//server->onOffline(this);
+		break;
+	}
+	
+	state = terminating;
+	
+	endElement("stream:stream");
+	flush();
+	
+	shutdown(WRITE);
+}
+
+/**
 * Сигнал завершения работы
 *
 * Объект должен закрыть файловый дескриптор
@@ -75,16 +102,7 @@ void XMPPStream::onShutdown()
 */
 void XMPPStream::onTerminate()
 {
-	if ( state == terminating ) return;
-	state = terminating;
-	
-	cerr << "[XMPPStream]: terminating connection..." << endl;
-	
-	server->onOffline(this);
-	endElement("stream:stream");
-	flush();
-	
-	shutdown(WRITE);
+	terminate();
 }
 
 /**
@@ -363,10 +381,22 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	setAttribute("version", "1.0");
 	setAttribute("xml:lang", "en");
 	
+	if ( state == init )
+	{
+		vhost = server->getHostByName(attributes.find("to")->second);
+		if ( vhost == 0 ) {
+			Stanza *error = Stanza::streamError("host-unknown", "Неизвестный хост", "ru");
+			sendStanza(error);
+			delete error;
+			terminate();
+			return;
+		}
+	}
+	
 	startElement("stream:features");
 	if ( state == init )
 	{
-		client_jid.setHostname(attributes.find("to")->second);
+		client_jid.setHostname(vhost->hostname());
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			SASLServer::mechanisms_t list = server->getMechanisms();
