@@ -28,24 +28,17 @@ Stanza Stanza::badRequest(JID server, JID reply_to, std::string id) {
 }
 
 Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
-	ATXmlTag *iq = new ATXmlTag("iq");
-		iq->insertAttribute("from", server.bare());
-		iq->insertAttribute("to", reply_to.full());
-		iq->insertAttribute("type", "result");
-		if(!id.empty()) iq->insertAttribute("id", id);
-		ATXmlTag *query = new ATXmlTag("query");
-			query->setDefaultNameSpaceAttribute("jabber:iq:version");
-				ATXmlTag *name = new ATXmlTag("name");
-				ATXmlTag *version = new ATXmlTag("version");
-				ATXmlTag *os = new ATXmlTag("os");
-				name->insertCharacterData("mawar Jabber/XMPP engine");
-				version->insertCharacterData("development branch");
-				os->insertCharacterData("UNIX");
+	Stanza iq = new ATXmlTag("iq");
+	iq->setAttribute("from", server.bare());
+	iq->setAttribute("to", reply_to.full());
+	iq->setAttribute("type", "result");
+	if( !id.empty() ) iq->setAttribute("id", id);
 	
-	query->insertChildElement(name);
-	query->insertChildElement(version);
-	query->insertChildElement(os);
-	iq->insertChildElement(query);
+	TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:version");
+		query["name"] = "mawar Jabber/XMPP engine";
+		query["version"] = "development branch";
+		query["os"] = "UNIX";
 	
 	return iq;
 }
