@@ -84,9 +84,12 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 				// Впихнуть элементы ростера тут
 				XMPPServer::users_t roster = server->getUserList();
+				ATXmlTag *item;
 				for(XMPPServer::users_t::iterator it = roster.begin(); it != roster.end(); it++) {
-					query["item"]->setAttribute("subscription", "both");
-					query["item"]->setAttribute("jid", (*it));
+					item = new ATXmlTag("item");
+					item->setAttribute("subscription", "both");
+					item->setAttribute("jid", (*it));
+					query->insertChildElement(item);
 				}
 			
 			getStreamByJid(stanza.from())->sendStanza(iq);
