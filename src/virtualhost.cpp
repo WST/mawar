@@ -49,9 +49,13 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				//	<identity category="server" type="im" name="Mawar" /><feature var="msgoffline" /> (последнее — оффлайновые сообщения, видимо)
 				// TODO: при расширении функционала сервера нужно дописывать сюда фичи
 				// В том числе и динамические (зависящие от вирт.хоста)
+				// Ну и register, конечно
 				query["identity"]->setAttribute("category", "server");
 				query["identity"]->setAttribute("type", "im");
 				query["identity"]->setAttribute("name", "Mawar Jabber/XMPP engine");
+				ATXmlTag *feature = new ATXmlTag("feature");
+				feature->insertAttribute("var", "jabber:iq:version");
+				query->insertChildElement(feature);
 			
 			getStreamByJid(stanza.from())->sendStanza(iq);
 			delete iq;
