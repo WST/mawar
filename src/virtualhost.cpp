@@ -31,10 +31,9 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		
 		if(query_xmlns == "jabber:iq:version") {
-			// Отправить версию сервера
-			Stanza s = Stanza::serverVersion(name, stanza.from(), stanza.id());
-		    //sendStanza(s); // TODO — отправить ответ
-			delete s;
+			Stanza version = Stanza::serverVersion(name, stanza.from(), stanza.id());
+			getStreamByJid(stanza.from())->sendStanza(version);
+			delete version;
 			return;
 		}
 		
