@@ -17,6 +17,10 @@ std::string Stanza::id() {
 	return tag->getAttribute("id", "");
 }
 
+void Stanza::setFrom(JID &jid) {
+	tag->setAttribute("from", jid.full());
+}
+
 Stanza Stanza::badRequest(JID server, JID reply_to, std::string id) {
 	// <iq from="admin@underjabber.net.ru" type="error" xml:lang="ru-RU" to="admin@underjabber.net.ru/home" >
 	// <error type="modify" code="400" >

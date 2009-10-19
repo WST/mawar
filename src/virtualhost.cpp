@@ -37,38 +37,47 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			return;
 		}
 		
+		if(query_xmlns == "http://jabber.org/protocol/disco#info") {
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+				//	<identity category="server" type="im" name="Mawar" /><feature var="msgoffline" /> (последнее — оффлайновые сообщения, видимо)
+				// TODO: при расширении функционала сервера нужно дописывать сюда фичи
+				// В том числе и динамические (зависящие от вирт.хоста)
+				query["identity"]->setAttribute("category", "server");
+				query["identity"]->setAttribute("type", "im");
+				query["identity"]->setAttribute("name", "Mawar");
+			
+			getStreamByJid(stanza.from())->sendStanza(iq);
+			delete iq;
+			return;
+		}
+		
+		if(query_xmlns == "http://jabber.org/protocol/disco#items") {
+			
+		}
+		
 		if(query_xmlns == "jabber:iq:roster") {
-			// Отправить ростер
-			/*
-			startElement("iq");
-				setAttribute("type", "result");
-				setAttribute("id", stanza->getAttribute("id"));
-				startElement("query");
-					setAttribute("xmlns", "jabber:iq:roster");
-					XMPPServer::users_t users = server->getUserList();
-					for(XMPPServer::users_t::iterator pos = users.begin(); pos != users.end(); ++pos)
-					{
-						startElement("item");
-							setAttribute("jid", *pos);
-							setAttribute("name", *pos);
-							setAttribute("subscription", "both");
-							addElement("group", "Friends");
-						endElement("item");
-					}
-				endElement("query");
-			endElement("iq");
-			flush();
-			// Ниже идёт костыль — рассылка присутствий от всех онлайнеров
-			// TODO: конечно же, декостылизация ;)
-			for(XMPPServer::sessions_t::const_iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
-				for(XMPPServer::reslist_t::const_iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
-					cout << "presence " << jt->second->presence().getPriority() << " from " << jt->second->jid().full() << " to " << jid().full() << endl;
-					Stanza roster_presence = Stanza::presence(jt->second->jid(), jid(), jt->second->presence());
-					sendStanza(roster_presence);
-					delete roster_presence;
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+				// Впихнуть элементы ростера тут
+				XMPPServer::users_t roster = server->getUserList();
+				for(XMPPServer::users_t::iterator it = roster.begin(); it != roster.end(); it++) {
+					query["item"]->setAttribute("subscription", "both");
+					query["item"]->setAttribute("jid", (*it));
 				}
-			}
-			*/
+			
+			getStreamByJid(stanza.from())->sendStanza(iq);
+			delete iq;
+			return;
 		}
 	}
 }
@@ -125,9 +134,11 @@ void VirtualHost::handleMessage(Stanza stanza) {
 }
 
 void VirtualHost::handleIq(Stanza stanza) {
-	if(stanza.to().username().empty()) {
+	if(!stanza->hasAttribute("to") || stanza.to().username().empty()) {
 		handleVHostIq(stanza);
+		return;
 	}
+	
 	if(stanza.to().resource().empty()) {
 		/*
 		<iq from="***" type="error" to="**" id="blah" >
@@ -148,7 +159,9 @@ void VirtualHost::handleIq(Stanza stanza) {
 		</error>
 		</iq>
 		*/
+		return;
 	}
+	stream->sendStanza(stanza);
 }
 
 XMPPStream *VirtualHost::getStreamByJid(JID jid) {

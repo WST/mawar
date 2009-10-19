@@ -63,7 +63,7 @@ void XMPPStream::onShutdown()
 	if ( state != terminating ) {
 		AsyncXMLStream::onShutdown();
 		//server->onOffline(this);
-		server->getHostByName(client_jid.hostname())->onOffline(this);
+		vhost->onOffline(this);
 		XMLWriter::flush();
 	}
 	server->daemon->removeObject(this);
@@ -175,7 +175,7 @@ void XMPPStream::onStanza(Stanza stanza)
 */
 void XMPPStream::onAuthStanza(Stanza stanza)
 {
-	sasl = server->start("xmpp", client_jid.hostname(), stanza->getAttribute("mechanism"));
+	sasl = server->start("xmpp", vhost->hostname(), stanza->getAttribute("mechanism"));
 	onSASLStep(string());
 }
 
@@ -228,33 +228,36 @@ void XMPPStream::onResponseStanza(Stanza stanza)
 /**
 * Обработчик iq-станзы
 */
-void XMPPStream::onIqStanza(Stanza stanza)
-{
+void XMPPStream::onIqStanza(Stanza stanza) {
+	stanza.setFrom(client_jid);
+	
 	if(stanza->hasChild("bind") && (stanza.type() == "set" || stanza.type() == "get")) {
 		client_jid.setResource(stanza.type() == "set" ? string(stanza["bind"]["resource"]) : "foo");
-		startElement("iq");
-			setAttribute("type", "result");
-			setAttribute("id", stanza->getAttribute("id"));
-			startElement("bind");
-				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
-				startElement("jid");
-					characterData(jid().full());
-				endElement("jid");
-			endElement("bind");
-		endElement("iq");
-		flush();
+		Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("type", "result");
+			iq->setAttribute("id", stanza->getAttribute("id"));
+			TagHelper bind = iq["bind"];
+				bind->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-bind");
+				bind["jid"] = jid().full();
+		sendStanza(iq);
+		delete iq;
 		return;
 	}
+	
 	if(stanza->hasChild("session") && stanza.type() == "set") {
-		startElement("iq");
-			setAttribute("id", stanza->getAttribute("id"));
-			setAttribute("type", "result");
-			startElement("session");
-				setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
-			endElement("session");
-		endElement("iq");
-		flush();
-		server->getHostByName(client_jid.hostname())->onOnline(this);
+		Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", vhost->hostname());
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			iq->setAttribute("type", "result");
+			iq["session"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-session");
+		
+		sendStanza(iq);
+		vhost->onOnline(this);
+		return;
+	}
+	
+	if(!stanza->hasAttribute("to")) {
+		vhost->handleIq(stanza);
 		return;
 	}
 	
@@ -264,7 +267,6 @@ void XMPPStream::onIqStanza(Stanza stanza)
 	} else {
 		// iq-запрос «наружу»
 	}
-	
 }
 
 ClientPresence XMPPStream::presence() {
@@ -272,7 +274,7 @@ ClientPresence XMPPStream::presence() {
 }
 
 void XMPPStream::onMessageStanza(Stanza stanza) {
-	stanza->setAttribute("from", jid().full());
+	stanza.setFrom(client_jid);
 	
 	VirtualHost *s = server->getHostByName(stanza.to().hostname());
 	if(s != 0) { // Сообщение к виртуальному узлу
