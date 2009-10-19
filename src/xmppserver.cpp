@@ -124,30 +124,6 @@ XMPPServer::users_t XMPPServer::getUserList()
 }
 
 /**
-* Событие появления нового онлайнера
-* @param stream поток
-*/
-void XMPPServer::onOnline(XMPPStream *stream)
-{
-	std::map<std::string, XMPPStream*> res;
-	res[stream->jid().resource()] = stream;
-	onliners[stream->jid().bare()] = res;
-	cout << stream->jid().full() << " is online :-)\n";
-}
-
-/**
-* Событие ухода пользователя в офлайн
-*/
-void XMPPServer::onOffline(XMPPStream *stream)
-{
-	onliners[stream->jid().bare()].erase(stream->jid().resource());
-	if(onliners[stream->jid().bare()].empty()) {
-		onliners.erase(stream->jid().bare());
-	}
-	cout << stream->jid().full() << " is offline :-(\n";
-}
-
-/**
 * Сигнал завершения
 */
 void XMPPServer::onSigTerm()

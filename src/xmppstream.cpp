@@ -62,7 +62,8 @@ void XMPPStream::onShutdown()
 	cerr << "[XMPPStream]: peer shutdown connection" << endl;
 	if ( state != terminating ) {
 		AsyncXMLStream::onShutdown();
-		server->onOffline(this);
+		//server->onOffline(this);
+		server->getHostByName(client_jid.hostname())->onOffline(this);
 		XMLWriter::flush();
 	}
 	server->daemon->removeObject(this);
@@ -242,6 +243,7 @@ void XMPPStream::onIqStanza(Stanza stanza)
 			endElement("bind");
 		endElement("iq");
 		flush();
+		return;
 	}
 	if(stanza->hasChild("session") && stanza.type() == "set") {
 		startElement("iq");
@@ -252,53 +254,17 @@ void XMPPStream::onIqStanza(Stanza stanza)
 			endElement("session");
 		endElement("iq");
 		flush();
-		server->onOnline(this);
+		server->getHostByName(client_jid.hostname())->onOnline(this);
+		return;
 	}
-	if(stanza->hasChild("query") && stanza.type() == "get") {
-		// Входящие запросы информации
-		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
-		if(query_xmlns == "jabber:iq:version") {
-			// Отправить версию сервера
-			Stanza s = Stanza::serverVersion(client_jid.hostname(), stanza.from(), stanza.id());
-		    sendStanza(s);
-			delete s;
-		} else if (query_xmlns == "jabber:iq:roster") {
-			startElement("iq");
-				setAttribute("type", "result");
-				setAttribute("id", stanza->getAttribute("id"));
-				startElement("query");
-					setAttribute("xmlns", "jabber:iq:roster");
-					XMPPServer::users_t users = server->getUserList();
-					for(XMPPServer::users_t::iterator pos = users.begin(); pos != users.end(); ++pos)
-					{
-						startElement("item");
-							setAttribute("jid", *pos);
-							setAttribute("name", *pos);
-							setAttribute("subscription", "both");
-							addElement("group", "Friends");
-						endElement("item");
-					}
-				endElement("query");
-			endElement("iq");
-			flush();
-			
-			// Ниже идёт костыль — рассылка присутствий от всех онлайнеров
-			// TODO: конечно же, декостылизация ;)
-			for(XMPPServer::sessions_t::const_iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
-				for(XMPPServer::reslist_t::const_iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
-					cout << "presence " << jt->second->presence().getPriority() << " from " << jt->second->jid().full() << " to " << jid().full() << endl;
-					Stanza roster_presence = Stanza::presence(jt->second->jid(), jid(), jt->second->presence());
-					sendStanza(roster_presence);
-					delete roster_presence;
-				}
-			}
-		} else {
-		    // Неизвестный запрос
-			Stanza s = Stanza::badRequest(client_jid.hostname(), stanza.from(), stanza.id());
-		    sendStanza(s);
-			delete s;
-		}
+	
+	VirtualHost *s = server->getHostByName(stanza.to().hostname());
+	if(s != 0) { // iq-запрос к виртуальному узлу
+		s->handleIq(stanza);
+	} else {
+		// iq-запрос «наружу»
 	}
+	
 }
 
 ClientPresence XMPPStream::presence() {
@@ -308,57 +274,26 @@ ClientPresence XMPPStream::presence() {
 void XMPPStream::onMessageStanza(Stanza stanza) {
 	stanza->setAttribute("from", jid().full());
 	
-	XMPPServer::sessions_t::iterator it;
-	XMPPServer::reslist_t reslist;
-	XMPPServer::reslist_t::iterator jt;
-	
-	it = server->onliners.find(stanza.to().bare());
-	if(it != server->onliners.end()) {
-		// Проверить, есть ли ресурс, если он указан
-		JID to = stanza.to();
-		if(to.resource() != "") {
-			jt = it->second.find(to.resource());
-			if(jt != it->second.end()) {
-				jt->second->sendStanza(stanza);
-				return;
-			}
-			// Не отправили на выбранный ресурс, смотрим дальше…
-		}
-		std::list<XMPPStream *> sendto_list;
-		std::list<XMPPStream *>::iterator kt;
-		int max_priority = 0;
-		for(jt = it->second.begin(); jt != it->second.end(); jt++) {
-			if(jt->second->presence().priority == max_priority) {
-				sendto_list.push_back(jt->second);
-			} else if(jt->second->presence().priority > max_priority) {
-				sendto_list.clear();
-				sendto_list.push_back(jt->second);
-			}
-		}
-		if(sendto_list.empty()) {
-			cout << "Offline message for: " << stanza.to().bare() << endl;
-			return;
-		}
-		for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++) {
-			(*kt)->sendStanza(stanza);
-		}
+	VirtualHost *s = server->getHostByName(stanza.to().hostname());
+	if(s != 0) { // Сообщение к виртуальному узлу
+		s->handleMessage(stanza);
 	} else {
-		cout << "Offline message for: " << stanza.to().bare() << endl;
+		// Сообщение «наружу» (S2S)
 	}
 }
 
-void XMPPStream::onPresenceStanza(Stanza stanza)
-{
+void XMPPStream::onPresenceStanza(Stanza stanza) {
+	stanza->setAttribute("from", client_jid.full());
+	
 	client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
 	client_presence.status_text = stanza->getChildValue("status", "");
 	client_presence.setShow(stanza->getChildValue("show", "Available"));
 	
-	for(XMPPServer::sessions_t::iterator it = server->onliners.begin(); it != server->onliners.end(); it++) {
-		stanza->setAttribute("to", it->first);
-		stanza->setAttribute("from", client_jid.full());
-		for(XMPPServer::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
-			jt->second->sendStanza(stanza);
-		}
+	VirtualHost *s = server->getHostByName(stanza.to().hostname());
+	if(s != 0) { // Сообщение к виртуальному узлу
+		s->handlePresence(stanza);
+	} else {
+		// Присутствие «наружу» (S2S)
 	}
 }
 

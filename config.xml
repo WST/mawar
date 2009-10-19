@@ -28,6 +28,15 @@
 			</storage>
 			<!-- other settings -->
 		</host>
+		<host name="home.the1st.net.ru">
+			<storage engine="mysql">
+				<server>localhost</server>
+				<username>mawar</username>
+				<password>123456</password>
+				<database>mawar_shamangrad</database>
+			</storage>
+			<!-- other settings -->
+		</host>
 		<!-- other vhosts -->
 	</hosts>
 </maward>

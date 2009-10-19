@@ -48,13 +48,6 @@ public:
 	* TODO декостылизация...
 	*/
 	typedef std::vector<std::string> users_t;
-
-	/**
-	* TODO декостылизация...
-	* (добавил WST)
-	*/
-	typedef std::map<std::string, XMPPStream *> reslist_t;
-	typedef std::map<std::string, reslist_t> sessions_t;
 	
 	/**
 	* Список виртуальных хостов
@@ -113,7 +106,6 @@ public:
 	* TODO временый костыль для временного ростера
 	*/
 	users_t getUserList();
-	sessions_t onliners;
 	
 	/**
 	* Вернуть виртуальный хост по имени
