@@ -38,6 +38,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#info") {
+			// Информация о возможностях сервера
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("from", name);
 			iq->setAttribute("to", stanza.from().full());
@@ -50,7 +51,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				// В том числе и динамические (зависящие от вирт.хоста)
 				query["identity"]->setAttribute("category", "server");
 				query["identity"]->setAttribute("type", "im");
-				query["identity"]->setAttribute("name", "Mawar");
+				query["identity"]->setAttribute("name", "Mawar Jabber/XMPP engine");
 			
 			getStreamByJid(stanza.from())->sendStanza(iq);
 			delete iq;
@@ -58,7 +59,18 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#items") {
+			// Информация о компонентах сервера и прочей фигне в обзоре служб (команды, транспорты)
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 			
+			getStreamByJid(stanza.from())->sendStanza(iq);
+			delete iq;
+			return;
 		}
 		
 		if(query_xmlns == "jabber:iq:roster") {
