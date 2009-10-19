@@ -63,8 +63,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		if(query_xmlns == "jabber:iq:roster") {
 			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
+			//iq->setAttribute("from", name);
+			iq->setAttribute("from", stanza.from().full());
 			iq->setAttribute("to", stanza.from().full());
+			if(stanza->hasAttribute("id")) iq->setAttribute("id", stanza.id());
 			iq->setAttribute("type", "result");
 			TagHelper query = iq["query"];
 				query->setDefaultNameSpaceAttribute("jabber:iq:roster");

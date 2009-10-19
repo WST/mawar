@@ -246,7 +246,6 @@ void XMPPStream::onIqStanza(Stanza stanza) {
 	
 	if(stanza->hasChild("session") && stanza.type() == "set") {
 		Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", vhost->hostname());
 			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			iq->setAttribute("type", "result");
 			iq["session"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-session");
