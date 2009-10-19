@@ -126,10 +126,10 @@ void VirtualHost::handleMessage(Stanza stanza) {
 }
 
 void VirtualHost::handleIq(Stanza stanza) {
-	if(stanza.from().username().empty()) {
-		// Станза к виртуальному узлу
+	if(stanza.to().username().empty()) {
+		handleVHostIq(stanza);
 	}
-	if(stanza.from().resource().empty()) {
+	if(stanza.to().resource().empty()) {
 		/*
 		<iq from="***" type="error" to="**" id="blah" >
 		<query xmlns="foo"/>
