@@ -6,6 +6,8 @@
 #include <string>
 #include <iostream>
 #include <nanosoft/error.h>
+#include <nanosoft/mysql.h>
+#include <nanosoft/gsaslserver.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -18,15 +20,18 @@ using namespace nanosoft;
 */
 VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config): server(srv), name(aName) {
 	TagHelper storage = config["storage"];
-	if ( storage->getAttribute("engine", "mysql") != "mysql" ) error("[VirtualHost] unknown storage engine: " + storage->getAttribute("engine"));
-	else {
-		string server = storage["server"];
-		if( server.substr(0, 5) == "unix:" ) {
-			if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) ) error("[VirtualHost] cannot connect to database");
-		} else {
-			if ( ! db.connectUnix(server, storage["database"], storage["username"], storage["password"]) ) error("[VirtualHost] cannot connect to database");
-		}
+	if ( storage->getAttribute("engine", "mysql") != "mysql" ) ::error("[VirtualHost] unknown storage engine: " + storage->getAttribute("engine"));
+	
+	// Подключаемся к БД
+	string server = storage["server"];
+	if( server.substr(0, 5) == "unix:" ) {
+		if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
+	} else {
+		if ( ! db.connectUnix(server, storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
 	}
+	
+	// кодировка только UTF-8
+	db.query("SET NAMES UTF8");
 }
 
 /**
@@ -103,15 +108,16 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			iq->setAttribute("type", "result");
 			TagHelper query = iq["query"];
 				query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+				
 				// Впихнуть элементы ростера тут
-				XMPPServer::users_t roster = server->getUserList();
-				ATXmlTag *item;
-				for(XMPPServer::users_t::iterator it = roster.begin(); it != roster.end(); it++) {
-					item = new ATXmlTag("item");
+				MySQL::result r = db.query("SELECT user_login FROM users");
+				for(; ! r.eof(); r.next()) {
+					ATXmlTag *item = new ATXmlTag("item");
 					item->setAttribute("subscription", "both");
-					item->setAttribute("jid", (*it));
+					item->setAttribute("jid", r["user_login"] + "@" + hostname());
 					query->insertChildElement(item);
 				}
+				r.free();
 			
 			getStreamByJid(stanza.from())->sendStanza(iq);
 			delete iq;
@@ -234,4 +240,19 @@ void VirtualHost::onOffline(XMPPStream *stream) {
 		onliners.erase(stream->jid().username());
 	}
 	//cout << stream->jid().full() << " is offline :-(\n";
+}
+
+/**
+* Вернуть пароль пользователя по логину
+* @param realm домен
+* @param login логин пользователя
+* @return пароль пользователя или "" если нет такого пользователя
+*/
+std::string VirtualHost::getUserPassword(const std::string &realm, const std::string &login)
+{
+	MySQL::result r = db.query("SELECT user_password FROM users WHERE user_login = %s", db.quote(login).c_str());
+	string pwd = r.eof() ? string() : r["password"];
+	r.free();
+	cout << "host: " << hostname() << ", login: " << login << ", password: " << pwd << endl;	
+	return pwd;
 }

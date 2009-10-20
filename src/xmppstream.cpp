@@ -175,7 +175,7 @@ void XMPPStream::onStanza(Stanza stanza)
 */
 void XMPPStream::onAuthStanza(Stanza stanza)
 {
-	sasl = server->start("xmpp", vhost->hostname(), stanza->getAttribute("mechanism"));
+	sasl = vhost->start("xmpp", vhost->hostname(), stanza->getAttribute("mechanism"));
 	onSASLStep(string());
 }
 
@@ -185,11 +185,11 @@ void XMPPStream::onAuthStanza(Stanza stanza)
 void XMPPStream::onSASLStep(const std::string &input)
 {
 	string output;
-	switch ( server->step(sasl, input, output) )
+	switch ( vhost->step(sasl, input, output) )
 	{
 	case SASLServer::ok:
-		client_jid.setUsername(server->getUsername(sasl));
-		server->GSASLServer::close(sasl);
+		client_jid.setUsername(vhost->getUsername(sasl));
+		vhost->GSASLServer::close(sasl);
 		startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 		endElement("success");
@@ -207,7 +207,7 @@ void XMPPStream::onSASLStep(const std::string &input)
 		flush();
 		break;
 	case SASLServer::error:
-		server->GSASLServer::close(sasl);
+		vhost->GSASLServer::close(sasl);
 		startElement("failure");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 			addElement("temporary-auth-failure", "");
@@ -332,7 +332,7 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 		client_jid.setHostname(vhost->hostname());
 		startElement("mechanisms");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-			SASLServer::mechanisms_t list = server->getMechanisms();
+			SASLServer::mechanisms_t list = vhost->getMechanisms();
 			for(SASLServer::mechanisms_t::const_iterator pos = list.begin(); pos != list.end(); ++pos)
 			{
 				addElement("mechanism", *pos);

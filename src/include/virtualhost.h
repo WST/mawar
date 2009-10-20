@@ -6,11 +6,12 @@
 #include <string>
 #include <stanza.h>
 #include <nanosoft/mysql.h>
+#include <nanosoft/gsaslserver.h>
 
 /**
 * Класс виртуального узла
 */
-class VirtualHost
+class VirtualHost: public GSASLServer
 {
 	public:
 		/**
@@ -33,7 +34,15 @@ class VirtualHost
 		XMPPStream *getStreamByJid(JID jid);
 		virtual void onOnline(XMPPStream *stream);
 		virtual void onOffline(XMPPStream *stream);
-	
+		
+		/**
+		* Вернуть пароль пользователя по логину
+		* @param realm домен
+		* @param login логин пользователя
+		* @return пароль пользователя или "" если нет такого пользователя
+		*/
+		std::string getUserPassword(const std::string &realm, const std::string &login);
+		
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
 		typedef std::map<std::string, XMPPStream *> reslist_t;
