@@ -81,8 +81,7 @@ int main()
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
 	
-	test_TagHelper();
-	return 0;
+	//test_TagHelper();
 	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
