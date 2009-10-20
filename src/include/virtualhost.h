@@ -5,6 +5,7 @@
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
+#include <nanosoft/mysql.h>
 
 /**
 * Класс виртуального узла
@@ -12,6 +13,11 @@
 class VirtualHost
 {
 	public:
+		/**
+		* База данных
+		*/
+		nanosoft::MySQL db;
+		
 		/**
 		* Конструктор
 		* @param srv ссылка на сервер

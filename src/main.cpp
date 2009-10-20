@@ -3,11 +3,11 @@
 #include <nanosoft/netdaemon.h>
 #include <xmppserver.h>
 #include <myconsole.h>
-#include <nanosoft/gsaslserver.h>
 #include <xml_tag.h>
 #include <configfile.h>
 #include <signal.h>
 #include <string.h>
+#include <nanosoft/mysql.h>
 
 #include <taghelper.h>
 
@@ -93,11 +93,13 @@ int main()
 	server->listen(10);
 	
 	// добавляем виртуальные хосты
+	cerr << "[main] loading virtual hosts..." << endl;
 	for(VirtualHostConfig vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost))
 	{
-		cout << "vhost: " << vhost.hostname() << endl;
+		cerr << "vhost: " << vhost.hostname() << endl;
 		server->addHost(vhost.hostname(), vhost);
 	}
+	cerr << "[main] virtual hosts loaded" << endl;
 	
 	// добавляем сервер в демона
 	daemon.addObject(server);
@@ -114,8 +116,10 @@ int main()
 	sigaction(SIGINT, &sa, 0);
 	
 	// запускаем демона
+	cerr << "[main] running daemon..." << endl;
 	daemon.run();
-	cerr << "done" << endl;
+	cerr << "[main] daemon exited" << endl;
+	
 	delete server;
 	
 	return 0;

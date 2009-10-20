@@ -66,8 +66,8 @@ AC_ARG_WITH(mysql, AS_HELP_STRING([--with-mysql=PREFIX], [MySQL client library])
 		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
 	])
 # TODO AC_CHECK_HEADER(mysql.h, [], [AC_ERROR(MySQL client library required)])
-AC_CHECK_LIB(mysqlclient_r, mysql_real_connect, [], [AC_ERROR(MySQL client library required)])
-AC_CHECK_LIB(mysqlclient_r, mysql_real_query, [], [AC_ERROR(MySQL client library required)])
+AC_CHECK_LIB(mysqlclient, mysql_real_connect, [], [AC_ERROR(MySQL client library required)])
+AC_CHECK_LIB(mysqlclient, mysql_real_query, [], [AC_ERROR(MySQL client library required)])
 
 # Checks for header files.
 

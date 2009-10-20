@@ -3,35 +3,24 @@
 #define MAWAR_CONFIGFILE_H
 
 #include <xml_tag.h>
+#include <taghelper.h>
 #include <string>
 
 /**
 * Конфигурация виртуального хоста
 */
-class VirtualHostConfig
+class VirtualHostConfig: public TagHelper
 {
 friend class ConfigFile;
-private:
-	/**
-	* Тег виртуального хоста
-	*/
-	ATXmlTag *config;
 public:
-	/**
-	* Конструктор
-	*/
-	VirtualHostConfig(ATXmlTag *tag): config(tag) {
-	}
-	
-	operator bool() {
-		return config != 0;
+	VirtualHostConfig(ATXmlTag *host_config): TagHelper(host_config) {
 	}
 	
 	/**
 	* Вернуть имя хоста
 	*/
 	std::string hostname() {
-		return config->getAttribute("name");
+		return this->tag->getAttribute("name");
 	}
 };
 

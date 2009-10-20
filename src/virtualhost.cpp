@@ -1,6 +1,14 @@
 
 #include <virtualhost.h>
 #include <xmppstream.h>
+#include <configfile.h>
+#include <taghelper.h>
+#include <string>
+#include <iostream>
+#include <nanosoft/error.h>
+
+using namespace std;
+using namespace nanosoft;
 
 /**
 * Конструктор
@@ -9,7 +17,16 @@
 * @param config конфигурация хоста
 */
 VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config): server(srv), name(aName) {
-	
+	TagHelper storage = config["storage"];
+	if ( storage->getAttribute("engine", "mysql") != "mysql" ) error("[VirtualHost] unknown storage engine: " + storage->getAttribute("engine"));
+	else {
+		string server = storage["server"];
+		if( server.substr(0, 5) == "unix:" ) {
+			if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) ) error("[VirtualHost] cannot connect to database");
+		} else {
+			if ( ! db.connectUnix(server, storage["database"], storage["username"], storage["password"]) ) error("[VirtualHost] cannot connect to database");
+		}
+	}
 }
 
 /**

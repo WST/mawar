@@ -12,10 +12,10 @@
 	<hosts name="1">
 		<host name="localhost">
 			<storage engine="mysql">
-				<server>localhost</server>
+				<server>unix:/var/lib/mysql/mysql.sock</server>
 				<username>mawar</username>
 				<password>123456</password>
-				<database>mawar_shamangrad</database>
+				<database>mawar</database>
 			</storage>
 			<!-- other settings -->
 		</host>
