@@ -38,6 +38,10 @@ void test_TagHelper()
 	// добавить ещё текста? :-)
 	tag += "bla bla bla";
 	
+	// добавить тег?
+	TagHelper bar = tag += new ATXmlTag("bar");
+	bar->setAttribute("name", "bar");
+	
 	// здесь мы не копируем объект, мы берем ссылку/указатель
 	TagHelper iq = tag["iq"];
 	iq["session"]->setAttribute("id", "12345");
@@ -77,7 +81,8 @@ int main()
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
 	
-	//test_TagHelper();
+	test_TagHelper();
+	return 0;
 	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());

@@ -1,5 +1,22 @@
 #include <taghelper.h>
 #include <string.h>
+#include <nanosoft/error.h>
+
+/**
+* Добавить тег
+*
+* Если у тега нет родителя, то он добавляется в потомки
+* @TODO Если у тега есть родитель, то добавляется его копия
+*
+* @param t добавляемый тег
+* @return добавленный тег
+*/
+ATXmlTag* TagHelper::operator += (ATXmlTag *t)
+{
+	if ( t->getParent() != 0 ) nanosoft::error("[TagHelper::operator += (ATXmlTag *)] TODO Если у тега есть родитель, то добавляется его копия");
+	tag->insertChildElement(t);
+	return t;
+}
 
 /**
 * Индексный оператор
