@@ -241,6 +241,7 @@ void XMPPStream::onIqStanza(Stanza stanza) {
 				bind["jid"] = jid().full();
 		sendStanza(iq);
 		delete iq;
+		vhost->onOnline(this);
 		return;
 	}
 	
@@ -251,7 +252,6 @@ void XMPPStream::onIqStanza(Stanza stanza) {
 			iq["session"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-session");
 		
 		sendStanza(iq);
-		vhost->onOnline(this);
 		return;
 	}
 	
@@ -286,10 +286,18 @@ void XMPPStream::onMessageStanza(Stanza stanza) {
 void XMPPStream::onPresenceStanza(Stanza stanza) {
 	stanza->setAttribute("from", client_jid.full());
 	
-	client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
-	client_presence.status_text = stanza->getChildValue("status", "");
-	client_presence.setShow(stanza->getChildValue("show", "Available"));
+	if(!stanza->hasAttribute("to")) {
+		client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
+		client_presence.status_text = stanza->getChildValue("status", "");
+		client_presence.setShow(stanza->getChildValue("show", "Available"));
+		
+		// Разослать этот presence контактам ростера
+	}
 	
+	// Временный костыль — разослать всем юзерам с этого же вирт.узла
+	vhost->handlePresence(stanza);
+	
+	// Иначе — индивидуальное присутствие
 	VirtualHost *s = server->getHostByName(stanza.to().hostname());
 	if(s != 0) { // Сообщение к виртуальному узлу
 		s->handlePresence(stanza);

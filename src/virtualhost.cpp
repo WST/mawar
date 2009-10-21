@@ -123,17 +123,37 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			delete iq;
 			return;
 		}
+		
+		if(query_xmlns == "jabber:iq:private") { // private storage
+			if(stanza["query"]->hasChild("storage") && stanza["query"]["storage"]->getAttribute("xmlns") == "storage:bookmarks") {
+				// Выдача закладок
+				MySQL::result r = db.query("SELECT b.bookmark_name, b.bookmark_jid, b.bookmark_nick FROM bookmarks AS b, users AS u WHERE u.id_user=b.id_user AND u.user_login=%s", db.quote(stanza.from().username()).c_str());
+				for(; !r.eof(); r.next()) {
+					//
+				}
+				r.free();
+			}
+		}
 	}
 }
 
 void VirtualHost::handlePresence(Stanza stanza) {
 	// from уже определено ранее
+	// TODO: декостылизация
+	JID to;
+	to.setHostname(name);
 	for(VirtualHost::sessions_t::iterator it = onliners.begin(); it != onliners.end(); it++) {
-		stanza->setAttribute("to", it->first);
+		to.setUsername(it->first);
 		for(VirtualHost::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
+			to.setResource(jt->first);
+			stanza->setAttribute("to", to.bare());
 			jt->second->sendStanza(stanza);
 		}
 	}
+}
+
+void VirtualHost::saveOfflineMessage(Stanza stanza) {
+	db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %d)", db.quote(stanza->asString()).c_str(), 123456789);
 }
 
 void VirtualHost::handleMessage(Stanza stanza) {
@@ -149,7 +169,7 @@ void VirtualHost::handleMessage(Stanza stanza) {
 		if(!to.resource().empty()) {
 			jt = it->second.find(to.resource());
 			if(jt != it->second.end()) {
-				jt->second->sendStanza(stanza);
+				jt->second->sendStanza(stanza); // TODO — учесть bool
 				return;
 			}
 			// Не отправили на выбранный ресурс, смотрим дальше…
@@ -166,14 +186,14 @@ void VirtualHost::handleMessage(Stanza stanza) {
 			}
 		}
 		if(sendto_list.empty()) {
-			//cout << "Offline message for: " << stanza.to().bare() << endl;
+			saveOfflineMessage(stanza);
 			return;
 		}
 		for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++) {
-			(*kt)->sendStanza(stanza);
+			(*kt)->sendStanza(stanza); // TODO — учесть bool
 		}
 	} else {
-		//cout << "Offline message for: " << stanza.to().bare() << endl;
+		saveOfflineMessage(stanza);
 	}
 }
 
@@ -251,7 +271,7 @@ void VirtualHost::onOffline(XMPPStream *stream) {
 std::string VirtualHost::getUserPassword(const std::string &realm, const std::string &login)
 {
 	MySQL::result r = db.query("SELECT user_password FROM users WHERE user_login = %s", db.quote(login).c_str());
-	string pwd = r.eof() ? string() : r["password"];
+	string pwd = r.eof() ? string() : r["user_password"];
 	r.free();
 	cout << "host: " << hostname() << ", login: " << login << ", password: " << pwd << endl;	
 	return pwd;

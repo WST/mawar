@@ -34,6 +34,7 @@ class VirtualHost: public GSASLServer
 		XMPPStream *getStreamByJid(JID jid);
 		virtual void onOnline(XMPPStream *stream);
 		virtual void onOffline(XMPPStream *stream);
+		void saveOfflineMessage(Stanza stanza);
 		
 		/**
 		* Вернуть пароль пользователя по логину
