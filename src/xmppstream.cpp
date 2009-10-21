@@ -8,6 +8,7 @@
 // for debug only
 #include <string>
 #include <iostream>
+#include <stdio.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -38,7 +39,7 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 {
 	int r = write(data, len);
 	if ( r != len ) onError("write fault");
-	cout << "written: \033[22;34m" << string(data, len) << "\033[0m\n";
+	printf("#%d written: \033[22;34m%s\033[0m\n", getWorkerId(), string(data, len).c_str());
 }
 
 /**
@@ -69,6 +70,7 @@ void XMPPStream::onShutdown()
 	server->daemon->removeObject(this);
 	shutdown(READ | WRITE);
 	delete this;
+	cerr << "[XMPPStream]: onShutdown leave" << endl;
 }
 
 /**
@@ -161,7 +163,7 @@ void XMPPStream::onEndElement(const std::string &name)
 */
 void XMPPStream::onStanza(Stanza stanza)
 {
-	cout << "stanza: " << stanza->name() << endl;
+	fprintf(stderr, "#%d stanza: %s\n", getWorkerId(), stanza->name().c_str());
 	if (stanza->name() == "iq") onIqStanza(stanza);
 	else if (stanza->name() == "auth") onAuthStanza(stanza);
 	else if (stanza->name() == "response" ) onResponseStanza(stanza);
@@ -312,7 +314,7 @@ void XMPPStream::onPresenceStanza(Stanza stanza) {
 */
 void XMPPStream::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	cout << "new stream" << endl;
+	fprintf(stderr, "#%d new stream to %s\n", getWorkerId(), attributes.find("to")->second.c_str());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");

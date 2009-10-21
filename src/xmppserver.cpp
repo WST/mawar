@@ -55,6 +55,7 @@ void XMPPServer::onTerminate()
 {
 	onError("XMPPServer::onTerminate()...");
 	daemon->removeObject(this);
+	onError("XMPPServer::onTerminate() leave...");
 }
 
 /**

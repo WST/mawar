@@ -85,7 +85,9 @@ int main()
 	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
-	daemon.setWorkerCount(config->workers());
+	
+	// устанавливаем скорректированное число воркеров
+	daemon.setWorkerCount(config->workers() - 1);
 	
 	// XMPP-сервер
 	server = new XMPPServer(&daemon);

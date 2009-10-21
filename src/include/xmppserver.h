@@ -25,11 +25,6 @@ protected:
 	
 public:
 	/**
-	* TODO декостылизация...
-	*/
-	typedef std::vector<std::string> users_t;
-	
-	/**
 	* Список виртуальных хостов
 	*/
 	typedef std::map<std::string, VirtualHost*> vhosts_t;
@@ -74,12 +69,6 @@ public:
 	* Сигнал HUP
 	*/
 	void onSigHup();
-	
-	/**
-	* Вернуть список всех пользователей сервера
-	* TODO временый костыль для временного ростера
-	*/
-	users_t getUserList();
 	
 	/**
 	* Вернуть виртуальный хост по имени
