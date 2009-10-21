@@ -1,7 +1,7 @@
 
 -- таблица пользователей
 CREATE TABLE users (
-	user_id INT PRIMARY KEY auto_increment, -- ID пользователя
+	id_user INT PRIMARY KEY auto_increment, -- ID пользователя
 	user_login VARCHAR(40) UNIQUE COLLATE utf8_general_ci, -- логин пользователя (сравнение без учета регистра)
 	user_password VARCHAR(80) -- пароль пользователя
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
