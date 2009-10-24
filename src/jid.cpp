@@ -2,6 +2,18 @@
 #include <jid.h>
 
 JID::JID(std::string jid_text) {
+	set(jid_text);
+}
+
+JID::JID() {
+	
+}
+
+JID::~JID() {
+	
+}
+
+void JID::set(std::string jid_text) {
 	int pos = jid_text.find("@");
 	if(pos != -1) {
 		jid_username = jid_text.substr(0, pos);
@@ -14,14 +26,6 @@ JID::JID(std::string jid_text) {
 	} else {
 		jid_hostname = jid_text;
 	}
-}
-
-JID::JID() {
-	
-}
-
-JID::~JID() {
-	
 }
 
 std::string JID::full() {

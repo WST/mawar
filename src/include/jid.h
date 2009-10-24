@@ -18,6 +18,7 @@ class JID
 		void setHostname(std::string hostname);
 		void setResource(std::string resource);
 		void setUsername(std::string username);
+		void set(std::string jid_text);
 	
 	private:
 		std::string jid_hostname;

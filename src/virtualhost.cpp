@@ -84,73 +84,87 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 	return result;
 }
 
-void VirtualHost::addRosterItem(std::string jid, std::string name, std::string group) {
+void VirtualHost::addRosterItem(Stanza stanza, std::string jid, std::string name, std::string group) {
 	db.query("INSERT INTO roster (contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%s, %s, %s, 'N', 'B')", db.quote(jid).c_str(), db.quote(name).c_str(), db.quote(group).c_str());
+	
+	Stanza iq = new ATXmlTag("iq");
+	TagHelper query = iq["query"];
+	query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+	ATXmlTag *item = stanza->find("query/item");
+	if(item == 0) return;
+	item->setAttribute("subscription", "none");
+	query->insertChildElement(item);
+	getStreamByJid(stanza.from())->sendStanza(iq);
+	
+	Stanza iqres = new ATXmlTag("iq");
+	iqres->setAttribute("type", "result");
+	iqres->setAttribute("id", stanza.id());
+	getStreamByJid(stanza.from())->sendStanza(iqres);
 }
 
 void VirtualHost::handleVHostIq(Stanza stanza) {
-	if(stanza->hasChild("query") && stanza.type() == "get") {
-		// Входящие запросы информации
+	if(stanza->hasChild("query")) {
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
-		
-		if(query_xmlns == "jabber:iq:version") {
-			Stanza version = Stanza::serverVersion(name, stanza.from(), stanza.id());
-			getStreamByJid(stanza.from())->sendStanza(version);
-			delete version;
-			return;
-		}
-		
-		if(query_xmlns == "http://jabber.org/protocol/disco#info") {
-			// Информация о возможностях сервера
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
-				//	<identity category="server" type="im" name="Mawar" /><feature var="msgoffline" /> (последнее — оффлайновые сообщения, видимо)
-				// TODO: при расширении функционала сервера нужно дописывать сюда фичи
-				// В том числе и динамические (зависящие от вирт.хоста)
-				// Ну и register, конечно
-				query["identity"]->setAttribute("category", "server");
-				query["identity"]->setAttribute("type", "im");
-				query["identity"]->setAttribute("name", "Mawar Jabber/XMPP engine");
-				ATXmlTag *feature = new ATXmlTag("feature");
-				feature->insertAttribute("var", "jabber:iq:version");
-				query->insertChildElement(feature);
+		if(stanza.type() == "get") {
+			// Входящие запросы информации
+			if(query_xmlns == "jabber:iq:version") {
+				Stanza version = Stanza::serverVersion(name, stanza.from(), stanza.id());
+				getStreamByJid(stanza.from())->sendStanza(version);
+				delete version;
+				return;
+			}
 			
-			getStreamByJid(stanza.from())->sendStanza(iq);
-			delete iq;
-			return;
-		}
-		
-		if(query_xmlns == "http://jabber.org/protocol/disco#items") {
-			// Информация о компонентах сервера и прочей фигне в обзоре служб (команды, транспорты)
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+			if(query_xmlns == "http://jabber.org/protocol/disco#info") {
+				// Информация о возможностях сервера
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper query = iq["query"];
+					query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+					//	<identity category="server" type="im" name="Mawar" /><feature var="msgoffline" /> (последнее — оффлайновые сообщения, видимо)
+					// TODO: при расширении функционала сервера нужно дописывать сюда фичи
+					// В том числе и динамические (зависящие от вирт.хоста)
+					// Ну и register, конечно
+					query["identity"]->setAttribute("category", "server");
+					query["identity"]->setAttribute("type", "im");
+					query["identity"]->setAttribute("name", "Mawar Jabber/XMPP engine");
+					ATXmlTag *feature = new ATXmlTag("feature");
+					feature->insertAttribute("var", "jabber:iq:version");
+					query->insertChildElement(feature);
+				
+				getStreamByJid(stanza.from())->sendStanza(iq);
+				delete iq;
+				return;
+			}
 			
-			getStreamByJid(stanza.from())->sendStanza(iq);
-			delete iq;
-			return;
-		}
-		
-		if(query_xmlns == "jabber:iq:roster") {
-			if(stanza.type() == "get") {
+			if(query_xmlns == "http://jabber.org/protocol/disco#items") {
+				// Информация о компонентах сервера и прочей фигне в обзоре служб (команды, транспорты)
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper query = iq["query"];
+					query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+				
+				getStreamByJid(stanza.from())->sendStanza(iq);
+				delete iq;
+				return;
+			}
+			
+			if(query_xmlns == "jabber:iq:roster") {
 				sendRoster(stanza);
 			}
-			if(stanza.type() == "set") {
+		} else { // set
+			if(query_xmlns == "jabber:iq:roster") {
 				// Обновление элемента ростера — добавление, правка или удаление
 				TagHelper query = stanza["query"];
-				ATXmlTag *item = query->firstChild("item");
+				ATXmlTag *item = stanza->firstChild("query/item");
 				if(item != 0) {
 					if(!item->hasAttribute("subscription")) {
-						addRosterItem(item->getAttribute("jid"), item->getAttribute("name"), query->getChildValue("group", ""));
+						addRosterItem(stanza, item->getAttribute("jid"), item->getAttribute("name"), query->getChildValue("group", ""));
 					}
 				}
 				delete item;
@@ -162,7 +176,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				// Выдача закладок
 				MySQL::result r = db.query("SELECT b.bookmark_name, b.bookmark_jid, b.bookmark_nick FROM bookmarks AS b, users AS u WHERE u.id_user=b.id_user AND u.user_login=%s", db.quote(stanza.from().username()).c_str());
 				for(; !r.eof(); r.next()) {
-					//
+					
 				}
 				r.free();
 			}
@@ -171,18 +185,38 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 }
 
 void VirtualHost::handlePresence(Stanza stanza) {
-	// from уже определено ранее
-	// TODO: декостылизация
+	if(stanza->hasAttribute("to")) {
+		JID to(stanza->getAttribute("to"));
+		VirtualHost *vhost = server->getHostByName(to.hostname());
+		if(vhost == 0) {
+			// TODO: S2S-presence
+			return;
+		}
+		if(stanza.type() == "subscribed") {
+			db.query("");
+		}
+		VirtualHost::sessions_t::iterator it = vhost->onliners.find(to.username());
+		for(VirtualHost::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
+			to.setResource(jt->first);
+			stanza->setAttribute("to", to.bare());
+			jt->second->sendStanza(stanza);
+		}
+		return;
+	}
 	JID to;
-	to.setHostname(name);
-	for(VirtualHost::sessions_t::iterator it = onliners.begin(); it != onliners.end(); it++) {
-		to.setUsername(it->first);
+	VirtualHost *vhost;
+	MySQL::result r = db.query("SELECT contact_jid FROM roster WHERE contact_subscription IN ('F', 'B')");
+	for(; !r.eof(); r.next()) {
+		to.set(r["contact_jid"]);
+		vhost = server->getHostByName(to.hostname());
+		VirtualHost::sessions_t::iterator it = vhost->onliners.find(to.username());
 		for(VirtualHost::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
 			to.setResource(jt->first);
 			stanza->setAttribute("to", to.bare());
 			jt->second->sendStanza(stanza);
 		}
 	}
+	r.free();
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
