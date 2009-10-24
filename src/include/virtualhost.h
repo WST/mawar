@@ -46,6 +46,8 @@ class VirtualHost: public GSASLServer
 		
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
+		bool sendRoster(Stanza stanza); // Отправить ростер в ответ на станзу stanza
+		void addRosterItem(std::string jid, std::string name, std::string group);
 		typedef std::map<std::string, XMPPStream *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		XMPPServer *server; // Ссылка на сервер которому принадлежит виртуальный хост

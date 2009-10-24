@@ -47,6 +47,47 @@ const std::string& VirtualHost::hostname() {
 	return name;
 }
 
+bool VirtualHost::sendRoster(Stanza stanza) {
+	Stanza iq = new ATXmlTag("iq");
+	//iq->setAttribute("from", name);
+	iq->setAttribute("from", stanza.from().full());
+	iq->setAttribute("to", stanza.from().full());
+	if(stanza->hasAttribute("id")) iq->setAttribute("id", stanza.id());
+	iq->setAttribute("type", "result");
+	TagHelper query = iq["query"];
+	query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+	
+	// Впихнуть элементы ростера тут
+	// TODO: ожидание авторизации (pending)
+	std::string subscription;
+	ATXmlTag *item;
+	MySQL::result r = db.query("SELECT * FROM roster, users WHERE roster.id_user=users.id_user AND users.user_login=%s", db.quote(stanza.from().username()).c_str());
+	for(; ! r.eof(); r.next()) {
+		if(r["contact_subscription"] == "F") { // from
+			subscription = "from";
+		} else if(r["contact_subscription"] == "T") { // to
+			subscription = "to";
+		} else if(r["contact_subscription"] == "B") { // both
+			subscription = "both";
+		} else { // none
+			subscription = "none";
+		}
+		item = new ATXmlTag("item");
+		item->setAttribute("subscription", subscription.c_str());
+		item->setAttribute("jid", r["user_login"] + "@" + hostname());
+		query->insertChildElement(item);
+	}
+	r.free();
+	
+	bool result = getStreamByJid(stanza.from())->sendStanza(iq);
+	delete iq;
+	return result;
+}
+
+void VirtualHost::addRosterItem(std::string jid, std::string name, std::string group) {
+	db.query("INSERT INTO roster (contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%s, %s, %s, 'N', 'B')", db.quote(jid).c_str(), db.quote(name).c_str(), db.quote(group).c_str());
+}
+
 void VirtualHost::handleVHostIq(Stanza stanza) {
 	if(stanza->hasChild("query") && stanza.type() == "get") {
 		// Входящие запросы информации
@@ -100,28 +141,20 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "jabber:iq:roster") {
-			Stanza iq = new ATXmlTag("iq");
-			//iq->setAttribute("from", name);
-			iq->setAttribute("from", stanza.from().full());
-			iq->setAttribute("to", stanza.from().full());
-			if(stanza->hasAttribute("id")) iq->setAttribute("id", stanza.id());
-			iq->setAttribute("type", "result");
-			TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("jabber:iq:roster");
-				
-				// Впихнуть элементы ростера тут
-				MySQL::result r = db.query("SELECT user_login FROM users");
-				for(; ! r.eof(); r.next()) {
-					ATXmlTag *item = new ATXmlTag("item");
-					item->setAttribute("subscription", "both");
-					item->setAttribute("jid", r["user_login"] + "@" + hostname());
-					query->insertChildElement(item);
+			if(stanza.type() == "get") {
+				sendRoster(stanza);
+			}
+			if(stanza.type() == "set") {
+				// Обновление элемента ростера — добавление, правка или удаление
+				TagHelper query = stanza["query"];
+				ATXmlTag *item = query->firstChild("item");
+				if(item != 0) {
+					if(!item->hasAttribute("subscription")) {
+						addRosterItem(item->getAttribute("jid"), item->getAttribute("name"), query->getChildValue("group", ""));
+					}
 				}
-				r.free();
-			
-			getStreamByJid(stanza.from())->sendStanza(iq);
-			delete iq;
-			return;
+				delete item;
+			}
 		}
 		
 		if(query_xmlns == "jabber:iq:private") { // private storage
