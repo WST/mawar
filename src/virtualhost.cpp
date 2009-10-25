@@ -205,6 +205,7 @@ void VirtualHost::handlePresence(Stanza stanza) {
 	}
 	JID to;
 	VirtualHost *vhost;
+	/*
 	DB::result r = db.query("SELECT contact_jid FROM roster, users WHERE roster.contact_subscription IN ('F', 'B') AND users.id_user=roster.id_user AND users.user_login=%s", db.quote(stanza.from().username()).c_str());
 	for(; !r.eof(); r.next()) {
 		to.set(r["contact_jid"]);
@@ -218,6 +219,7 @@ void VirtualHost::handlePresence(Stanza stanza) {
 		}
 	}
 	r.free();
+	*/
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
