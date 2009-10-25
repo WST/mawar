@@ -46,7 +46,7 @@ MAWAR_OBJECTS+=jid.o
 MAWAR_OBJECTS+=configfile.o
 MAWAR_OBJECTS+=virtualhost.o
 
-MAWAR_TESTS=test-01
+MAWAR_TESTS=test-01 test-02
 
 .PHONY: all install
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS)
@@ -55,9 +55,14 @@ maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS)
 .PHONY: tests
 tests: $(MAWAR_TESTS)
 	./test-01
+	./test-02
 
 test-01: $(srcdir)/tests/test-01.cpp $(MAWAR_OBJECTS)
 	$(CXX) $(srcdir)/tests/test-01.cpp $(MAWAR_OBJECTS) $(LDFLAGS) $(LIBS) -o test-01
+
+test-02: $(srcdir)/tests/test-02.cpp $(MAWAR_OBJECTS)
+	$(CXX) $(srcdir)/tests/test-02.cpp $(MAWAR_OBJECTS) $(LDFLAGS) $(LIBS) -o test-02
+	touch test1.xml test2.xml
 
 # modules
 
@@ -99,7 +104,7 @@ virtualhost.o: $(srcdir)/virtualhost.cpp $(srcdir)/include/virtualhost.h $(srcdi
 .PHONY: clean distclean
 
 distclean: clean
-	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS)
+	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS) test1.xml test2.xml
 
 clean:
 	rm -f *.o maward
