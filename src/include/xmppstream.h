@@ -4,6 +4,7 @@
 #include <nanosoft/asyncxmlstream.h>
 #include <nanosoft/xmlwriter.h>
 #include <nanosoft/gsaslserver.h>
+#include <nanosoft/mutex.h>
 #include <xml_types.h>
 #include <tagbuilder.h>
 #include <xml_tag.h>
@@ -16,6 +17,11 @@
 class XMPPStream: public AsyncXMLStream, private nanosoft::XMLWriter
 {
 private:
+	/**
+	* Mutex для сихронизации
+	*/
+	nanosoft::Mutex mutex;
+	
 	/**
 	* Ссылка на сервер
 	*/
@@ -102,7 +108,7 @@ public:
 	/**
 	* JID потока
 	*/
-	JID jid();
+	JID jid() const;
 
 	/**
 	* Приоритет ресурса
@@ -175,10 +181,18 @@ public:
 	virtual void onPresenceStanza(Stanza stanza);
 	
 	void sendTag(ATXmlTag * tag);
+	
+	/**
+	* Отправить станзу в поток (thread-safe)
+	* @param stanza станза
+	* @return TRUE - станза отправлена (или буферизована для отправки), FALSE что-то не получилось
+	*/
 	bool sendStanza(Stanza stanza);
 	
 	/**
 	* Завершить сессию
+	*
+	* thread-safe
 	*/
 	void terminate();
 };

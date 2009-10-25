@@ -75,6 +75,8 @@ void XMPPStream::onShutdown()
 
 /**
 * Завершить сессию
+*
+* thread-safe
 */
 void XMPPStream::terminate()
 {
@@ -89,12 +91,14 @@ void XMPPStream::terminate()
 		break;
 	}
 	
-	state = terminating;
-	
-	endElement("stream:stream");
-	flush();
-	
-	shutdown(WRITE);
+	mutex.lock();
+		if ( state != terminating ) {
+			state = terminating;
+			endElement("stream:stream");
+			flush();
+			shutdown(WRITE);
+		}
+	mutex.unlock();
 }
 
 /**
@@ -379,7 +383,7 @@ void XMPPStream::onEndStream()
 /**
 * JID потока
 */
-JID XMPPStream::jid()
+JID XMPPStream::jid() const
 {
 	return client_jid;
 }
@@ -402,12 +406,19 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 	// send(tag->asString()); — так будет куда проще…
 }
 
+/**
+* Отправить станзу в поток (thread-safe)
+* @param stanza станза
+* @return TRUE - станза отправлена (или буферизована для отправки), FALSE что-то не получилось
+*/
 bool XMPPStream::sendStanza(Stanza stanza) {
 	if ( state == terminating ) {
 		cerr << "XMPPStream::sendStanza(): connection terminating..." << endl;
 		return false;
 	}
-	sendTag(stanza);
-	flush();
+	mutex.lock();
+		sendTag(stanza);
+		flush();
+	mutex.unlock();
 	return true;
 }
