@@ -49,7 +49,6 @@ const std::string& VirtualHost::hostname() {
 
 bool VirtualHost::sendRoster(Stanza stanza) {
 	Stanza iq = new ATXmlTag("iq");
-	//iq->setAttribute("from", name);
 	iq->setAttribute("from", stanza.from().full());
 	iq->setAttribute("to", stanza.from().full());
 	if(stanza->hasAttribute("id")) iq->setAttribute("id", stanza.id());
@@ -74,7 +73,8 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 		}
 		item = new ATXmlTag("item");
 		item->setAttribute("subscription", subscription.c_str());
-		item->setAttribute("jid", r["user_login"] + "@" + hostname());
+		item->setAttribute("jid", r["contact_jid"]);
+		item->setAttribute("name", r["contact_nick"]);
 		query->insertChildElement(item);
 	}
 	r.free();
@@ -205,10 +205,11 @@ void VirtualHost::handlePresence(Stanza stanza) {
 	}
 	JID to;
 	VirtualHost *vhost;
-	DB::result r = db.query("SELECT contact_jid FROM roster WHERE contact_subscription IN ('F', 'B')");
+	DB::result r = db.query("SELECT contact_jid FROM roster, users WHERE roster.contact_subscription IN ('F', 'B') AND users.id_user=roster.id_user AND users.user_login=%s", db.quote(stanza.from().username()).c_str());
 	for(; !r.eof(); r.next()) {
 		to.set(r["contact_jid"]);
 		vhost = server->getHostByName(to.hostname());
+		// TODO: s2s
 		VirtualHost::sessions_t::iterator it = vhost->onliners.find(to.username());
 		for(VirtualHost::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
 			to.setResource(jt->first);

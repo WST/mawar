@@ -29,7 +29,7 @@ CREATE TABLE roster (
 	id_user INT(11) UNSIGNED NOT NULL,
 	contact_jid VARCHAR(64) NOT NULL,
 	contact_nick VARCHAR(64) NOT NULL,
-	contact_group VARCHAR(64) NUT NULL, -- для обозначения отсутствия группы будет использована пустая строка
+	contact_group VARCHAR(64) NOT NULL, -- для обозначения отсутствия группы будет использована пустая строка
 	contact_subscription CHAR(1) NOT NULL,
 	contact_pending CHAR(1) NOT NULL
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
