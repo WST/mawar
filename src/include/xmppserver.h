@@ -3,6 +3,7 @@
 
 #include <nanosoft/netdaemon.h>
 #include <nanosoft/asyncserver.h>
+#include <nanosoft/mutex.h>
 #include <configfile.h>
 #include <string>
 
@@ -15,6 +16,11 @@ class VirtualHost;
 class XMPPServer: public AsyncServer
 {
 protected:
+	/**
+	* Mutex для thread-safe доступа к общим данным
+	*/
+	nanosoft::Mutex mutex;
+	
 	/**
 	* Сигнал завершения работы
 	*
@@ -46,19 +52,10 @@ public:
 	
 	/**
 	* Обработчик события: подключение клиента
+	*
+	* thread-safe
 	*/
 	AsyncObject* onAccept();
-	
-	/**
-	* Событие появления нового онлайнера
-	* @param stream поток
-	*/
-	void onOnline(XMPPStream *stream);
-	
-	/**
-	* Событие ухода пользователя в офлайн
-	*/
-	void onOffline(XMPPStream *stream);
 	
 	/**
 	* Сигнал завершения
@@ -72,6 +69,9 @@ public:
 	
 	/**
 	* Вернуть виртуальный хост по имени
+	*
+	* thread-safe
+	*
 	* @param name имя искомого хоста
 	* @return виртуальный хост или 0 если такого хоста нет
 	*/
@@ -79,6 +79,8 @@ public:
 	
 	/**
 	* Добавить виртуальный хост
+	*
+	* thread-safe
 	*/
 	void addHost(const std::string &name, VirtualHostConfig config);
 	

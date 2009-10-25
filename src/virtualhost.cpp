@@ -341,6 +341,5 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 	DB::result r = db.query("SELECT user_password FROM users WHERE user_login = %s", db.quote(login).c_str());
 	string pwd = r.eof() ? string() : r["user_password"];
 	r.free();
-	cout << "host: " << hostname() << ", login: " << login << ", password: " << pwd << endl;	
 	return pwd;
 }

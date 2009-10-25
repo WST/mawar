@@ -32,17 +32,21 @@ XMPPServer::~XMPPServer()
 
 /**
 * Обработчик события: подключение клиента
+*
+* thread-safe
 */
 AsyncObject* XMPPServer::onAccept()
 {
-	int sock = accept();
-	if ( sock )
-	{
-		XMPPStream *client = new XMPPStream(this, sock);
-		daemon->addObject(client);
-		return client;
-	}
-	return 0;
+	mutex.lock();
+		int sock = accept();
+		XMPPStream *client = 0;
+		if ( sock )
+		{
+			client = new XMPPStream(this, sock);
+			daemon->addObject(client);
+		}
+	mutex.unlock();
+	return client;
 }
 
 /**
@@ -78,19 +82,29 @@ void XMPPServer::onSigHup()
 
 /**
 * Вернуть виртуальный хост по имени
+*
+* thread-safe
+*
 * @param name имя искомого хоста
 * @return виртуальный хост или 0 если такого хоста нет
 */
 VirtualHost* XMPPServer::getHostByName(const std::string &name)
 {
-	vhosts_t::const_iterator iter = vhosts.find(name);
-	return iter != vhosts.end() ? iter->second : 0;
+	mutex.lock();
+		vhosts_t::const_iterator iter = vhosts.find(name);
+		VirtualHost *vhost = iter != vhosts.end() ? iter->second : 0;
+	mutex.unlock();
+	return vhost;
 }
 
 /**
 * Добавить виртуальный хост
+*
+* thread-safe
 */
 void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
 {
-	vhosts[name] = new VirtualHost(this, name, config);
+	mutex.lock();
+		vhosts[name] = new VirtualHost(this, name, config);
+	mutex.unlock();
 }
