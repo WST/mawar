@@ -3,6 +3,7 @@
 #include <xmppstream.h>
 #include <configfile.h>
 #include <taghelper.h>
+#include <attagparser.h>
 #include <string>
 #include <iostream>
 #include <nanosoft/error.h>
@@ -329,6 +330,26 @@ void VirtualHost::onOnline(XMPPStream *stream) {
 		onliners[stream->jid().username()] = reslist;
 		//cout << stream->jid().full() << " is online :-)\n";
 	mutex.unlock();
+	
+	DB::result r = db.query("SELECT * FROM spool WHERE message_to = %s ORDER BY message_when ASC", db.quote(stream->jid().bare()).c_str());
+	for(; !r.eof(); r.next())
+	{
+		Stanza msg = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["message_stanza"]);
+		if ( msg )
+		{
+			// TODO вставить отметку времени
+			// <message from="admin@underjabber.net.ru/home" xml:lang="ru-RU" to="averkov@jabberid.org" id="aef3a" >
+			// <subject>test</subject>
+			// <body>Test msg</body>
+			// <nick xmlns="http://jabber.org/protocol/nick">WST</nick>
+			// <x xmlns="jabber:x:delay" stamp="20091025T14:39:32" />
+			// </message>
+			stream->sendStanza(msg);
+			delete msg;
+		}
+	}
+	r.free();
+	db.query("DELETE FROM spool WHERE message_to = %s", db.quote(stream->jid().bare()).c_str());
 }
 
 /**

@@ -40,6 +40,13 @@ public:
 	*/
 	ATXmlTag * parseStream(nanosoft::stream &s);
 	
+	/**
+	* Парсинг строки
+	* @param xml XML
+	* @return тег в случае успеха и NULL в случае ошибки
+	*/
+	ATXmlTag * parseString(const std::string &xml);
+	
 protected:
 	/**
 	* Обработчик открытия тега
@@ -81,5 +88,12 @@ ATXmlTag * parse_xml_file(const std::string &path);
 * @return тег в случае успеха и NULL в случае ошибки
 */
 ATXmlTag * parse_xml_stream(nanosoft::stream &s);
+
+/**
+* Парсинг произвольной строки
+* @param xml XML
+* @return тег в случае успеха и NULL в случае ошибки
+*/
+ATXmlTag * parse_xml_string(const std::string &xml);
 
 #endif // MAWAR_ATTAGPARSER_H

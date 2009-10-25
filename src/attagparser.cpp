@@ -67,6 +67,19 @@ ATXmlTag * ATTagParser::parseStream(nanosoft::stream &s)
 }
 
 /**
+* Парсинг строки
+* @param xml XML
+* @return тег в случае успеха и NULL в случае ошибки
+*/
+ATXmlTag * ATTagParser::parseString(const std::string &xml)
+{
+	depth = 0;
+	parseXML(xml.c_str(), xml.length(), true);
+	return fetchResult();
+}
+
+
+/**
 * Обработчик открытия тега
 */
 void ATTagParser::onStartElement(const std::string &name, const nanosoft::XMLParser::attributtes_t &attributes)
@@ -131,4 +144,15 @@ ATXmlTag * parse_xml_stream(nanosoft::stream &s)
 {
 	ATTagParser parser;
 	return parser.parseStream(s);
+}
+
+/**
+* Парсинг произвольной строки
+* @param xml XML
+* @return тег в случае успеха и NULL в случае ошибки
+*/
+ATXmlTag * parse_xml_string(const std::string &xml)
+{
+	ATTagParser parser;
+	return parser.parseString(xml);
 }
