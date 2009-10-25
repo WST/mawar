@@ -5,8 +5,8 @@
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
-#include <nanosoft/mysql.h>
 #include <nanosoft/gsaslserver.h>
+#include <db.h>
 
 /**
 * Класс виртуального узла
@@ -17,7 +17,7 @@ class VirtualHost: public GSASLServer
 		/**
 		* База данных
 		*/
-		nanosoft::MySQL db;
+		DB db;
 		
 		/**
 		* Конструктор

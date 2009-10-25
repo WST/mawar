@@ -6,8 +6,8 @@
 #include <string>
 #include <iostream>
 #include <nanosoft/error.h>
-#include <nanosoft/mysql.h>
 #include <nanosoft/gsaslserver.h>
+#include <db.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -61,7 +61,7 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 	// TODO: ожидание авторизации (pending)
 	std::string subscription;
 	ATXmlTag *item;
-	MySQL::result r = db.query("SELECT * FROM roster, users WHERE roster.id_user=users.id_user AND users.user_login=%s", db.quote(stanza.from().username()).c_str());
+	DB::result r = db.query("SELECT * FROM roster, users WHERE roster.id_user=users.id_user AND users.user_login=%s", db.quote(stanza.from().username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		if(r["contact_subscription"] == "F") { // from
 			subscription = "from";
@@ -174,7 +174,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		if(query_xmlns == "jabber:iq:private") { // private storage
 			if(stanza["query"]->hasChild("storage") && stanza["query"]["storage"]->getAttribute("xmlns") == "storage:bookmarks") {
 				// Выдача закладок
-				MySQL::result r = db.query("SELECT b.bookmark_name, b.bookmark_jid, b.bookmark_nick FROM bookmarks AS b, users AS u WHERE u.id_user=b.id_user AND u.user_login=%s", db.quote(stanza.from().username()).c_str());
+				DB::result r = db.query("SELECT b.bookmark_name, b.bookmark_jid, b.bookmark_nick FROM bookmarks AS b, users AS u WHERE u.id_user=b.id_user AND u.user_login=%s", db.quote(stanza.from().username()).c_str());
 				for(; !r.eof(); r.next()) {
 					
 				}
@@ -205,7 +205,7 @@ void VirtualHost::handlePresence(Stanza stanza) {
 	}
 	JID to;
 	VirtualHost *vhost;
-	MySQL::result r = db.query("SELECT contact_jid FROM roster WHERE contact_subscription IN ('F', 'B')");
+	DB::result r = db.query("SELECT contact_jid FROM roster WHERE contact_subscription IN ('F', 'B')");
 	for(; !r.eof(); r.next()) {
 		to.set(r["contact_jid"]);
 		vhost = server->getHostByName(to.hostname());
@@ -337,7 +337,7 @@ void VirtualHost::onOffline(XMPPStream *stream) {
 */
 std::string VirtualHost::getUserPassword(const std::string &realm, const std::string &login)
 {
-	MySQL::result r = db.query("SELECT user_password FROM users WHERE user_login = %s", db.quote(login).c_str());
+	DB::result r = db.query("SELECT user_password FROM users WHERE user_login = %s", db.quote(login).c_str());
 	string pwd = r.eof() ? string() : r["user_password"];
 	r.free();
 	cout << "host: " << hostname() << ", login: " << login << ", password: " << pwd << endl;	
