@@ -8,6 +8,7 @@
 #include <nanosoft/error.h>
 #include <nanosoft/gsaslserver.h>
 #include <db.h>
+#include <time.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -223,7 +224,7 @@ void VirtualHost::handlePresence(Stanza stanza) {
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
-	db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %d)", db.quote(stanza->asString()).c_str(), 123456789);
+	db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(stanza->asString()).c_str(), time(NULL));
 }
 
 void VirtualHost::handleMessage(Stanza stanza) {
