@@ -5,7 +5,9 @@
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
+#include <jid.h>
 #include <nanosoft/gsaslserver.h>
+#include <nanosoft/mutex.h>
 #include <db.h>
 
 /**
@@ -20,6 +22,11 @@ class VirtualHost: public GSASLServer
 		DB db;
 		
 		/**
+		* Mutex для thread-safe доступа к общим данным
+		*/
+		nanosoft::Mutex mutex;
+		
+		/**
 		* Конструктор
 		* @param srv ссылка на сервер
 		* @param aName имя хоста
@@ -31,8 +38,24 @@ class VirtualHost: public GSASLServer
 		virtual void handleMessage(Stanza stanza); // Обработать message
 		virtual void handlePresence(Stanza stanza); // Обработать presence
 		const std::string &hostname(); // Вернуть имя хоста
-		XMPPStream *getStreamByJid(JID jid);
+		
+		/**
+		* Найти поток по JID (thread-safe)
+		*
+		* @note возможно в нем отпадет необходимость по завершении routeStanza()
+		*/
+		XMPPStream *getStreamByJid(const JID &jid);
+		
+		/**
+		* Событие: Пользователь появился в online (thread-safe)
+		* @param stream поток
+		*/
 		virtual void onOnline(XMPPStream *stream);
+		
+		/**
+		* Событие: Пользователь ушел в offline (thread-safe)
+		* @param stream поток
+		*/
 		virtual void onOffline(XMPPStream *stream);
 		void saveOfflineMessage(Stanza stanza);
 		
@@ -43,6 +66,31 @@ class VirtualHost: public GSASLServer
 		* @return пароль пользователя или "" если нет такого пользователя
 		*/
 		std::string getUserPassword(const std::string &realm, const std::string &login);
+		
+		/**
+		* Роутер исходящих станз (thread-safe)
+		*
+		* Роутер передает станзу нужному потоку.
+		*
+		* @note Данная функция отвечает только за маршрутизацию, она не сохраняет офлайновые сообщения:
+		*   если адресат online, то пересылает ему станзу,
+		*   если offline, то вернет FALSE и вызывающая сторона должна сама сохранить офлайновое сообщение.
+		*
+		* @note Данный метод вызывается из глобального маршрутизатора станз XMPPServer::routeStanza()
+		*   вызывать его напрямую из других мест не рекомендуется - используйте XMPPServer::routeStanza()
+		*
+		* @note Данный метод в будущем станет виртуальным и будет перенесен в специальный
+		*   базовый класс, от которого будут наследовать VirtualHost (виртуальные узлы)
+		*   и, к примеру, MUC. Виртуальые узлы и MUC имеют общие черты, оба адресуются
+		*   доменом, оба принимают входящие станзы, но обрабатывают их по разному,
+		*   VirtualHost доставляет сообщения своим пользователям, а MUC доставляет
+		*   сообщения участникам комнат.
+		*
+		* @param to адресат которому надо направить станзу
+		* @param stanza станза
+		* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
+		*/
+		/* TODO virtual */ bool routeStanza(const JID &to, Stanza stanza);
 		
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу

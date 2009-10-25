@@ -5,6 +5,8 @@
 #include <nanosoft/asyncserver.h>
 #include <nanosoft/mutex.h>
 #include <configfile.h>
+#include <jid.h>
+#include <stanza.h>
 #include <string>
 
 class XMPPStream;
@@ -83,6 +85,23 @@ public:
 	* thread-safe
 	*/
 	void addHost(const std::string &name, VirtualHostConfig config);
+	
+	/**
+	* Роутер исходящих станз (thread-safe)
+	*
+	* Роутер передает станзу нужному потоку.
+	* Если поток локальный, то просто перекидывает сообщение в него.
+	* Если внешний (s2s), то пытается установить соединение с сервером и передать ему станзу
+	*
+	* @note Данная функция отвечает только за маршрутизацию, она не сохраняет офлайновые сообщения:
+	*   если адресат локальный, но в offline, то routeStanza() вернет FALSE и вызывающая
+	*   сторона должна сама сохранить офлайновое сообщение.
+	*
+	* @param to адресат которому надо направить станзу
+	* @param stanza станза
+	* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
+	*/
+	bool routeStanza(const JID &to, Stanza stanza);
 	
 private:
 	/**

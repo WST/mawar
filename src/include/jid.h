@@ -10,11 +10,11 @@ class JID
 		JID(std::string jid_text);
 		JID();
 		~JID();
-		std::string bare();
-		std::string hostname();
-		std::string resource();
-		std::string username();
-		std::string full();
+		std::string bare() const;
+		std::string hostname() const;
+		std::string resource() const;
+		std::string username() const;
+		std::string full() const;
 		void setHostname(std::string hostname);
 		void setResource(std::string resource);
 		void setUsername(std::string username);

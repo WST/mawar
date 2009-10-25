@@ -296,38 +296,51 @@ void VirtualHost::handleIq(Stanza stanza) {
 	stream->sendStanza(stanza);
 }
 
-XMPPStream *VirtualHost::getStreamByJid(JID jid) {
-	sessions_t::iterator it = onliners.find(jid.username());
-	if(it != onliners.end()) {
-		reslist_t::iterator jt = it->second.find(jid.resource());
-		if(jt != it->second.end()) {
-			return jt->second;
+/**
+* Найти поток по JID (thread-safe)
+*
+* @note возможно в нем отпадет необходимость по завершении routeStanza()
+*/
+XMPPStream *VirtualHost::getStreamByJid(const JID &jid) {
+	mutex.lock();
+		sessions_t::iterator it = onliners.find(jid.username());
+		if(it != onliners.end()) {
+			reslist_t::iterator jt = it->second.find(jid.resource());
+			if(jt != it->second.end()) {
+				mutex.unlock(); // NB: unlock перед каждым return!
+				return jt->second;
+			}
 		}
-	}
+	mutex.unlock();
 	return 0;
 }
 
 /**
-* Событие появления нового онлайнера
+* Событие: Пользователь появился в online (thread-safe)
 * @param stream поток
 */
 void VirtualHost::onOnline(XMPPStream *stream) {
-	reslist_t reslist;
-	reslist[stream->jid().resource()] = stream;
-	onliners[stream->jid().username()] = reslist;
-	//cout << stream->jid().full() << " is online :-)\n";
+	mutex.lock();
+		reslist_t reslist;
+		reslist[stream->jid().resource()] = stream;
+		onliners[stream->jid().username()] = reslist;
+		//cout << stream->jid().full() << " is online :-)\n";
+	mutex.unlock();
 }
 
 /**
-* Событие ухода пользователя в офлайн
+* Событие: Пользователь ушел в offline (thread-safe)
+* @param stream поток
 */
 void VirtualHost::onOffline(XMPPStream *stream) {
-	onliners[stream->jid().bare()].erase(stream->jid().resource());
-	if(onliners[stream->jid().username()].empty()) {
-		// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить
-		onliners.erase(stream->jid().username());
-	}
-	//cout << stream->jid().full() << " is offline :-(\n";
+	mutex.lock();
+		onliners[stream->jid().bare()].erase(stream->jid().resource());
+		if(onliners[stream->jid().username()].empty()) {
+			// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить
+			onliners.erase(stream->jid().username());
+		}
+		//cout << stream->jid().full() << " is offline :-(\n";
+	mutex.unlock();
 }
 
 /**
@@ -342,4 +355,43 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 	string pwd = r.eof() ? string() : r["user_password"];
 	r.free();
 	return pwd;
+}
+
+/**
+* Роутер исходящих станз (thread-safe)
+*
+* Роутер передает станзу нужному потоку.
+*
+* @note Данная функция отвечает только за маршрутизацию, она не сохраняет офлайновые сообщения:
+*   если адресат online, то пересылает ему станзу,
+*   если offline, то вернет FALSE и вызывающая сторона должна сама сохранить офлайновое сообщение.
+*
+* @note Данный метод вызывается из глобального маршрутизатора станз XMPPServer::routeStanza()
+*   вызывать его напрямую из других мест не рекомендуется - используйте XMPPServer::routeStanza()
+*
+* @note Данный метод в будущем станет виртуальным и будет перенесен в специальный
+*   базовый класс, от которого будут наследовать VirtualHost (виртуальные узлы)
+*   и, к примеру, MUC. Виртуальые узлы и MUC имеют общие черты, оба адресуются
+*   доменом, оба принимают входящие станзы, но обрабатывают их по разному,
+*   VirtualHost доставляет сообщения своим пользователям, а MUC доставляет
+*   сообщения участникам комнат.
+*
+* @param to адресат которому надо направить станзу
+* @param stanza станза
+* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
+*/
+bool VirtualHost::routeStanza(const JID &to, Stanza stanza)
+{
+	XMPPStream *stream = 0;
+	
+	// TODO корректный роутинг станз возможно на основе анализа типа станзы
+	// NB код марштрутизации должен быть thread-safe, getStreamByJID сейчас thread-safe
+	stream = getStreamByJid(to);
+	
+	if ( stanza ) {
+		stream->sendStanza(stanza);
+		return true;
+	}
+	
+	return false;
 }
