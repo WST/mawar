@@ -2,8 +2,10 @@
 #include <xml_tag.h>
 #include <iostream>
 #include <string.h>
+#include <nanosoft/xmlwriter.h>
 
 using namespace std;
+using namespace nanosoft;
 
 ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth) {
 	tag_cdata = "";
@@ -96,7 +98,7 @@ std::string ATXmlTag::asString() {
 	}
     xml += tag_name;
 	for(attributes_t::iterator it = attributes.begin(); it != attributes.end(); it++) {
-		xml += " " + it->first + std::string("=\"") + it->second + std::string("\"");
+		xml += " " + it->first + std::string("=\"") + XMLWriter::escape(it->second) + std::string("\"");
 	}
     if(childnodes.empty()) {
 		xml += " />";
@@ -108,7 +110,7 @@ std::string ATXmlTag::asString() {
 					xml += (*it)->tag->asString();
 				break;
 				case TCharacterData:
-				xml += (*it)->cdata;
+				xml += XMLWriter::escape((*it)->cdata);
 				break;
 			}
 		}
