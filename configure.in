@@ -6,6 +6,7 @@ AC_INIT(mawar, 0.1, BUG-REPORT-ADDRESS)
 #AC_CONFIG_SRCDIR([parse_url.c])
 AC_CONFIG_AUX_DIR(autoconf)
 AC_CONFIG_HEADER([src/include/config.h])
+AC_CONFIG_HEADER([nanosoft/src/include/nanosoft/config.h])
 
 AC_CANONICAL_HOST
 
@@ -51,23 +52,72 @@ AC_ARG_WITH(nanosoft, AS_HELP_STRING([--with-nanosoft=PREFIX], [prefix to nanoso
 		CXXFLAGS="$CXXFLAGS -I$withval/include"
 		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
 	])
-AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
-AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
+#AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
+#AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
+
+SASL=none
+SASL_LIBS=""
+AC_ARG_WITH(sasl, AS_HELP_STRING([--with-sasl=TYPE], [switch SASL library (cyrus, gnu)]), [
+		SASL=$withval
+		case "$SASL" in
+		gnu)
+			AC_DEFINE(WITH_GNU_SASL, 1)
+			SASL_LIBS="-lgsasl"
+			;;
+		cyrus)
+			AC_DEFINE(WITH_CYRUS_SASL, 1)
+			SASL_LIBS="-lsasl2"
+			;;
+		*)
+			AC_ERROR([switch SASL library (cyrus, gnu, none)])
+			;;
+		esac
+	], [
+		SASL=gnu
+	])
+AC_SUBST(SASL)
+AC_SUBST(SASL_LIBS)
+echo SASL: $SASL
 
 AC_ARG_WITH(gsasl, AS_HELP_STRING([--with-gsasl=PREFIX], [GNU SASL library]), [
 		CPPFLAGS="$CPPFLAGS  -I$withval/include"
 		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
 	])
-# TODO AC_CHECK_HEADER(gsasl.h, [], [AC_ERROR(GNU SASL library required)])
-AC_CHECK_LIB(gsasl, main, [], [AC_ERROR(GNU SASL library required)])
+AC_CHECK_LIB(gsasl, main, [], [
+		if test "$SASL" = "gnu"; then
+			AC_ERROR(GNU SASL library required)
+		fi
+	])
 
-AC_ARG_WITH(mysql, AS_HELP_STRING([--with-mysql=PREFIX], [MySQL client library]), [
+AC_ARG_WITH(cyrus-sasl, AS_HELP_STRING([--with-cyrus-sasl=PREFIX], [Cyrus SASL library]), [
 		CPPFLAGS="$CPPFLAGS  -I$withval/include"
 		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
 	])
-# TODO AC_CHECK_HEADER(mysql.h, [], [AC_ERROR(MySQL client library required)])
-AC_CHECK_LIB(mysqlclient, mysql_real_connect, [], [AC_ERROR(MySQL client library required)])
-AC_CHECK_LIB(mysqlclient, mysql_real_query, [], [AC_ERROR(MySQL client library required)])
+AC_CHECK_LIB(sasl2, main, [], [
+		if test "$SASL" = "cyrus"; then
+			AC_ERROR(Cyrus SASL library required)
+		fi
+	])
+
+WITH_MYSQL=yes
+MYSQL_LIBS=""
+AC_ARG_WITH(mysql, AS_HELP_STRING([--with-mysql=PREFIX], [MySQL client library]), [
+		if test "$withval" != "yes"; then
+			CPPFLAGS="$CPPFLAGS  -I$withval/include"
+			LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
+		fi
+		WITH_MYSQL=yes
+	])
+AC_CHECK_LIB(mysqlclient_r, mysql_real_connect, [
+		MYSQL_LIBS="-lmysqlclient_r"
+		WITH_MYSQL="yes"
+	], [
+		if test "$WITH_MYSQL" = "yes"; then
+			AC_ERROR(MySQL client library not found)
+		fi
+	])
+AC_SUBST(WITH_MYSQL)
+AC_SUBST(MYSQL_LIBS)
 
 # Checks for header files.
 

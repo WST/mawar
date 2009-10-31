@@ -1,11 +1,21 @@
 
-srcdir = @srcdir@/src
+root = @srcdir@
+srcdir = $(root)/src
 
 config = ./src/include/config.h
 
-CPPFLAGS = @CPPFLAGS@
-LDFLAGS = @LDFLAGS@
-CXXFLAGS = @CXXFLAGS@ $(CPPFLAGS) -I./src/include -I/opt/gsasl/include
+ns_root = $(root)/nanosoft
+ns_srcdir = $(ns_root)/src
+ns_srcbin = $(ns_srcdir)/progs
+ns_srclib = $(ns_srcdir)/lib
+ns_srcinc = $(ns_srcdir)/include
+ns_srcexm = $(ns_srcdir)/examples
+
+
+CPPFLAGS = @CPPFLAGS@ -I./src/include -I/opt/gsasl/include -I$(ns_srcinc)
+LDFLAGS = @LDFLAGS@ -L.
+CXXFLAGS = @CXXFLAGS@ $(CPPFLAGS)
+CFLAGS = @CXXFLAGS@ $(CPPFLAGS)
 CXX = @CXX@ $(CXXFLAGS)
 CC = @CC@ $(CFLAGS)
 AR = @AR@
@@ -34,6 +44,12 @@ BUILD = @build@
 HOST = @host@
 HOST_OS = @host_os@
 
+SASL = @SASL@
+SASL_LIBS = @SASL_LIBS@
+
+WITH_MYSQL = @WITH_MYSQL@
+MYSQL_LIBS = @MYSQL_LIBS@
+
 MAWAR_OBJECTS=xmppserver.o
 MAWAR_OBJECTS+=xmppstream.o
 MAWAR_OBJECTS+=myconsole.o
@@ -49,8 +65,13 @@ MAWAR_OBJECTS+=virtualhost.o
 MAWAR_TESTS=test-01 test-02
 
 .PHONY: all install
-maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS)
-	$(CXX) $(srcdir)/main.cpp $(MAWAR_OBJECTS) $(LDFLAGS) $(LIBS) -o maward
+maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS) libns_core.a libns_netd.a libns_xml.a libns_sasl.a
+	$(CXX) $(srcdir)/main.cpp $(MAWAR_OBJECTS) $(LDFLAGS) -lns_core -lns_netd -lns_xml -lns_sasl $(MYSQL_LIBS) $(LIBS) -o maward
+
+include $(ns_root)/core.mf
+include $(ns_root)/xml.mf
+include $(ns_root)/netd.mf
+include $(ns_root)/sasl.mf
 
 .PHONY: tests
 tests: $(MAWAR_TESTS)
@@ -104,7 +125,7 @@ virtualhost.o: $(srcdir)/virtualhost.cpp $(srcdir)/include/virtualhost.h $(srcdi
 .PHONY: clean distclean
 
 distclean: clean
-	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS) test1.xml test2.xml
+	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS) test1.xml test2.xml lib*.a
 
 clean:
 	rm -f *.o maward
