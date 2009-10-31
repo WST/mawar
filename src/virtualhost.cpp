@@ -358,7 +358,7 @@ void VirtualHost::onOnline(XMPPStream *stream) {
 */
 void VirtualHost::onOffline(XMPPStream *stream) {
 	mutex.lock();
-		onliners[stream->jid().bare()].erase(stream->jid().resource());
+		onliners[stream->jid().username()].erase(stream->jid().resource());
 		if(onliners[stream->jid().username()].empty()) {
 			// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить
 			onliners.erase(stream->jid().username());
