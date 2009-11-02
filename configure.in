@@ -77,7 +77,6 @@ AC_ARG_WITH(sasl, AS_HELP_STRING([--with-sasl=TYPE], [switch SASL library (cyrus
 	])
 AC_SUBST(SASL)
 AC_SUBST(SASL_LIBS)
-echo SASL: $SASL
 
 AC_ARG_WITH(gsasl, AS_HELP_STRING([--with-gsasl=PREFIX], [GNU SASL library]), [
 		CPPFLAGS="$CPPFLAGS  -I$withval/include"
@@ -119,9 +118,11 @@ AC_CHECK_LIB(mysqlclient_r, mysql_real_connect, [
 AC_SUBST(WITH_MYSQL)
 AC_SUBST(MYSQL_LIBS)
 
-# Checks for header files.
-
-# Checks for typedefs, structures, and compiler characteristics.
+AC_ARG_WITH(udns, AS_HELP_STRING([--with-udns=PREFIX], [UDNS (DNS Resolver Library)]), [
+		CPPFLAGS="$CPPFLAGS  -I$withval/include"
+		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
+	])
+AC_CHECK_LIB(udns, main, [], [AC_ERROR(UDNS (DNS Resolver Library) required)])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
