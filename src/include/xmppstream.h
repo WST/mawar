@@ -70,6 +70,12 @@ private:
 	
 	ClientPresence client_presence;
 	
+	/**
+	* TRUE - Initial presense уже отправлен
+	* FLASE - Initial presense ещё не отправлен
+	*/
+	bool initialPresenceSent;
+	
 protected:
 	/**
 	* Запись XML

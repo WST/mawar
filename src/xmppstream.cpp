@@ -20,7 +20,7 @@ using namespace nanosoft;
 XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 	AsyncXMLStream(sock), XMLWriter(1024),
 	server(srv), vhost(0),
-	state(init), depth(0)
+	state(init), depth(0), initialPresenceSent(false)
 {
 	builder = new ATTagBuilder();
 }
@@ -299,7 +299,12 @@ void XMPPStream::onPresenceStanza(Stanza stanza) {
 		client_presence.setShow(stanza->getChildValue("show", "Available"));
 		
 		// Разослать этот presence контактам ростера
-		vhost->broadcastPresence(stanza);
+		if ( initialPresenceSent || stanza->hasAttribute("type") ) {
+			vhost->broadcastPresence(stanza);
+		} else {
+			vhost->initialPresence(stanza);
+			initialPresenceSent = true;
+		}
 	}
 }
 

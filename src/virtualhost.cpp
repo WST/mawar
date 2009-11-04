@@ -201,12 +201,42 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 * @todo обработка атрибута type
 */
 void VirtualHost::handlePresence(Stanza stanza) {
+	if ( stanza->getAttribute("type", "") == "error" ) {
+		// TODO somethink...
+		return;
+	}
+	
+	if ( stanza->getAttribute("type", "") == "probe" ) {
+		cout << "probe " << stanza.to().full() << " from " << stanza.from().full() << endl;
+		DB::result r = db.query(
+			"SELECT count(*) AS cnt FROM roster JOIN users ON roster.id_user = users.id_user "
+			"WHERE user_login = %s AND contact_jid = %s AND contact_subscription IN ('F', 'B')",
+				db.quote(stanza.to().username()).c_str(), db.quote(stanza.from().bare()).c_str());
+		cout << "status: " << r["cnt"] << endl;
+		if ( r["cnt"] != "0" ) {
+			//mutex.lock();
+				sessions_t::iterator it = onliners.find(stanza.to().username());
+				if(it != onliners.end()) {
+					for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
+					{
+						Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
+						server->routeStanza(p.to().hostname(), p);
+						delete p;
+					}
+				}
+			//mutex.unlock();
+		}
+		r.free();
+		return;
+	}
+	
 	if ( stanza.to().resource() == "" ) {
 		mutex.lock();
 			sessions_t::iterator it = onliners.find(stanza.to().username());
 			if(it != onliners.end()) {
 				for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
 				{
+					stanza->setAttribute("to", jt->second->jid().full());
 					jt->second->sendStanza(stanza);
 				}
 			}
@@ -229,14 +259,31 @@ void VirtualHost::broadcastPresence(Stanza stanza)
 		// (с) shade
 		stanza->removeAttribute("type");
 	}
-	DB::result r = db.query("SELECT * FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", db.quote(stanza.from().username()).c_str());
+	DB::result r = db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", db.quote(stanza.from().username()).c_str());
 	for(; ! r.eof(); r.next()) {
-		cerr << "to " << r["contact_jid"] << endl;
 		stanza->setAttribute("to", r["contact_jid"]);
 		server->routeStanza(stanza.to().hostname(), stanza);
-		cerr << "exited\n";
 	}
 	r.free();
+}
+
+/**
+* Presence Broadcast (RFC 3921, 5.1.1)
+*/
+void VirtualHost::initialPresence(Stanza stanza)
+{
+	cerr << "initial presence\n";
+	Stanza probe = new ATXmlTag("presence");
+	probe->setAttribute("type", "probe");
+	probe->setAttribute("from", stanza.from().full());
+	DB::result r = db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('T', 'B')", db.quote(stanza.from().username()).c_str());
+	for(; ! r.eof(); r.next()) {
+		probe->setAttribute("to", r["contact_jid"]);
+		server->routeStanza(probe.to().hostname(), probe);
+	}
+	r.free();
+	delete probe;
+	broadcastPresence(stanza);
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {

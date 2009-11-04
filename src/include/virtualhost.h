@@ -45,6 +45,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void broadcastPresence(Stanza stanza);
 		
 		/**
+		* Presence Broadcast (RFC 3921, 5.1.1)
+		*/
+		void initialPresence(Stanza stanza);
+		
+		/**
 		* Найти поток по JID (thread-safe)
 		*
 		* @note возможно в нем отпадет необходимость по завершении routeStanza()
