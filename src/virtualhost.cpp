@@ -20,7 +20,9 @@ using namespace nanosoft;
 * @param aName имя хоста
 * @param config конфигурация хоста
 */
-VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config): server(srv), name(aName) {
+VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config):
+	XMPPDomain(srv, aName)
+{
 	TagHelper storage = config["storage"];
 	if ( storage->getAttribute("engine", "mysql") != "mysql" ) ::error("[VirtualHost] unknown storage engine: " + storage->getAttribute("engine"));
 	
@@ -40,13 +42,6 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 * Деструктор
 */
 VirtualHost::~VirtualHost() {
-}
-
-/**
-* Вернуть имя хоста
-*/
-const std::string& VirtualHost::hostname() {
-	return name;
 }
 
 bool VirtualHost::sendRoster(Stanza stanza) {
@@ -110,7 +105,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		if(stanza.type() == "get") {
 			// Входящие запросы информации
 			if(query_xmlns == "jabber:iq:version") {
-				Stanza version = Stanza::serverVersion(name, stanza.from(), stanza.id());
+				Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
 				getStreamByJid(stanza.from())->sendStanza(version);
 				delete version;
 				return;
@@ -119,7 +114,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			if(query_xmlns == "http://jabber.org/protocol/disco#info") {
 				// Информация о возможностях сервера
 				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
+				iq->setAttribute("from", hostname());
 				iq->setAttribute("to", stanza.from().full());
 				iq->setAttribute("type", "result");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
@@ -144,7 +139,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			if(query_xmlns == "http://jabber.org/protocol/disco#items") {
 				// Информация о компонентах сервера и прочей фигне в обзоре служб (команды, транспорты)
 				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
+				iq->setAttribute("from", hostname());
 				iq->setAttribute("to", stanza.from().full());
 				iq->setAttribute("type", "result");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
@@ -201,42 +196,47 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 	}
 }
 
+/**
+* Обработка станзы presence
+* @todo обработка атрибута type
+*/
 void VirtualHost::handlePresence(Stanza stanza) {
-	if(stanza->hasAttribute("to")) {
-		JID to(stanza->getAttribute("to"));
-		VirtualHost *vhost = server->getHostByName(to.hostname());
-		if(vhost == 0) {
-			// TODO: S2S-presence
-			return;
-		}
-		if(stanza.type() == "subscribed") {
-			db.query("");
-		}
-		VirtualHost::sessions_t::iterator it = vhost->onliners.find(to.username());
-		for(VirtualHost::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
-			to.setResource(jt->first);
-			stanza->setAttribute("to", to.bare());
-			jt->second->sendStanza(stanza);
-		}
-		return;
+	if ( stanza.to().resource() == "" ) {
+		mutex.lock();
+			sessions_t::iterator it = onliners.find(stanza.to().username());
+			if(it != onliners.end()) {
+				for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
+				{
+					jt->second->sendStanza(stanza);
+				}
+			}
+		mutex.unlock();
+	} else {
+		XMPPStream *stream = getStreamByJid(stanza.to());
+		if ( stream ) stream->sendStanza(stanza);
 	}
-	JID to;
-	VirtualHost *vhost;
-	/*
-	DB::result r = db.query("SELECT contact_jid FROM roster, users WHERE roster.contact_subscription IN ('F', 'B') AND users.id_user=roster.id_user AND users.user_login=%s", db.quote(stanza.from().username()).c_str());
-	for(; !r.eof(); r.next()) {
-		to.set(r["contact_jid"]);
-		vhost = server->getHostByName(to.hostname());
-		// TODO: s2s
-		VirtualHost::sessions_t::iterator it = vhost->onliners.find(to.username());
-		for(VirtualHost::reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); jt++) {
-			to.setResource(jt->first);
-			stanza->setAttribute("to", to.bare());
-			jt->second->sendStanza(stanza);
-		}
+}
+
+/**
+* Presence Broadcast (RFC 3921, 5.1.2)
+*/
+void VirtualHost::broadcastPresence(Stanza stanza)
+{
+	cerr << "broadcast presence\n";
+	if ( stanza->hasAttribute("type") && stanza->getAttribute("type", "") != "unavailable" ) {
+		// костыль? удаляем атрибут type, из RFC мне не понятно как правильно поступать
+		// быть может надо возращать ошибку
+		// (с) shade
+		stanza->removeAttribute("type");
+	}
+	DB::result r = db.query("SELECT * FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", db.quote(stanza.from().username()).c_str());
+	for(; ! r.eof(); r.next()) {
+		cerr << "to " << r["contact_jid"] << endl;
+		stanza->setAttribute("to", r["contact_jid"]);
+		server->routeStanza(stanza.to().hostname(), stanza);
+		cerr << "exited\n";
 	}
 	r.free();
-	*/
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
@@ -422,22 +422,34 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 *   VirtualHost доставляет сообщения своим пользователям, а MUC доставляет
 *   сообщения участникам комнат.
 *
-* @param to адресат которому надо направить станзу
 * @param stanza станза
 * @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 */
-bool VirtualHost::routeStanza(const JID &to, Stanza stanza)
+bool VirtualHost::routeStanza(Stanza stanza)
 {
+	if ( stanza->name() == "message" ) {
+		handleMessage(stanza);
+		return true;
+	}
+	
+	if ( stanza->name() == "presence" ) {
+		handlePresence(stanza);
+		return true;
+	}
+	
 	XMPPStream *stream = 0;
 	
 	// TODO корректный роутинг станз возможно на основе анализа типа станзы
 	// NB код марштрутизации должен быть thread-safe, getStreamByJID сейчас thread-safe
-	stream = getStreamByJid(to);
+	stream = getStreamByJid(stanza.to());
 	
-	if ( stanza ) {
+	if ( stream ) {
+		cerr << "stream found" << endl;
 		stream->sendStanza(stanza);
 		return true;
 	}
+	
+	cerr << "stream not found" << endl;
 	
 	return false;
 }

@@ -2,6 +2,7 @@
 #define MAWAR_VIRTUALHOST_H
 
 #include <xmppserver.h>
+#include <xmppdomain.h>
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
@@ -13,7 +14,7 @@
 /**
 * Класс виртуального узла
 */
-class VirtualHost: public GSASLServer
+class VirtualHost: public XMPPDomain, public GSASLServer
 {
 	public:
 		/**
@@ -37,7 +38,11 @@ class VirtualHost: public GSASLServer
 		virtual void handleIq(Stanza stanza); // Обработать iq, адресованный данному виртуальному узлу или пользователю на нём
 		virtual void handleMessage(Stanza stanza); // Обработать message
 		virtual void handlePresence(Stanza stanza); // Обработать presence
-		const std::string &hostname(); // Вернуть имя хоста
+		
+		/**
+		* Presence Broadcast (RFC 3921, 5.1.2)
+		*/
+		void broadcastPresence(Stanza stanza);
 		
 		/**
 		* Найти поток по JID (thread-safe)
@@ -90,7 +95,7 @@ class VirtualHost: public GSASLServer
 		* @param stanza станза
 		* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 		*/
-		/* TODO virtual */ bool routeStanza(const JID &to, Stanza stanza);
+		virtual bool routeStanza(Stanza stanza);
 		
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
@@ -98,8 +103,6 @@ class VirtualHost: public GSASLServer
 		void addRosterItem(Stanza stanza, std::string jid, std::string name, std::string group);
 		typedef std::map<std::string, XMPPStream *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
-		XMPPServer *server; // Ссылка на сервер которому принадлежит виртуальный хост
-		std::string name; // Имя виртуального узла
 		sessions_t onliners; // Онлайнеры
 		std::map<std::string, unsigned long int> id_users;
 };

@@ -2,6 +2,7 @@
 #include <xmppstream.h>
 #include <xmppserver.h>
 #include <virtualhost.h>
+#include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
 
@@ -266,7 +267,7 @@ void XMPPStream::onIqStanza(Stanza stanza) {
 		return;
 	}
 	
-	VirtualHost *s = server->getHostByName(stanza.to().hostname());
+	VirtualHost *s = dynamic_cast<VirtualHost*>(server->getHostByName(stanza.to().hostname()));
 	if(s != 0) { // iq-запрос к виртуальному узлу
 		s->handleIq(stanza);
 	} else {
@@ -280,38 +281,27 @@ ClientPresence XMPPStream::presence() {
 
 void XMPPStream::onMessageStanza(Stanza stanza) {
 	stanza.setFrom(client_jid);
-	
-	VirtualHost *s = server->getHostByName(stanza.to().hostname());
-	if(s != 0) { // Сообщение к виртуальному узлу
-		s->handleMessage(stanza);
-	} else {
-		// Сообщение «наружу» (S2S)
-	}
+	server->routeStanza(stanza.to().hostname(), stanza);
 }
 
 void XMPPStream::onPresenceStanza(Stanza stanza) {
 	stanza->setAttribute("from", client_jid.full());
 	
-	if(!stanza->hasAttribute("to")) {
+	if ( stanza->hasAttribute("to") )
+	{
+		// доставить личный презенс
+		server->routeStanza(stanza.to().hostname(), stanza);
+	}
+	else
+	{
 		client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
 		client_presence.status_text = stanza->getChildValue("status", "");
 		client_presence.setShow(stanza->getChildValue("show", "Available"));
 		
 		// Разослать этот presence контактам ростера
-	}
-	
-	// Временный костыль — разослать всем юзерам с этого же вирт.узла
-	vhost->handlePresence(stanza);
-	
-	// Иначе — индивидуальное присутствие
-	VirtualHost *s = server->getHostByName(stanza.to().hostname());
-	if(s != 0) { // Сообщение к виртуальному узлу
-		s->handlePresence(stanza);
-	} else {
-		// Присутствие «наружу» (S2S)
+		vhost->broadcastPresence(stanza);
 	}
 }
-
 
 /**
 * Событие: начало потока
@@ -330,7 +320,7 @@ void XMPPStream::onStartStream(const std::string &name, const attributes_t &attr
 	
 	if ( state == init )
 	{
-		vhost = server->getHostByName(attributes.find("to")->second);
+		vhost = dynamic_cast<VirtualHost*>(server->getHostByName(attributes.find("to")->second));
 		if ( vhost == 0 ) {
 			Stanza error = Stanza::streamError("host-unknown", "Неизвестный хост", "ru");
 			sendStanza(error);

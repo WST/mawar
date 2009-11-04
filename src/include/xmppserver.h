@@ -10,7 +10,7 @@
 #include <string>
 
 class XMPPStream;
-class VirtualHost;
+class XMPPDomain;
 
 /**
 * Класс XMPP сервера
@@ -33,9 +33,9 @@ protected:
 	
 public:
 	/**
-	* Список виртуальных хостов
+	* Список доменов
 	*/
-	typedef std::map<std::string, VirtualHost*> vhosts_t;
+	typedef std::map<std::string, XMPPDomain*> domains_t;
 	
 	/**
 	* Ссылка на демона
@@ -70,14 +70,19 @@ public:
 	void onSigHup();
 	
 	/**
-	* Вернуть виртуальный хост по имени
+	* Вернуть домен по имени
 	*
 	* thread-safe
 	*
 	* @param name имя искомого хоста
-	* @return виртуальный хост или 0 если такого хоста нет
+	* @return домен или 0 если такого хоста нет
 	*/
-	VirtualHost* getHostByName(const std::string &name);
+	XMPPDomain* getHostByName(const std::string &name);
+	
+	/**
+	* Добавить домен (thread-safe)
+	*/
+	void addDomain(XMPPDomain *domain);
 	
 	/**
 	* Добавить виртуальный хост
@@ -97,17 +102,17 @@ public:
 	*   если адресат локальный, но в offline, то routeStanza() вернет FALSE и вызывающая
 	*   сторона должна сама сохранить офлайновое сообщение.
 	*
-	* @param to адресат которому надо направить станзу
+	* @param host домент в который надо направить станзу
 	* @param stanza станза
 	* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 	*/
-	bool routeStanza(const JID &to, Stanza stanza);
+	bool routeStanza(const std::string &host, Stanza stanza);
 	
 private:
 	/**
-	* Список виртуальных хостов
+	* Список доменов
 	*/
-	vhosts_t vhosts;
+	domains_t domains;
 };
 
 #endif // MAWAR_XMPPSERVER_H

@@ -1,6 +1,7 @@
 
 #include <xmppserver.h>
 #include <xmppstream.h>
+#include <xmppdomain.h>
 #include <virtualhost.h>
 #include <configfile.h>
 #include <string>
@@ -22,12 +23,12 @@ XMPPServer::XMPPServer(NetDaemon *d): daemon(d)
 */
 XMPPServer::~XMPPServer()
 {
-	// delete virtual hosts
-	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+	// delete domains
+	for(domains_t::iterator iter = domains.begin(); iter != domains.end(); ++iter)
 	{
 		delete iter->second;
 	}
-	vhosts.clear();
+	domains.clear();
 }
 
 /**
@@ -88,13 +89,23 @@ void XMPPServer::onSigHup()
 * @param name имя искомого хоста
 * @return виртуальный хост или 0 если такого хоста нет
 */
-VirtualHost* XMPPServer::getHostByName(const std::string &name)
+XMPPDomain* XMPPServer::getHostByName(const std::string &name)
 {
 	mutex.lock();
-		vhosts_t::const_iterator iter = vhosts.find(name);
-		VirtualHost *vhost = iter != vhosts.end() ? iter->second : 0;
+		domains_t::const_iterator iter = domains.find(name);
+		XMPPDomain *domain = iter != domains.end() ? iter->second : 0;
 	mutex.unlock();
-	return vhost;
+	return domain;
+}
+
+/**
+* Добавить домен (thread-safe)
+*/
+void XMPPServer::addDomain(XMPPDomain *domain)
+{
+	mutex.lock();
+		domains[domain->hostname()] = domain;
+	mutex.unlock();
 }
 
 /**
@@ -104,9 +115,7 @@ VirtualHost* XMPPServer::getHostByName(const std::string &name)
 */
 void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
 {
-	mutex.lock();
-		vhosts[name] = new VirtualHost(this, name, config);
-	mutex.unlock();
+	addDomain(new VirtualHost(this, name, config));
 }
 
 /**
@@ -120,20 +129,20 @@ void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
 *   если адресат локальный, но в offline, то routeStanza() вернет FALSE и вызывающая
 *   сторона должна сама сохранить офлайновое сообщение.
 *
-* @param to адресат которому надо направить станзу
+* @param host домент в который надо направить станзу
 * @param stanza станза
 * @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 */
-bool XMPPServer::routeStanza(const JID &to, Stanza stanza)
+bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 {
-	VirtualHost *vhost = getHostByName(to.hostname());
-	if ( vhost )
-	{ // локальное сообщение
-		return vhost->routeStanza(to, stanza);
+	XMPPDomain *domain = getHostByName(host);
+	if ( domain )
+	{ // известный домен
+		return domain->routeStanza(stanza);
 	}
 	else
-	{ // внешенее сообщение
-		// TODO s2s
+	{ // неизвестный домен
+		// TODO addDomain( new s2s )...
 		return false;
 	}
 }

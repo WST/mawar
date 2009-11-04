@@ -60,6 +60,7 @@ MAWAR_OBJECTS+=tagbuilder.o
 MAWAR_OBJECTS+=stanza.o
 MAWAR_OBJECTS+=jid.o
 MAWAR_OBJECTS+=configfile.o
+MAWAR_OBJECTS+=xmppdomain.o
 MAWAR_OBJECTS+=virtualhost.o
 
 MAWAR_TESTS=test-01 test-02
@@ -117,8 +118,11 @@ jid.o: $(srcdir)/jid.cpp $(srcdir)/include/jid.h
 configfile.o: $(srcdir)/configfile.cpp $(srcdir)/include/configfile.h
 	$(CXX) -c $(srcdir)/configfile.cpp -o configfile.o
 
-virtualhost.o: $(srcdir)/virtualhost.cpp $(srcdir)/include/virtualhost.h $(srcdir)/include/xmppserver.h
+virtualhost.o: $(srcdir)/virtualhost.cpp $(srcdir)/include/virtualhost.h $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h
 	$(CXX) -c $(srcdir)/virtualhost.cpp -o virtualhost.o
+
+xmppdomain.o: $(srcdir)/xmppdomain.cpp $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h
+	$(CXX) -c $(srcdir)/xmppdomain.cpp -o xmppdomain.o
 
 # CLEAN
 
