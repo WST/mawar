@@ -101,6 +101,7 @@ class VirtualHost: public GSASLServer
 		XMPPServer *server; // Ссылка на сервер которому принадлежит виртуальный хост
 		std::string name; // Имя виртуального узла
 		sessions_t onliners; // Онлайнеры
+		std::map<std::string, unsigned long int> id_users;
 };
 
 #endif // MAWAR_VIRTUALHOST_H

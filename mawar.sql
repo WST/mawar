@@ -14,14 +14,12 @@ CREATE TABLE spool (
 	message_when INT UNSIGNED NOT NULL -- время
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
 
--- Таблица закладок на MUC
--- Временный костыль вместо XML-хранилища
-CREATE TABLE bookmarks (
-	id_bookmark INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, -- ID закладки
-	id_user INT UNSIGNED NOT NULL, -- ID владельца закладки
-	bookmark_name VARCHAR(40) NOT NULL, -- название закладки
-	bookmark_jid VARCHAR(255) NOT NULL, -- JID закладки
-	bookmark_nick VARCHAR(40) NOT NULL -- ник юзера
+-- Приватное XML-хранилище
+CREATE TABLE private_storage (
+	id_block INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, -- ID блока
+	id_user INT UNSIGNED NOT NULL, -- ID владельца блока
+	block_xmlns VARCHAR(40) NOT NULL, -- xmlns блока для хранения
+	block_data TEXT NOT NULL -- XML
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
 
 CREATE TABLE roster (

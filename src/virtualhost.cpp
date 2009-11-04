@@ -159,6 +159,25 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			if(query_xmlns == "jabber:iq:roster") {
 				sendRoster(stanza);
 			}
+			
+			if(query_xmlns == "jabber:iq:private") { // private storage
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("jabber:iq:private");
+				
+				TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
+				DB::result r = db.query("SELECT block_data FROM private_storage WHERE id_user = %d AND block_xmlns = %s", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str());
+				if(!r.eof()) {
+					ATXmlTag *res = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
+					iq["query"]->insertChildElement(res);
+				}
+				getStreamByJid(stanza.from())->sendStanza(iq);
+				r.free();
+			}
 		} else { // set
 			if(query_xmlns == "jabber:iq:roster") {
 				// Обновление элемента ростера — добавление, правка или удаление
@@ -171,16 +190,12 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				}
 				delete item;
 			}
-		}
-		
-		if(query_xmlns == "jabber:iq:private") { // private storage
-			if(stanza["query"]->hasChild("storage") && stanza["query"]["storage"]->getAttribute("xmlns") == "storage:bookmarks") {
-				// Выдача закладок
-				DB::result r = db.query("SELECT b.bookmark_name, b.bookmark_jid, b.bookmark_nick FROM bookmarks AS b, users AS u WHERE u.id_user=b.id_user AND u.user_login=%s", db.quote(stanza.from().username()).c_str());
-				for(; !r.eof(); r.next()) {
-					
-				}
-				r.free();
+			
+			if(query_xmlns == "jabber:iq:private") { // private storage
+				TagHelper block = stanza["query"]->firstChild();
+				db.query("DELETE FROM private_storage WHERE id_user = %d AND block_xmlns = %s", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str());
+				db.query("INSERT INTO private_storage (id_user, block_xmlns, block_data) VALUES (%d, %s, %s)", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
+				// send result iq
 			}
 		}
 	}
@@ -325,10 +340,16 @@ XMPPStream *VirtualHost::getStreamByJid(const JID &jid) {
 */
 void VirtualHost::onOnline(XMPPStream *stream) {
 	mutex.lock();
+	if(onliners.find(stream->jid().username()) != onliners.end()) {
+		onliners[stream->jid().username()][stream->jid().resource()] = stream;
+	} else {
 		reslist_t reslist;
 		reslist[stream->jid().resource()] = stream;
 		onliners[stream->jid().username()] = reslist;
-		//cout << stream->jid().full() << " is online :-)\n";
+		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(stream->jid().username()).c_str());
+		id_users[stream->jid().username()] = atoi(r["id_user"].c_str());
+		r.free();
+	}
 	mutex.unlock();
 	
 	DB::result r = db.query("SELECT * FROM spool WHERE message_to = %s ORDER BY message_when ASC", db.quote(stream->jid().bare()).c_str());
@@ -362,6 +383,7 @@ void VirtualHost::onOffline(XMPPStream *stream) {
 		if(onliners[stream->jid().username()].empty()) {
 			// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить
 			onliners.erase(stream->jid().username());
+			id_users.erase(stream->jid().username());
 		}
 		//cout << stream->jid().full() << " is offline :-(\n";
 	mutex.unlock();
