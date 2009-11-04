@@ -29,7 +29,7 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 	if( server.substr(0, 5) == "unix:" ) {
 		if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
 	} else {
-		if ( ! db.connectUnix(server, storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
+		if ( ! db.connect(server, storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
 	}
 	
 	// кодировка только UTF-8
