@@ -1,6 +1,6 @@
 
 #include <xmppserver.h>
-#include <xmppstream.h>
+#include <xmppclient.h>
 #include <xmppdomain.h>
 #include <virtualhost.h>
 #include <configfile.h>
@@ -43,7 +43,7 @@ AsyncObject* XMPPServer::onAccept()
 		XMPPStream *client = 0;
 		if ( sock )
 		{
-			client = new XMPPStream(this, sock);
+			client = new XMPPClient(this, sock);
 			daemon->addObject(client);
 		}
 	mutex.unlock();

@@ -2,6 +2,7 @@
 #define MAWAR_VIRTUALHOST_H
 
 #include <xmppserver.h>
+#include <xmppclient.h>
 #include <xmppdomain.h>
 #include <configfile.h>
 #include <string>
@@ -45,28 +46,28 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void broadcastPresence(Stanza stanza);
 		
 		/**
-		* Presence Broadcast (RFC 3921, 5.1.1)
+		* Initial Presence (RFC 3921, 5.1.1)
 		*/
 		void initialPresence(Stanza stanza);
 		
 		/**
-		* Найти поток по JID (thread-safe)
+		* Найти клиента по JID (thread-safe)
 		*
 		* @note возможно в нем отпадет необходимость по завершении routeStanza()
 		*/
-		XMPPStream *getStreamByJid(const JID &jid);
+		XMPPClient *getClientByJid(const JID &jid);
 		
 		/**
 		* Событие: Пользователь появился в online (thread-safe)
-		* @param stream поток
+		* @param client поток
 		*/
-		virtual void onOnline(XMPPStream *stream);
+		virtual void onOnline(XMPPClient *client);
 		
 		/**
 		* Событие: Пользователь ушел в offline (thread-safe)
-		* @param stream поток
+		* @param client поток
 		*/
-		virtual void onOffline(XMPPStream *stream);
+		virtual void onOffline(XMPPClient *client);
 		void saveOfflineMessage(Stanza stanza);
 		
 		/**
@@ -106,7 +107,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
 		bool sendRoster(Stanza stanza); // Отправить ростер в ответ на станзу stanza
 		void addRosterItem(Stanza stanza, std::string jid, std::string name, std::string group);
-		typedef std::map<std::string, XMPPStream *> reslist_t;
+		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		sessions_t onliners; // Онлайнеры
 		std::map<std::string, unsigned long int> id_users;

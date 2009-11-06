@@ -1,6 +1,5 @@
 
 #include <virtualhost.h>
-#include <xmppstream.h>
 #include <configfile.h>
 #include <taghelper.h>
 #include <attagparser.h>
@@ -76,7 +75,7 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 	}
 	r.free();
 	
-	bool result = getStreamByJid(stanza.from())->sendStanza(iq);
+	bool result = getClientByJid(stanza.from())->sendStanza(iq);
 	delete iq;
 	return result;
 }
@@ -91,12 +90,12 @@ void VirtualHost::addRosterItem(Stanza stanza, std::string jid, std::string name
 	if(item == 0) return;
 	item->setAttribute("subscription", "none");
 	query->insertChildElement(item);
-	getStreamByJid(stanza.from())->sendStanza(iq);
+	getClientByJid(stanza.from())->sendStanza(iq);
 	
 	Stanza iqres = new ATXmlTag("iq");
 	iqres->setAttribute("type", "result");
 	iqres->setAttribute("id", stanza.id());
-	getStreamByJid(stanza.from())->sendStanza(iqres);
+	getClientByJid(stanza.from())->sendStanza(iqres);
 }
 
 void VirtualHost::handleVHostIq(Stanza stanza) {
@@ -106,7 +105,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			// Входящие запросы информации
 			if(query_xmlns == "jabber:iq:version") {
 				Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
-				getStreamByJid(stanza.from())->sendStanza(version);
+				getClientByJid(stanza.from())->sendStanza(version);
 				delete version;
 				return;
 			}
@@ -131,7 +130,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 					feature->insertAttribute("var", "jabber:iq:version");
 					query->insertChildElement(feature);
 				
-				getStreamByJid(stanza.from())->sendStanza(iq);
+				getClientByJid(stanza.from())->sendStanza(iq);
 				delete iq;
 				return;
 			}
@@ -146,7 +145,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				TagHelper query = iq["query"];
 					query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 				
-				getStreamByJid(stanza.from())->sendStanza(iq);
+				getClientByJid(stanza.from())->sendStanza(iq);
 				delete iq;
 				return;
 			}
@@ -170,7 +169,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 					ATXmlTag *res = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
 					iq["query"]->insertChildElement(res);
 				}
-				getStreamByJid(stanza.from())->sendStanza(iq);
+				getClientByJid(stanza.from())->sendStanza(iq);
 				r.free();
 			}
 		} else { // set
@@ -242,8 +241,8 @@ void VirtualHost::handlePresence(Stanza stanza) {
 			}
 		mutex.unlock();
 	} else {
-		XMPPStream *stream = getStreamByJid(stanza.to());
-		if ( stream ) stream->sendStanza(stanza);
+		XMPPClient *client = getClientByJid(stanza.to());
+		if ( client ) client->sendStanza(stanza);
 	}
 }
 
@@ -308,8 +307,8 @@ void VirtualHost::handleMessage(Stanza stanza) {
 			}
 			// Не отправили на выбранный ресурс, смотрим дальше…
 		}
-		std::list<XMPPStream *> sendto_list;
-		std::list<XMPPStream *>::iterator kt;
+		std::list<XMPPClient *> sendto_list;
+		std::list<XMPPClient *>::iterator kt;
 		int max_priority = 0;
 		for(jt = it->second.begin(); jt != it->second.end(); jt++) {
 			if(jt->second->presence().priority == max_priority) {
@@ -347,8 +346,8 @@ void VirtualHost::handleIq(Stanza stanza) {
 		</iq>
 		*/
 	}
-	XMPPStream *stream = getStreamByJid(stanza.to());
-	if(stream == 0) {
+	XMPPClient *client = getClientByJid(stanza.to());
+	if(client == 0) {
 		/*
 		<iq from="averkov@jabberid.org/test" type="error" xml:lang="ru-RU" to="admin@underjabber.net.ru/home" id="blah" >
 		<query xmlns="foo"/>
@@ -359,15 +358,15 @@ void VirtualHost::handleIq(Stanza stanza) {
 		*/
 		return;
 	}
-	stream->sendStanza(stanza);
+	client->sendStanza(stanza);
 }
 
 /**
-* Найти поток по JID (thread-safe)
+* Найти клиента по JID (thread-safe)
 *
 * @note возможно в нем отпадет необходимость по завершении routeStanza()
 */
-XMPPStream *VirtualHost::getStreamByJid(const JID &jid) {
+XMPPClient *VirtualHost::getClientByJid(const JID &jid) {
 	mutex.lock();
 		sessions_t::iterator it = onliners.find(jid.username());
 		if(it != onliners.end()) {
@@ -383,23 +382,23 @@ XMPPStream *VirtualHost::getStreamByJid(const JID &jid) {
 
 /**
 * Событие: Пользователь появился в online (thread-safe)
-* @param stream поток
+* @param client поток
 */
-void VirtualHost::onOnline(XMPPStream *stream) {
+void VirtualHost::onOnline(XMPPClient *client) {
 	mutex.lock();
-	if(onliners.find(stream->jid().username()) != onliners.end()) {
-		onliners[stream->jid().username()][stream->jid().resource()] = stream;
+	if(onliners.find(client->jid().username()) != onliners.end()) {
+		onliners[client->jid().username()][client->jid().resource()] = client;
 	} else {
 		reslist_t reslist;
-		reslist[stream->jid().resource()] = stream;
-		onliners[stream->jid().username()] = reslist;
-		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(stream->jid().username()).c_str());
-		id_users[stream->jid().username()] = atoi(r["id_user"].c_str());
+		reslist[client->jid().resource()] = client;
+		onliners[client->jid().username()] = reslist;
+		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
+		id_users[client->jid().username()] = atoi(r["id_user"].c_str());
 		r.free();
 	}
 	mutex.unlock();
 	
-	DB::result r = db.query("SELECT * FROM spool WHERE message_to = %s ORDER BY message_when ASC", db.quote(stream->jid().bare()).c_str());
+	DB::result r = db.query("SELECT * FROM spool WHERE message_to = %s ORDER BY message_when ASC", db.quote(client->jid().bare()).c_str());
 	for(; !r.eof(); r.next())
 	{
 		Stanza msg = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["message_stanza"]);
@@ -412,27 +411,27 @@ void VirtualHost::onOnline(XMPPStream *stream) {
 			// <nick xmlns="http://jabber.org/protocol/nick">WST</nick>
 			// <x xmlns="jabber:x:delay" stamp="20091025T14:39:32" />
 			// </message>
-			stream->sendStanza(msg);
+			client->sendStanza(msg);
 			delete msg;
 		}
 	}
 	r.free();
-	db.query("DELETE FROM spool WHERE message_to = %s", db.quote(stream->jid().bare()).c_str());
+	db.query("DELETE FROM spool WHERE message_to = %s", db.quote(client->jid().bare()).c_str());
 }
 
 /**
 * Событие: Пользователь ушел в offline (thread-safe)
-* @param stream поток
+* @param client поток
 */
-void VirtualHost::onOffline(XMPPStream *stream) {
+void VirtualHost::onOffline(XMPPClient *client) {
 	mutex.lock();
-		onliners[stream->jid().username()].erase(stream->jid().resource());
-		if(onliners[stream->jid().username()].empty()) {
+		onliners[client->jid().username()].erase(client->jid().resource());
+		if(onliners[client->jid().username()].empty()) {
 			// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить
-			onliners.erase(stream->jid().username());
-			id_users.erase(stream->jid().username());
+			onliners.erase(client->jid().username());
+			id_users.erase(client->jid().username());
 		}
-		//cout << stream->jid().full() << " is offline :-(\n";
+		//cout << client->jid().full() << " is offline :-(\n";
 	mutex.unlock();
 }
 
@@ -484,19 +483,19 @@ bool VirtualHost::routeStanza(Stanza stanza)
 		return true;
 	}
 	
-	XMPPStream *stream = 0;
+	XMPPClient *client = 0;
 	
 	// TODO корректный роутинг станз возможно на основе анализа типа станзы
-	// NB код марштрутизации должен быть thread-safe, getStreamByJID сейчас thread-safe
-	stream = getStreamByJid(stanza.to());
+	// NB код марштрутизации должен быть thread-safe, getClientByJID сейчас thread-safe
+	client = getClientByJid(stanza.to());
 	
-	if ( stream ) {
-		cerr << "stream found" << endl;
-		stream->sendStanza(stanza);
+	if ( client ) {
+		cerr << "client found" << endl;
+		client->sendStanza(stanza);
 		return true;
 	}
 	
-	cerr << "stream not found" << endl;
+	cerr << "client not found" << endl;
 	
 	return false;
 }

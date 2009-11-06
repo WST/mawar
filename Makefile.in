@@ -52,6 +52,7 @@ MYSQL_LIBS = @MYSQL_LIBS@
 
 MAWAR_OBJECTS=xmppserver.o
 MAWAR_OBJECTS+=xmppstream.o
+MAWAR_OBJECTS+=xmppclient.o
 MAWAR_OBJECTS+=myconsole.o
 MAWAR_OBJECTS+=xml_tag.o
 MAWAR_OBJECTS+=taghelper.o
@@ -62,6 +63,7 @@ MAWAR_OBJECTS+=jid.o
 MAWAR_OBJECTS+=configfile.o
 MAWAR_OBJECTS+=xmppdomain.o
 MAWAR_OBJECTS+=virtualhost.o
+MAWAR_OBJECTS+=xep0114listener.o
 
 MAWAR_TESTS=test-01 test-02
 
@@ -94,6 +96,9 @@ xmppserver.o: $(srcdir)/xmppserver.cpp $(srcdir)/include/xmppserver.h
 xmppstream.o: $(srcdir)/xmppstream.cpp $(srcdir)/include/xmppstream.h $(srcdir)/include/tagbuilder.h
 	$(CXX) -c $(srcdir)/xmppstream.cpp -o xmppstream.o
 
+xmppclient.o: $(srcdir)/xmppclient.cpp $ $(srcdir)/include/xmppclient.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppclient.cpp -o xmppclient.o
+
 myconsole.o: $(srcdir)/myconsole.cpp $(srcdir)/include/myconsole.h
 	$(CXX) -c $(srcdir)/myconsole.cpp -o myconsole.o
 
@@ -123,6 +128,9 @@ virtualhost.o: $(srcdir)/virtualhost.cpp $(srcdir)/include/virtualhost.h $(srcdi
 
 xmppdomain.o: $(srcdir)/xmppdomain.cpp $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h
 	$(CXX) -c $(srcdir)/xmppdomain.cpp -o xmppdomain.o
+
+xep0114listener.o: $(srcdir)/xep0114listener.cpp $(srcdir)/include/xep0114listener.h $(srcdir)/include/xmppserver.h
+	$(CXX) -c $(srcdir)/xep0114listener.cpp -o xep0114listener.o
 
 # CLEAN
 

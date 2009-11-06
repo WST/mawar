@@ -2,6 +2,7 @@
 #include <iostream>
 #include <nanosoft/netdaemon.h>
 #include <xmppserver.h>
+#include <xep0114listener.h>
 #include <myconsole.h>
 #include <xml_tag.h>
 #include <configfile.h>
@@ -135,6 +136,12 @@ int main()
 	// добавляем сервер в демона
 	daemon.addObject(server);
 	
+	// TODO вынести в конфиг
+	XEP0114Listener *xep0114 = new XEP0114Listener(server);
+	xep0114->bind(4000);
+	xep0114->listen(10);
+	daemon.addObject(xep0114);
+	
 	AsyncDNS dns(&daemon);
 	dns.a4("shamangrad.net", on_dns_a4, 0);
 	dns.srv("shamangrad.net", "xmpp-client", "tcp", on_dns_srv, 0);
@@ -157,6 +164,7 @@ int main()
 	daemon.run();
 	cerr << "[main] daemon exited" << endl;
 	
+	delete xep0114;
 	delete server;
 	
 	return 0;
