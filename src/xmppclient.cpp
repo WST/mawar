@@ -193,12 +193,7 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 		return;
 	}
 	
-	VirtualHost *s = dynamic_cast<VirtualHost*>(server->getHostByName(stanza.to().hostname()));
-	if(s != 0) { // iq-запрос к виртуальному узлу
-		s->handleIq(stanza);
-	} else {
-		// iq-запрос «наружу»
-	}
+	server->routeStanza(stanza.to().hostname(), stanza);
 }
 
 ClientPresence XMPPClient::presence() {
