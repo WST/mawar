@@ -38,6 +38,12 @@ class ConfigFile
 		unsigned int c2s();
 		
 		/**
+		* Порт для XEP-0114
+		* @return -1 если ненужно открывать порт
+		*/
+		int xep0114();
+		
+		/**
 		* Вернуть первый виртуальный хост
 		*/
 		VirtualHostConfig firstHost();

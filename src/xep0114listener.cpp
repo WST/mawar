@@ -2,6 +2,7 @@
 #include <xep0114listener.h>
 #include <xmppserver.h>
 #include <xmppstream.h>
+#include <xep0114.h>
 
 /**
 * Конструктор
@@ -30,7 +31,7 @@ AsyncObject* XEP0114Listener::onAccept()
 		XMPPStream *client = 0;
 		if ( sock )
 		{
-			client = new XMPPClient(server, sock);
+			client = new XEP0114(server, sock);
 			server->daemon->addObject(client);
 		}
 	mutex.unlock();

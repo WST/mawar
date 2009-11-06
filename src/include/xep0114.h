@@ -1,28 +1,17 @@
-#ifndef MAWAR_XMPPCLIENT_H
-#define MAWAR_XMPPCLIENT_H
+#ifndef MAWAR_XEP0114_H
+#define MAWAR_XEP0114_H
 
 #include <xmppstream.h>
-#include <nanosoft/gsaslserver.h>
-#include <xml_types.h>
+#include <xmppdomain.h>
 #include <stanza.h>
 #include <presence.h>
 
 /**
-* Класс XMPP-поток (c2s)
+* Класс внешнего компонента (XEP-0114)
 */
-class XMPPClient: public XMPPStream
+class XEP0114: public XMPPStream, public XMPPDomain
 {
 protected:
-	/**
-	* Виртуальный хост
-	*/
-	class VirtualHost *vhost;
-	
-	/**
-	* Сеанс авторизации SASL
-	*/
-	GSASLSession *sasl;
-	
 	enum state_t {
 		/**
 		* Начальное состояние - инициализация и авторизация
@@ -41,16 +30,6 @@ protected:
 		*/
 		terminating
 	} state;
-	
-	JID client_jid;
-	
-	ClientPresence client_presence;
-	
-	/**
-	* TRUE - Initial presense уже отправлен
-	* FLASE - Initial presense ещё не отправлен
-	*/
-	bool initialPresenceSent;
 	
 	/**
 	* Событие: начало потока
@@ -74,22 +53,12 @@ public:
 	/**
 	* Конструктор потока
 	*/
-	XMPPClient(XMPPServer *srv, int sock);
+	XEP0114(XMPPServer *srv, int sock);
 	
 	/**
 	* Деструктор потока
 	*/
-	~XMPPClient();
-	
-	/**
-	* JID потока
-	*/
-	JID jid() const;
-
-	/**
-	* Приоритет ресурса
-	*/
-	ClientPresence presence();
+	~XEP0114();
 	
 	/**
 	* Событие закрытие соединения
@@ -104,41 +73,19 @@ public:
 	virtual void onStanza(Stanza stanza);
 	
 	/**
-	* Обработчик авторизации
-	*/
-	virtual void onAuthStanza(Stanza stanza);
-	
-	/**
-	* Обработка этапа авторизации SASL
-	*/
-	virtual void onSASLStep(const std::string &input);
-	
-	/**
-	* Обработчик авторизации: ответ клиента
-	*/
-	virtual void onResponseStanza(Stanza stanza);
-	
-	/**
-	* Обработчик iq-станзы
-	*/
-	virtual void onIqStanza(Stanza stanza);
-	
-	/**
-	* Обработчик message-станзы
-	*/
-	virtual void onMessageStanza(Stanza stanza);
-	
-	/**
-	* Обработчик presence-станзы
-	*/
-	virtual void onPresenceStanza(Stanza stanza);
-	
-	/**
-	* Завершить сессию
+	* Роутер станз (need thread-safe)
 	*
-	* thread-safe
+	* Данная функция отвечает только за маршрутизацию станз в данном домене
+	*
+	* @note Данный метод вызывается из глобального маршрутизатора станз XMPPServer::routeStanza()
+	*   вызывать его напрямую из других мест не рекомендуется - используйте XMPPServer::routeStanza()
+	*
+	* @param stanza станза
+	* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 	*/
+	virtual bool routeStanza(Stanza stanza);
+	
 	void terminate();
 };
 
-#endif // MAWAR_XMPPCLIENT_H
+#endif // MAWAR_XEP0114_H

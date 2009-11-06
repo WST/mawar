@@ -7,6 +7,7 @@
 	</limits>
 	<listen>
 		<c2s>5222</c2s>
+		<xep0114>4000</xep0114>
 	</listen>
 	
 	<hosts name="1">
@@ -19,6 +20,12 @@
 			</storage>
 			<!-- other settings -->
 		</host>
+		
+		<external name="conference.localhost">
+			<secret>secret</secret>
+			<!-- other settings -->
+		</external>
+		
 		<host name="shamangrad.net">
 			<storage engine="mysql">
 				<server>localhost</server>

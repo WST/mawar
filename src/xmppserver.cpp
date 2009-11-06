@@ -109,6 +109,16 @@ void XMPPServer::addDomain(XMPPDomain *domain)
 }
 
 /**
+* Удалить домен (thread-safe)
+*/
+void XMPPServer::removeDomain(XMPPDomain *domain)
+{
+	mutex.lock();
+		domains.erase(domain->hostname());
+	mutex.unlock();
+}
+
+/**
 * Добавить виртуальный хост
 *
 * thread-safe
@@ -135,6 +145,7 @@ void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
 */
 bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 {
+	cerr << "routeStanza(" << stanza->name() << " to " << host << endl;
 	XMPPDomain *domain = getHostByName(host);
 	if ( domain )
 	{ // известный домен

@@ -64,6 +64,7 @@ MAWAR_OBJECTS+=configfile.o
 MAWAR_OBJECTS+=xmppdomain.o
 MAWAR_OBJECTS+=virtualhost.o
 MAWAR_OBJECTS+=xep0114listener.o
+MAWAR_OBJECTS+=xep0114.o
 
 MAWAR_TESTS=test-01 test-02
 
@@ -131,6 +132,9 @@ xmppdomain.o: $(srcdir)/xmppdomain.cpp $(srcdir)/include/xmppdomain.h $(srcdir)/
 
 xep0114listener.o: $(srcdir)/xep0114listener.cpp $(srcdir)/include/xep0114listener.h $(srcdir)/include/xmppserver.h
 	$(CXX) -c $(srcdir)/xep0114listener.cpp -o xep0114listener.o
+
+xep0114.o: $(srcdir)/xep0114.cpp $(srcdir)/include/xep0114.h $(srcdir)/include/xmppstream.h $(srcdir)/include/xmppdomain.h
+	$(CXX) -c $(srcdir)/xep0114.cpp -o xep0114.o
 
 # CLEAN
 

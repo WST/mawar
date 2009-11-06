@@ -117,6 +117,7 @@ int main()
 	
 	// XMPP-сервер
 	server = new XMPPServer(&daemon);
+	server->config = config;
 	
 	// подключемся к c2s-порту из конфига
 	server->bind(config->c2s());
@@ -136,11 +137,14 @@ int main()
 	// добавляем сервер в демона
 	daemon.addObject(server);
 	
-	// TODO вынести в конфиг
-	XEP0114Listener *xep0114 = new XEP0114Listener(server);
-	xep0114->bind(4000);
-	xep0114->listen(10);
-	daemon.addObject(xep0114);
+	XEP0114Listener *xep0114;
+	int port = config->xep0114();
+	if ( port >= 0 ) {
+		xep0114 = new XEP0114Listener(server);
+		xep0114->bind(port);
+		xep0114->listen(10);
+		daemon.addObject(xep0114);
+	}
 	
 	AsyncDNS dns(&daemon);
 	dns.a4("shamangrad.net", on_dns_a4, 0);

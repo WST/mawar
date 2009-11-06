@@ -43,6 +43,11 @@ public:
 	NetDaemon *daemon;
 	
 	/**
+	* Конфигурация сервера
+	*/
+	ConfigFile *config;
+	
+	/**
 	* Конструктор сервера
 	*/
 	XMPPServer(NetDaemon *d);
@@ -83,6 +88,11 @@ public:
 	* Добавить домен (thread-safe)
 	*/
 	void addDomain(XMPPDomain *domain);
+	
+	/**
+	* Удалить домен (thread-safe)
+	*/
+	void removeDomain(XMPPDomain *domain);
 	
 	/**
 	* Добавить виртуальный хост
