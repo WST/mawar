@@ -145,7 +145,6 @@ void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
 */
 bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 {
-	cerr << "routeStanza(" << stanza->name() << " to " << host << endl;
 	XMPPDomain *domain = getHostByName(host);
 	if ( domain )
 	{ // известный домен
@@ -154,6 +153,7 @@ bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 	else
 	{ // неизвестный домен
 		// TODO addDomain( new s2s )...
+		cerr << "[TODO] XMPPServer::routeStanza() - s2s\n"
 		return false;
 	}
 }
