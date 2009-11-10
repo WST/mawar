@@ -153,7 +153,7 @@ bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 	else
 	{ // неизвестный домен
 		// TODO addDomain( new s2s )...
-		cerr << "[TODO] XMPPServer::routeStanza() - s2s\n"
+		cerr << "[TODO] XMPPServer::routeStanza() - s2s\n";
 		return false;
 	}
 }
