@@ -189,7 +189,14 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				TagHelper block = stanza["query"]->firstChild();
 				db.query("DELETE FROM private_storage WHERE id_user = %d AND block_xmlns = %s", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str());
 				db.query("INSERT INTO private_storage (id_user, block_xmlns, block_data) VALUES (%d, %s, %s)", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
-				// send result iq
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("jabber:iq:private");
+				getClientByJid(stanza.from())->sendStanza(iq);
 			}
 		}
 	}
