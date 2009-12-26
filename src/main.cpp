@@ -147,9 +147,9 @@ int main()
 	}
 	
 	AsyncDNS dns(&daemon);
-	dns.a4("shamangrad.net", on_dns_a4, 0);
-	dns.srv("shamangrad.net", "xmpp-client", "tcp", on_dns_srv, 0);
-	dns.srv("shamangrad.net", "xmpp-server", "tcp", on_dns_srv, 0);
+	//dns.a4("shamangrad.net", on_dns_a4, 0);
+	//dns.srv("shamangrad.net", "xmpp-client", "tcp", on_dns_srv, 0);
+	//dns.srv("shamangrad.net", "xmpp-server", "tcp", on_dns_srv, 0);
 	daemon.addObject(&dns);
 	
 	// консоль управления сервером

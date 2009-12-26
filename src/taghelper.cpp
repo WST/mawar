@@ -55,3 +55,9 @@ TagHelper TagHelper::operator [] (const char *path)
 	
 	return child;
 }
+
+/*
+TagHelper TagHelper::operator [] (const std::string &path) {
+	return this->operator [] (path.c_str());
+}
+*/

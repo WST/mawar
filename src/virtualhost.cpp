@@ -497,12 +497,16 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	client = getClientByJid(stanza.to());
 	
 	if ( client ) {
-		cerr << "client found" << endl;
 		client->sendStanza(stanza);
 		return true;
 	}
 	
-	cerr << "client not found" << endl;
+	if ( stanza->name() == "iq" && (stanza->getAttribute("type", "") == "get" || stanza->getAttribute("type", "") == "set") ) {
+		Stanza error = Stanza::iqError(stanza, "service-unavailable", "cancel");
+		server->routeStanza(stanza.from().hostname(), error);
+		delete error;
+		return true;
+	}
 	
 	return false;
 }

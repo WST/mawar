@@ -77,3 +77,28 @@ Stanza Stanza::streamError(const std::string &condition, const std::string &mess
 	
 	return error;
 }
+
+/**
+* IQ error
+* @param stanza станза вызвавшая ошибку
+* @param condition имя тега ошибки
+* @param type тип (cancel, continue, modify, auth, wait)
+* @param message поясняющий текст
+* @param lang язык
+* @return сформированная станза
+*/
+Stanza Stanza::iqError(Stanza stanza, const std::string &condition, const std::string &type, const std::string &message, const std::string &lang)
+{
+	Stanza iq = new ATXmlTag("iq");
+	iq->setAttribute("from", stanza.to().full());
+	iq->setAttribute("to", stanza.from().full());
+	iq->setAttribute("type", "error");
+	iq->setAttribute("id", stanza->getAttribute("id", ""));
+	//iq += (ATXmlTag*)stanza;
+	
+	TagHelper error = iq["error"];
+	error->setAttribute("type", type);
+	error[condition]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+	
+	return iq;
+}

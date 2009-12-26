@@ -139,7 +139,7 @@ public:
 	*/
 	TagHelper operator [] (const char *path);
 	TagHelper operator [] (const std::string &path) {
-		this->operator [] (path.c_str());
+		return this->operator [] (path.c_str());
 	}
 };
 
