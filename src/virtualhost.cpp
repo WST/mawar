@@ -120,7 +120,38 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 		delete result;
 	} else {
 		// обновить контакт
+		std::string subscription;
+		if(r["contact_subscription"] == "F") { // from
+			subscription = "from";
+		} else if(r["contact_subscription"] == "T") { // to
+			subscription = "to";
+		} else if(r["contact_subscription"] == "B") { // both
+			subscription = "both";
+		} else { // none
+			subscription = "none";
+		}
+		std::string name = item->hasAttribute("name") ? item->getAttribute("name") : r["contact_nick"];
+		std::string group = item->hasChild("group") ? string(item["group"]) : r["contact_group"];
+		int contact_id = atoi(r["id_contact"].c_str());
 		r.free();
+		db.query("UPDATE roster SET contact_nick = %s, contact_group = %s WHERE id_contact = %d",
+			db.quote(name).c_str(),
+			db.quote(group).c_str(),
+			contact_id
+			);
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", "");
+		iq->setAttribute("type", "set");
+		iq->setAttribute("id", "23234434342"); // random ?
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item2 = query["item"];
+			item2->setAttribute("jid", r["contact_jid"]);
+			item2->setAttribute("name", name);
+			item2->setAttribute("subscription", subscription);
+			if ( group != "" ) item2["group"] = group;
+		broadcast(iq, client->jid().username());
+		delete iq;
 	}
 }
 
