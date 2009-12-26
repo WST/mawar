@@ -51,6 +51,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void initialPresence(Stanza stanza);
 		
 		/**
+		* Отправить станзу всем ресурсам указаного пользователя
+		*/
+		void broadcast(Stanza stanza, const std::string &login);
+		
+		/**
 		* Найти клиента по JID (thread-safe)
 		*
 		* @note возможно в нем отпадет необходимость по завершении routeStanza()
@@ -79,6 +84,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		std::string getUserPassword(const std::string &realm, const std::string &login);
 		
 		/**
+		* Вернуть ID пользователя
+		* @param login логин пользователя
+		* @return ID пользователя
+		*/
+		int getUserId(const std::string &login);
+		
+		/**
 		* Роутер исходящих станз (thread-safe)
 		*
 		* Роутер передает станзу нужному потоку.
@@ -103,10 +115,14 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*/
 		virtual bool routeStanza(Stanza stanza);
 		
+		/**
+		* Обработка ростера
+		*/
+		virtual void handleRosterIq(XMPPClient *client, Stanza stanza);
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
 		bool sendRoster(Stanza stanza); // Отправить ростер в ответ на станзу stanza
-		void addRosterItem(Stanza stanza, std::string jid, std::string name, std::string group);
+		void setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item);
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		sessions_t onliners; // Онлайнеры

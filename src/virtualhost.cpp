@@ -80,22 +80,48 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 	return result;
 }
 
-void VirtualHost::addRosterItem(Stanza stanza, std::string jid, std::string name, std::string group) {
-	db.query("INSERT INTO roster (contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%s, %s, %s, 'N', 'B')", db.quote(jid).c_str(), db.quote(name).c_str(), db.quote(group).c_str());
-	
-	Stanza iq = new ATXmlTag("iq");
-	TagHelper query = iq["query"];
-	query->setDefaultNameSpaceAttribute("jabber:iq:roster");
-	ATXmlTag *item = stanza->find("query/item");
-	if(item == 0) return;
-	item->setAttribute("subscription", "none");
-	query->insertChildElement(item);
-	getClientByJid(stanza.from())->sendStanza(iq);
-	
-	Stanza iqres = new ATXmlTag("iq");
-	iqres->setAttribute("type", "result");
-	iqres->setAttribute("id", stanza.id());
-	getClientByJid(stanza.from())->sendStanza(iqres);
+/**
+* Добавить/обновить контакт в ростере
+*/
+void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item) {
+	DB::result r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+		client->userId(),
+		db.quote(item->getAttribute("jid")).c_str()
+		);
+	if ( r.eof() ) {
+		// добавить контакт
+		r.free();
+		db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
+			client->userId(), // id_user
+			db.quote(item->getAttribute("jid")).c_str(), // contact_jid
+			db.quote(item->getAttribute("name")).c_str(), // contact_nick
+			db.quote(item["group"]).c_str() // contact_group
+			);
+		
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", "");
+		iq->setAttribute("type", "set");
+		iq->setAttribute("id", "23234434342"); // random ?
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item2 = query["item"];
+			item2->setAttribute("jid", item->getAttribute("jid"));
+			item2->setAttribute("name", item->getAttribute("name"));
+			item2->setAttribute("subscription", "none");
+			item2["group"] = string(item["group"]);
+		broadcast(iq, client->jid().username());
+		delete iq;
+			
+		Stanza result = new ATXmlTag("iq");
+		result->setAttribute("to", client->jid().full());
+		result->setAttribute("type", "result");
+		result->setAttribute("id", stanza->getAttribute("id"));
+		client->sendStanza(result);
+		delete result;
+	} else {
+		// обновить контакт
+		r.free();
+	}
 }
 
 void VirtualHost::handleVHostIq(Stanza stanza) {
@@ -173,18 +199,6 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				r.free();
 			}
 		} else { // set
-			if(query_xmlns == "jabber:iq:roster") {
-				// Обновление элемента ростера — добавление, правка или удаление
-				TagHelper query = stanza["query"];
-				ATXmlTag *item = stanza->firstChild("query/item");
-				if(item != 0) {
-					if(!item->hasAttribute("subscription")) {
-						addRosterItem(stanza, item->getAttribute("jid"), item->getAttribute("name"), query->getChildValue("group", ""));
-					}
-				}
-				delete item;
-			}
-			
 			if(query_xmlns == "jabber:iq:private") { // private storage
 				TagHelper block = stanza["query"]->firstChild();
 				db.query("DELETE FROM private_storage WHERE id_user = %d AND block_xmlns = %s", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str());
@@ -290,6 +304,23 @@ void VirtualHost::initialPresence(Stanza stanza)
 	r.free();
 	delete probe;
 	broadcastPresence(stanza);
+}
+
+/**
+* Отправить станзу всем ресурсам указаного пользователя
+*/
+void VirtualHost::broadcast(Stanza stanza, const std::string &login)
+{
+	mutex.lock();
+	if( onliners.find(login) != onliners.end() ) {
+		const reslist_t *r = &onliners[login];
+		for(reslist_t::const_iterator iter = r->begin(); iter != r->end(); ++iter)
+		{
+			stanza->setAttribute("to", iter->second->jid().full());
+			iter->second->sendStanza(stanza);
+		}
+	}
+	mutex.unlock();
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
@@ -457,6 +488,19 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 }
 
 /**
+* Вернуть ID пользователя
+* @param login логин пользователя
+* @return ID пользователя
+*/
+int VirtualHost::getUserId(const std::string &login)
+{
+	DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(login).c_str());
+	int user_id = r.eof() ? 0 : atoi(r["user_password"].c_str());
+	r.free();
+	return user_id;
+}
+
+/**
 * Роутер исходящих станз (thread-safe)
 *
 * Роутер передает станзу нужному потоку.
@@ -509,4 +553,24 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	}
 	
 	return false;
+}
+
+/**
+* Обработка ростера
+*/
+void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
+{
+	TagHelper query = stanza["query"];
+	if ( stanza->getAttribute("type") == "get" ) {
+		sendRoster(stanza);
+		return;
+	}
+	else if ( stanza->getAttribute("type") == "set" ) {
+		TagHelper item = query->firstChild("item");
+		while ( item ) {
+			cout << "add " << item->getAttribute("jid") << endl;
+			setRosterItem(client, stanza, item);
+			item = query->nextChild("item", item);
+		}
+	}
 }

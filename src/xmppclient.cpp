@@ -122,6 +122,7 @@ void XMPPClient::onSASLStep(const std::string &input)
 	{
 	case SASLServer::ok:
 		client_jid.setUsername(vhost->getUsername(sasl));
+		user_id = vhost->getUserId(client_jid.username());
 		vhost->GSASLServer::close(sasl);
 		startElement("success");
 			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
@@ -188,8 +189,15 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 		return;
 	}
 	
-	if(!stanza->hasAttribute("to")) {
-		vhost->handleIq(stanza);
+	TagHelper query = stanza->firstChild("query");
+	if ( query ) {
+		if ( query->getAttribute("xmlns") == "jabber:iq:roster" ) {
+			vhost->handleRosterIq(this, stanza);
+			return;
+		}
+	}
+	
+	if ( ! stanza->hasAttribute("to") ) {
 		return;
 	}
 	

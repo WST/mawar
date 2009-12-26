@@ -44,6 +44,11 @@ protected:
 	
 	JID client_jid;
 	
+	/**
+	* ID пользователя
+	*/
+	int user_id;
+	
 	ClientPresence client_presence;
 	
 	/**
@@ -85,6 +90,13 @@ public:
 	* JID потока
 	*/
 	JID jid() const;
+	
+	/**
+	* ID пользователя
+	*/
+	int userId() const {
+		return user_id;
+	}
 
 	/**
 	* Приоритет ресурса
