@@ -122,7 +122,23 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
 		bool sendRoster(Stanza stanza); // Отправить ростер в ответ на станзу stanza
+		
+		/**
+		* Добавить/обновить контакт в ростере
+		* @param client клиент чей ростер обновляем
+		* @param stanza станза управления ростером
+		* @param item элемент описывающий изменения в контакте
+		*/
 		void setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item);
+		
+		/**
+		* Удалить контакт из ростера
+		* @param client клиент чей ростер обновляем
+		* @param stanza станза управления ростером
+		* @param item элемент описывающий изменения в контакте
+		*/
+		void removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper item);
+		
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		sessions_t onliners; // Онлайнеры

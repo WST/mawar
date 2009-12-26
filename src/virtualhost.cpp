@@ -82,6 +82,9 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 
 /**
 * Добавить/обновить контакт в ростере
+* @param client клиент чей ростер обновляем
+* @param stanza станза управления ростером
+* @param item элемент описывающий изменения в контакте
 */
 void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item) {
 	DB::result r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
@@ -111,13 +114,6 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 			item2["group"] = string(item["group"]);
 		broadcast(iq, client->jid().username());
 		delete iq;
-			
-		Stanza result = new ATXmlTag("iq");
-		result->setAttribute("to", client->jid().full());
-		result->setAttribute("type", "result");
-		result->setAttribute("id", stanza->getAttribute("id"));
-		client->sendStanza(result);
-		delete result;
 	} else {
 		// обновить контакт
 		std::string subscription;
@@ -153,6 +149,54 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 		broadcast(iq, client->jid().username());
 		delete iq;
 	}
+	
+	Stanza result = new ATXmlTag("iq");
+	result->setAttribute("to", client->jid().full());
+	result->setAttribute("type", "result");
+	result->setAttribute("id", stanza->getAttribute("id"));
+	client->sendStanza(result);
+	delete result;
+}
+
+/**
+* Удалить контакт из ростера
+* @param client клиент чей ростер обновляем
+* @param stanza станза управления ростером
+* @param item элемент описывающий изменения в контакте
+*/
+void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper item)
+{
+	DB::result r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+		client->userId(),
+		db.quote(item->getAttribute("jid")).c_str()
+		);
+	if ( r.eof() ) {
+		r.free();
+	} else {
+		int contact_id = atoi(r["id_contact"].c_str());
+		r.free();
+		
+		db.query("DELETE FROM roster WHERE id_contact = %d", contact_id);
+		
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", "");
+		iq->setAttribute("type", "set");
+		iq->setAttribute("id", "23234434342"); // random ?
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item2 = query["item"];
+			item2->setAttribute("jid", r["contact_jid"]);
+			item2->setAttribute("subscription", "remove");
+		broadcast(iq, client->jid().username());
+		delete iq;
+	}
+	
+	Stanza result = new ATXmlTag("iq");
+	result->setAttribute("to", client->jid().full());
+	result->setAttribute("type", "result");
+	result->setAttribute("id", stanza->getAttribute("id"));
+	client->sendStanza(result);
+	delete result;
 }
 
 void VirtualHost::handleVHostIq(Stanza stanza) {
@@ -599,8 +643,8 @@ void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 	else if ( stanza->getAttribute("type") == "set" ) {
 		TagHelper item = query->firstChild("item");
 		while ( item ) {
-			cout << "add " << item->getAttribute("jid") << endl;
-			setRosterItem(client, stanza, item);
+			if ( item->getAttribute("subscription", "") != "remove" ) setRosterItem(client, stanza, item);
+			else removeRosterItem(client, stanza, item);
 			item = query->nextChild("item", item);
 		}
 	}
