@@ -185,7 +185,7 @@ void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper 
 		TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item2 = query["item"];
-			item2->setAttribute("jid", r["contact_jid"]);
+			item2->setAttribute("jid", item->getAttribute("jid"));
 			item2->setAttribute("subscription", "remove");
 		broadcast(iq, client->jid().username());
 		delete iq;
@@ -298,7 +298,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 void VirtualHost::handlePresence(Stanza stanza) {
 	if ( stanza->getAttribute("type", "") == "error" ) {
 		// TODO somethink...
-		return;
+		//return;
 	}
 	
 	if ( stanza->getAttribute("type", "") == "probe" ) {
@@ -325,6 +325,11 @@ void VirtualHost::handlePresence(Stanza stanza) {
 		return;
 	}
 	
+	if ( stanza->getAttribute("type", "") == "subscribed" ) {
+		handleSubscribed(stanza);
+		return;
+	}
+	
 	if ( stanza.to().resource() == "" ) {
 		mutex.lock();
 			sessions_t::iterator it = onliners.find(stanza.to().username());
@@ -340,6 +345,34 @@ void VirtualHost::handlePresence(Stanza stanza) {
 		XMPPClient *client = getClientByJid(stanza.to());
 		if ( client ) client->sendStanza(stanza);
 	}
+}
+
+/**
+* Обработать presence[type=subscribed]
+*/
+void VirtualHost::handleSubscribed(Stanza stanza)
+{
+	cout << stanza->asString() << endl;
+	DB::result r = db.query("SELECT * FROM users WHERE user_login = %s",
+		db.quote(stanza.to().username()).c_str()
+		);
+	if ( r.eof() ) {
+		r.free();
+		Stanza error = Stanza::presenceError(stanza, "item-not-found", "cancel");
+		server->routeStanza(error.to().hostname(), error);
+		return;
+	}
+	int user_id = atoi(r["id_user"].c_str());
+	r.free();
+	r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+		user_id,
+		db.quote(stanza.from().bare()).c_str()
+		);
+	if ( r.eof() ) {
+		r.free();
+		return ; // ???
+	}
+	r.free();
 }
 
 /**

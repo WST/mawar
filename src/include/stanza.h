@@ -64,6 +64,17 @@ class Stanza: public TagHelper
 		* @return сформированная станза
 		*/
 		static Stanza iqError(Stanza stanza, const std::string &condition, const std::string &type, const std::string &message = "", const std::string &lang = "");
+		
+		/**
+		* Presence error
+		* @param stanza станза вызвавшая ошибку
+		* @param condition имя тега ошибки
+		* @param type тип (cancel, continue, modify, auth, wait)
+		* @param message поясняющий текст
+		* @param lang язык
+		* @return сформированная станза
+		*/
+		static Stanza presenceError(Stanza stanza, const std::string &condition, const std::string &type, const std::string &message = "", const std::string &lang = "");
 };
 
 #endif

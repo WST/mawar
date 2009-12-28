@@ -39,6 +39,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		virtual void handleIq(Stanza stanza); // Обработать iq, адресованный данному виртуальному узлу или пользователю на нём
 		virtual void handleMessage(Stanza stanza); // Обработать message
 		virtual void handlePresence(Stanza stanza); // Обработать presence
+		virtual void handleSubscribed(Stanza stanza); // обработать presence[type=subscribed]
 		
 		/**
 		* Presence Broadcast (RFC 3921, 5.1.2)
