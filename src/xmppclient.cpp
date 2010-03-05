@@ -198,6 +198,7 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 	}
 	
 	if ( ! stanza->hasAttribute("to") ) {
+		vhost->routeStanza(stanza);
 		return;
 	}
 	

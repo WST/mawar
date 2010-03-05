@@ -199,8 +199,49 @@ void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper 
 	delete result;
 }
 
+/**
+* Информационные запросы без атрибута to
+* Адресованные клиентом данному узлу
+*/
 void VirtualHost::handleVHostIq(Stanza stanza) {
-	if(stanza->hasChild("query")) {
+	if(stanza->hasChild("vCard")) {
+		// Обращение пользователя к собственной vcard
+		// vcard-temp
+		// http://xmpp.org/extensions/xep-0054.html
+		if(stanza.type() == "get") {
+			// Получение собственной vcard
+			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
+			// or an IQ-result containing an empty <vCard/> element.
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", id_users[stanza.from().username()]);
+			if(r.eof()) {
+				ATXmlTag *vCard = new ATXmlTag("vCard");
+				vCard->setDefaultNameSpaceAttribute("vcard-temp");
+				iq->insertChildElement(vCard);
+			} else {
+				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			}
+			r.free();
+			routeStanza(iq);
+				
+		} else if(stanza.type() == "set") {
+			// Установка собственной vcard
+			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", id_users[stanza.from().username()], db.quote(stanza["vCard"]->asString()).c_str());
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			ATXmlTag *vCard = new ATXmlTag("vCard");
+			vCard->setDefaultNameSpaceAttribute("vcard-temp");
+			iq->insertChildElement(vCard);
+			routeStanza(iq);
+		}
+	}
+	else if(stanza->hasChild("query")) {
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		if(stanza.type() == "get") {
 			// Входящие запросы информации
@@ -212,43 +253,11 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			}
 			
 			if(query_xmlns == "http://jabber.org/protocol/disco#info") {
-				// Информация о возможностях сервера
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", hostname());
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper query = iq["query"];
-					query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
-					//	<identity category="server" type="im" name="Mawar" /><feature var="msgoffline" /> (последнее — оффлайновые сообщения, видимо)
-					// TODO: при расширении функционала сервера нужно дописывать сюда фичи
-					// В том числе и динамические (зависящие от вирт.хоста)
-					// Ну и register, конечно
-					query["identity"]->setAttribute("category", "server");
-					query["identity"]->setAttribute("type", "im");
-					query["identity"]->setAttribute("name", "Mawar Jabber/XMPP engine");
-					ATXmlTag *feature = new ATXmlTag("feature");
-					feature->insertAttribute("var", "jabber:iq:version");
-					query->insertChildElement(feature);
-				
-				getClientByJid(stanza.from())->sendStanza(iq);
-				delete iq;
-				return;
+				// TODO
 			}
 			
 			if(query_xmlns == "http://jabber.org/protocol/disco#items") {
-				// Информация о компонентах сервера и прочей фигне в обзоре служб (команды, транспорты)
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", hostname());
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper query = iq["query"];
-					query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
-				
-				getClientByJid(stanza.from())->sendStanza(iq);
-				delete iq;
-				return;
+				// TODO
 			}
 			
 			if(query_xmlns == "jabber:iq:roster") {
@@ -476,36 +485,7 @@ void VirtualHost::handleMessage(Stanza stanza) {
 	}
 }
 
-void VirtualHost::handleIq(Stanza stanza) {
-	if(!stanza->hasAttribute("to") || stanza.to().username().empty()) {
-		handleVHostIq(stanza);
-		return;
-	}
-	
-	if(stanza.to().resource().empty()) {
-		/*
-		<iq from="***" type="error" to="**" id="blah" >
-		<query xmlns="foo"/>
-		<error type="modify" code="400" >
-		<bad-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
-		</error>
-		</iq>
-		*/
-	}
-	XMPPClient *client = getClientByJid(stanza.to());
-	if(client == 0) {
-		/*
-		<iq from="averkov@jabberid.org/test" type="error" xml:lang="ru-RU" to="admin@underjabber.net.ru/home" id="blah" >
-		<query xmlns="foo"/>
-		<error type="wait" code="404" >
-		<recipient-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
-		</error>
-		</iq>
-		*/
-		return;
-	}
-	client->sendStanza(stanza);
-}
+
 
 /**
 * Найти клиента по JID (thread-safe)
@@ -603,7 +583,7 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 int VirtualHost::getUserId(const std::string &login)
 {
 	DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(login).c_str());
-	int user_id = r.eof() ? 0 : atoi(r["user_password"].c_str());
+	int user_id = r.eof() ? 0 : atoi(r["id_user"].c_str());
 	r.free();
 	return user_id;
 }
@@ -632,6 +612,11 @@ int VirtualHost::getUserId(const std::string &login)
 */
 bool VirtualHost::routeStanza(Stanza stanza)
 {
+	if(!stanza->hasAttribute("to")) {
+		handleVHostIq(stanza);
+		return true;
+	}
+	
 	if ( stanza->name() == "message" ) {
 		handleMessage(stanza);
 		return true;
