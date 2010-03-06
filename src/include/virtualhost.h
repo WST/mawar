@@ -84,6 +84,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		std::string getUserPassword(const std::string &realm, const std::string &login);
 		
 		/**
+		* Вернуть ID пользователя
+		* @param login логин пользователя
+		* @return ID пользователя
+		*/
+		int getUserId(const std::string &login);
+		
+		/**
 		* Роутер исходящих станз (thread-safe)
 		*
 		* Роутер передает станзу нужному потоку.

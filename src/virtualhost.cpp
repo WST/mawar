@@ -538,6 +538,20 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 	return pwd;
 }
 
+/**
+* Вернуть ID пользователя
+* @param login логин пользователя
+* @return ID пользователя
+*/
+int VirtualHost::getUserId(const std::string &login)
+{
+	DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(login).c_str());
+	int user_id = r.eof() ? 0 : atoi(r["id_user"].c_str());
+	r.free();
+	return user_id;
+	// есть другой костыль — карта id_users… Она хотя бы быстрее %)
+}
+
 void VirtualHost::handleVcardRequest(Stanza stanza) {
 	if(!stanza->hasAttribute("to")) {
 		// Обращение пользователя к собственной vcard
