@@ -204,44 +204,7 @@ void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper 
 * Адресованные клиентом данному узлу
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
-	if(stanza->hasChild("vCard")) {
-		// Обращение пользователя к собственной vcard
-		// vcard-temp
-		// http://xmpp.org/extensions/xep-0054.html
-		if(stanza.type() == "get") {
-			// Получение собственной vcard
-			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
-			// or an IQ-result containing an empty <vCard/> element.
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			
-			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", id_users[stanza.from().username()]);
-			if(r.eof()) {
-				ATXmlTag *vCard = new ATXmlTag("vCard");
-				vCard->setDefaultNameSpaceAttribute("vcard-temp");
-				iq->insertChildElement(vCard);
-			} else {
-				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
-			}
-			r.free();
-			routeStanza(iq);
-				
-		} else if(stanza.type() == "set") {
-			// Установка собственной vcard
-			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", id_users[stanza.from().username()], db.quote(stanza["vCard"]->asString()).c_str());
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			ATXmlTag *vCard = new ATXmlTag("vCard");
-			vCard->setDefaultNameSpaceAttribute("vcard-temp");
-			iq->insertChildElement(vCard);
-			routeStanza(iq);
-		}
-	}
-	else if(stanza->hasChild("query")) {
+	if(stanza->hasChild("query")) {
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		if(stanza.type() == "get") {
 			// Входящие запросы информации
@@ -588,6 +551,70 @@ int VirtualHost::getUserId(const std::string &login)
 	return user_id;
 }
 
+void VirtualHost::handleVcardRequest(Stanza stanza) {
+	if(!stanza->hasAttribute("to")) {
+		// Обращение пользователя к собственной vcard
+		// vcard-temp
+		// http://xmpp.org/extensions/xep-0054.html
+		if(stanza.type() == "get") {
+			// Получение собственной vcard
+			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
+			// or an IQ-result containing an empty <vCard/> element.
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", id_users[stanza.from().username()]);
+			if(r.eof()) {
+				// Вернуть пустой vcard
+				ATXmlTag *vCard = new ATXmlTag("vCard");
+				vCard->setDefaultNameSpaceAttribute("vcard-temp");
+				iq->insertChildElement(vCard);
+			} else {
+				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			}
+			r.free();
+			routeStanza(iq);
+			delete iq;
+		} else if(stanza.type() == "set") {
+			// Установка собственной vcard
+			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", id_users[stanza.from().username()], db.quote(stanza["vCard"]->asString()).c_str());
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			ATXmlTag *vCard = new ATXmlTag("vCard");
+			vCard->setDefaultNameSpaceAttribute("vcard-temp");
+			iq->insertChildElement(vCard);
+			routeStanza(iq);
+			delete iq;
+		}
+	} else {
+		// Запрос чужого vcard (или своего способом псей)
+		// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
+		// or an IQ-result containing an empty <vCard/> element.
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		
+		DB::result r = db.query("SELECT v.vcard_data AS vcard_data FROM vcard AS v RIGHT JOIN users AS u ON u.id_user = v.id_user WHERE u.user_login = %s ", db.quote(stanza.to().username()).c_str());
+		if(r.eof()) {
+			// Вернуть пустой vcard
+			ATXmlTag *vCard = new ATXmlTag("vCard");
+			vCard->setDefaultNameSpaceAttribute("vcard-temp");
+			iq->insertChildElement(vCard);
+		} else {
+			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			// shade, я не понимаю, откуда ^тут возникает ошибка сегментирования…
+		}
+		r.free();
+		routeStanza(iq);
+		delete iq;
+	}
+}
+
 /**
 * Роутер исходящих станз (thread-safe)
 *
@@ -612,6 +639,12 @@ int VirtualHost::getUserId(const std::string &login)
 */
 bool VirtualHost::routeStanza(Stanza stanza)
 {
+	if(stanza->hasChild("vCard") && (stanza->getAttribute("type", "") == "get" || stanza->getAttribute("type", "") == "set")) {
+		// Запрос vcard может как содержать атрибут to, так и не содержать его…
+		handleVcardRequest(stanza);
+		return true;
+	}
+	
 	if(!stanza->hasAttribute("to")) {
 		handleVHostIq(stanza);
 		return true;
@@ -631,7 +664,6 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	
 	// TODO корректный роутинг станз возможно на основе анализа типа станзы
 	// NB код марштрутизации должен быть thread-safe, getClientByJID сейчас thread-safe
-	// NB запросы vcard нужно маршрутизовать не к клиентам, а к вхосту…
 	client = getClientByJid(stanza.to());
 	
 	if ( client ) {

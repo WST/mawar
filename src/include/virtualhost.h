@@ -121,6 +121,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		virtual void handleRosterIq(XMPPClient *client, Stanza stanza);
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
+		void handleVcardRequest(Stanza stanza); // Обработать запрос vCard
 		bool sendRoster(Stanza stanza); // Отправить ростер в ответ на станзу stanza
 		
 		/**
