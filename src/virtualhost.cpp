@@ -631,6 +631,7 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	
 	// TODO корректный роутинг станз возможно на основе анализа типа станзы
 	// NB код марштрутизации должен быть thread-safe, getClientByJID сейчас thread-safe
+	// NB запросы vcard нужно маршрутизовать не к клиентам, а к вхосту…
 	client = getClientByJid(stanza.to());
 	
 	if ( client ) {
