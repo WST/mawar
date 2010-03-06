@@ -599,7 +599,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 		iq->setAttribute("type", "result");
 		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 		
-		DB::result r = db.query("SELECT v.vcard_data AS vcard_data FROM vcard AS v RIGHT JOIN users AS u ON u.id_user = v.id_user WHERE u.user_login = %s ", db.quote(stanza.to().username()).c_str());
+		DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = (SELECT id_user FROM users WHERE user_login = %s)", db.quote(stanza.to().username()).c_str());
 		if(r.eof()) {
 			// Вернуть пустой vcard
 			ATXmlTag *vCard = new ATXmlTag("vCard");
