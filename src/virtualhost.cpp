@@ -607,7 +607,6 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			iq->insertChildElement(vCard);
 		} else {
 			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
-			// shade, я не понимаю, откуда ^тут возникает ошибка сегментирования…
 		}
 		r.free();
 		routeStanza(iq);
