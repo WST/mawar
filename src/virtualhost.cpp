@@ -223,10 +223,6 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				// TODO
 			}
 			
-			if(query_xmlns == "jabber:iq:roster") {
-				sendRoster(stanza);
-			}
-			
 			if(query_xmlns == "jabber:iq:private") { // private storage
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
@@ -248,8 +244,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		} else { // set
 			if(query_xmlns == "jabber:iq:private") { // private storage
 				TagHelper block = stanza["query"]->firstChild();
-				db.query("DELETE FROM private_storage WHERE id_user = %d AND block_xmlns = %s", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str());
-				db.query("INSERT INTO private_storage (id_user, block_xmlns, block_data) VALUES (%d, %s, %s)", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
+				db.query("REPLACE INTO private_storage (id_user, block_xmlns, block_data) VALUES (%d, %s, %s)", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
 				iq->setAttribute("to", stanza.from().full());
@@ -299,6 +294,11 @@ void VirtualHost::handlePresence(Stanza stanza) {
 	
 	if ( stanza->getAttribute("type", "") == "subscribed" ) {
 		handleSubscribed(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type", "") == "subscribe" ) {
+		// TODO
 		return;
 	}
 	
@@ -538,19 +538,6 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 	return pwd;
 }
 
-/**
-* Вернуть ID пользователя
-* @param login логин пользователя
-* @return ID пользователя
-*/
-int VirtualHost::getUserId(const std::string &login)
-{
-	DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(login).c_str());
-	int user_id = r.eof() ? 0 : atoi(r["id_user"].c_str());
-	r.free();
-	return user_id;
-}
-
 void VirtualHost::handleVcardRequest(Stanza stanza) {
 	if(!stanza->hasAttribute("to")) {
 		// Обращение пользователя к собственной vcard
@@ -644,7 +631,7 @@ bool VirtualHost::routeStanza(Stanza stanza)
 		return true;
 	}
 	
-	if(!stanza->hasAttribute("to")) {
+	if(!stanza->hasAttribute("to") || stanza->getAttribute("to", "") == name) {
 		handleVHostIq(stanza);
 		return true;
 	}

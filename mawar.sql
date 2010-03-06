@@ -18,7 +18,7 @@ CREATE TABLE spool (
 CREATE TABLE private_storage (
 	id_block INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, -- ID блока
 	id_user INT UNSIGNED NOT NULL, -- ID владельца блока
-	block_xmlns VARCHAR(40) NOT NULL, -- xmlns блока для хранения
+	block_xmlns VARCHAR(40) NOT NULL UNIQUE, -- xmlns блока для хранения
 	block_data TEXT NOT NULL -- XML
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
 
