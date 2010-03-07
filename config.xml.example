@@ -10,8 +10,9 @@
 		<xep0114>4000</xep0114>
 	</listen>
 	
-	<hosts name="1">
+	<hosts>
 		<host name="localhost">
+			<registration enable="yes" />
 			<storage engine="mysql">
 				<server>unix:/var/lib/mysql/mysql.sock</server>
 				<username>mawar</username>

@@ -87,11 +87,17 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 * @param item элемент описывающий изменения в контакте
 */
 void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item) {
-	DB::result r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
-		client->userId(),
-		db.quote(item->getAttribute("jid")).c_str()
-		);
-	if ( r.eof() ) {
+	/*
+	The server MUST update the roster information in persistent storage,
+	and also push the change out to all of the user's available resources
+	that have requested the roster.  This "roster push" consists of an IQ
+	stanza of type "set" from the server to the client and enables all
+	available resources to remain in sync with the server-based roster
+	information.
+	*/
+	
+	DB::result r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s", client->userId(), db.quote(item->getAttribute("jid")).c_str());
+	if(r.eof()) {
 		// добавить контакт
 		r.free();
 		db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
@@ -99,7 +105,7 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 			db.quote(item->getAttribute("jid")).c_str(), // contact_jid
 			db.quote(item->getAttribute("name")).c_str(), // contact_nick
 			db.quote(item["group"]).c_str() // contact_group
-			);
+		);
 		
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("to", "");
@@ -205,25 +211,29 @@ void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper 
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
 	if(stanza->hasChild("query")) {
+		// Входящие запросы информации
+		
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
-		if(stanza.type() == "get") {
-			// Входящие запросы информации
-			if(query_xmlns == "jabber:iq:version") {
-				Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
-				getClientByJid(stanza.from())->sendStanza(version);
-				delete version;
-				return;
-			}
-			
-			if(query_xmlns == "http://jabber.org/protocol/disco#info") {
-				// TODO
-			}
-			
-			if(query_xmlns == "http://jabber.org/protocol/disco#items") {
-				// TODO
-			}
-			
-			if(query_xmlns == "jabber:iq:private") { // private storage
+		std::string stanza_type = stanza.type();
+		
+		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
+			Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
+			getClientByJid(stanza.from())->sendStanza(version);
+			delete version;
+			return;
+		}
+		
+		if(query_xmlns == "http://jabber.org/protocol/disco#info" && stanza_type == "get") {
+			// TODO
+		}
+		
+		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
+			// TODO
+		}
+		
+		if(query_xmlns == "jabber:iq:private") {
+			// private storage
+			if(stanza_type == "get") {
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
 				iq->setAttribute("to", stanza.from().full());
@@ -240,9 +250,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				}
 				getClientByJid(stanza.from())->sendStanza(iq);
 				r.free();
-			}
-		} else { // set
-			if(query_xmlns == "jabber:iq:private") { // private storage
+			} else { // set
 				TagHelper block = stanza["query"]->firstChild();
 				db.query("REPLACE INTO private_storage (id_user, block_xmlns, block_data) VALUES (%d, %s, %s)", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
 				Stanza iq = new ATXmlTag("iq");
@@ -294,12 +302,13 @@ void VirtualHost::handlePresence(Stanza stanza) {
 	
 	if ( stanza->getAttribute("type", "") == "subscribed" ) {
 		handleSubscribed(stanza);
-		return;
+		//return;
+		// Закомментировал return, надо передавать ету станзу
 	}
 	
 	if ( stanza->getAttribute("type", "") == "subscribe" ) {
 		// TODO
-		return;
+		//return;
 	}
 	
 	if ( stanza.to().resource() == "" ) {
@@ -325,9 +334,7 @@ void VirtualHost::handlePresence(Stanza stanza) {
 void VirtualHost::handleSubscribed(Stanza stanza)
 {
 	cout << stanza->asString() << endl;
-	DB::result r = db.query("SELECT * FROM users WHERE user_login = %s",
-		db.quote(stanza.to().username()).c_str()
-		);
+	DB::result r = db.query("SELECT * FROM users WHERE user_login = %s", db.quote(stanza.to().username()).c_str());
 	if ( r.eof() ) {
 		r.free();
 		Stanza error = Stanza::presenceError(stanza, "item-not-found", "cancel");
@@ -336,10 +343,7 @@ void VirtualHost::handleSubscribed(Stanza stanza)
 	}
 	int user_id = atoi(r["id_user"].c_str());
 	r.free();
-	r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
-		user_id,
-		db.quote(stanza.from().bare()).c_str()
-		);
+	r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s", user_id, db.quote(stanza.from().bare()).c_str());
 	if ( r.eof() ) {
 		r.free();
 		return ; // ???
@@ -683,6 +687,7 @@ bool VirtualHost::routeStanza(Stanza stanza)
 
 /**
 * Обработка ростера
+* Вызывается из XMPPClient::onIqStanza()
 */
 void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 {
@@ -697,6 +702,89 @@ void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 			if ( item->getAttribute("subscription", "") != "remove" ) setRosterItem(client, stanza, item);
 			else removeRosterItem(client, stanza, item);
 			item = query->nextChild("item", item);
+		}
+	}
+}
+
+/**
+* Регистрация пользователей
+* Вызывается из XMPPClient::onIqStanza()
+*/
+void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
+	
+	if(client->isAuthorized()) {
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", name);
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:register");
+		ATXmlTag *registered = new ATXmlTag("registered");
+		ATXmlTag *username = new ATXmlTag("username"); // TODO: вписать сюда имя активного юзера
+		ATXmlTag *password = new ATXmlTag("password"); // TODO: вписать пасс активного юзера
+		query->insertChildElement(registered);
+		query->insertChildElement(username);
+		query->insertChildElement(password);
+		client->sendStanza(iq);
+		delete iq;
+		return;
+	}
+	
+	if(stanza.type() == "get") {
+		// Запрос регистрационной формы
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", name);
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:register");
+		ATXmlTag *instructions = new ATXmlTag("instructions");
+		instructions->insertCharacterData("Choose a username and password for use with this service.");
+		ATXmlTag *username = new ATXmlTag("username");
+		ATXmlTag *password = new ATXmlTag("password");
+		query->insertChildElement(instructions);
+		query->insertChildElement(username);
+		query->insertChildElement(password);
+		
+		client->sendStanza(iq);
+		delete iq;
+	}
+	else { // set
+		// Клиент прислал регистрационную информацию
+		ATXmlTag *username = stanza->find("query/username");
+		ATXmlTag *password = stanza->find("query/username");
+		if(username != 0 && password != 0) {
+			DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login = %s", db.quote(username->getCharacterData()).c_str());
+			bool exists = r["cnt"] == "1";
+			r.free();
+			
+			if(!exists) {
+				// Новый пользователь
+				db.query("INSERT INTO users (user_login, user_password) VALUES (%s, %s)", db.quote(username->getCharacterData()).c_str(), db.quote(password->getCharacterData()).c_str());
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				client->sendStanza(iq);
+				delete iq;
+			} else {
+				// Пользователь с таким именем уже существует
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("type", "error");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("jabber:iq:register");
+				query->insertChildElement(username);
+				query->insertChildElement(password);
+				TagHelper error = iq["error"];
+				error->insertAttribute("code", "409");
+				error->insertAttribute("type", "cancel");
+				ATXmlTag *conflict = new ATXmlTag("conflict");
+				conflict->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+				client->sendStanza(iq);
+				delete iq;
+			}
 		}
 	}
 }

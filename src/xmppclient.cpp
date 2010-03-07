@@ -191,6 +191,10 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 	
 	TagHelper query = stanza->firstChild("query");
 	if ( query ) {
+		if(query->getAttribute("xmlns") == "jabber:iq:register") {
+			vhost->handleRegisterIq(this, stanza);
+		}
+		
 		if ( query->getAttribute("xmlns") == "jabber:iq:roster" ) {
 			vhost->handleRosterIq(this, stanza);
 			return;
@@ -311,4 +315,8 @@ void XMPPClient::onEndStream()
 JID XMPPClient::jid() const
 {
 	return client_jid;
+}
+
+bool XMPPClient::isAuthorized() {
+	return state == authorized;
 }
