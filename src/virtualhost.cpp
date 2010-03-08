@@ -208,6 +208,7 @@ void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper 
 /**
 * Информационные запросы без атрибута to
 * Адресованные клиентом данному узлу
+* TODO: передавать ответы роутеру, сейчас жёстко завязаны на c2s
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
 	if(stanza->hasChild("query")) {
@@ -218,7 +219,8 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
 			Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
-			getClientByJid(stanza.from())->sendStanza(version);
+			//getClientByJid(stanza.from())->sendStanza(version); // c2s only
+			server->routeStanza(stanza.from().hostname(), version);
 			delete version;
 			return;
 		}
