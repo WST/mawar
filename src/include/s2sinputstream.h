@@ -6,13 +6,12 @@
 /**
 * Класс потока ввода (s2s input)
 *
-* Поток ввода авторизуется только для отправки станз
-* удалённому хосту, для получения станз от удаленного
-* хоста используется другой тип потока - S2SOutputStream
-* (s2s output).
+* Поток ввода авторизуется только для приёма станз
+* от удалённого хоста, для отправки станз удалённому хосту
+* используется другой тип потока - S2SOutputStream (s2s output).
 *
-* S2SOutputStream - клиентский сокет
-* S2SInputStream - серверный сокет
+* S2SOutputStream - клиентский сокет, исходящие станзы
+* S2SInputStream - серверный сокет, входящие станзы
 */
 class S2SInputStream: public XMPPStream
 {
@@ -23,7 +22,7 @@ protected:
 	class VirtualHost *vhost;
 	
 	/**
-	* Удаленный хост
+	* Удаленный хост от которого мы принимаем станзы
 	*/
 	std::string remote_host;
 	
@@ -87,9 +86,9 @@ public:
 	~S2SInputStream();
 	
 	/**
-	* Удаленный хост
+	* Удаленный хост от которого мы принимаем станзы
 	*/
-	std::string remoteHost() const;
+	std::string remoteHost() const { return remote_host; }
 	
 	/**
 	* Событие закрытие соединения

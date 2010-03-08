@@ -51,15 +51,37 @@ void S2SInputStream::onEndStream()
 void S2SInputStream::onStanza(Stanza stanza)
 {
 	fprintf(stderr, "#%d s2s-input stanza: %s\n", getWorkerId(), stanza->name().c_str());
-	if (stanza->name() == "verify" ) onDBVerifyStanza(stanza);
-	else if (stanza->name() == "result") onDBResultStanza(stanza);
-	else
+	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
+	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
+	else if ( state != authorized )
 	{
 		fprintf(stderr, "#%d unexpected s2s-input stanza: %s\n", getWorkerId(), stanza->name().c_str());
 		Stanza error = Stanza::streamError("not-authoized");
 		sendStanza(error);
 		delete error;
 		terminate();
+	}
+	else if ( stanza.from().hostname() != remote_host )
+	{
+		fprintf(stderr, "#%d [s2s-input: %s] invalid from: %s\n", getWorkerId(), remote_host.c_str(), stanza->getAttribute("from").c_str());
+		Stanza error = Stanza::streamError("improper-addressing");
+		sendStanza(error);
+		delete error;
+		terminate();
+	}
+	else
+	{
+		// доставить станзу по назначению
+		XMPPDomain *vhost = server->getHostByName(stanza.to().hostname());
+		if ( ! vhost )
+		{
+			fprintf(stderr, "#%d [s2s-input: %s] invalid to: %s\n", getWorkerId(), remote_host.c_str(), stanza->getAttribute("to").c_str());
+			Stanza error = Stanza::streamError("improper-addressing");
+			sendStanza(error);
+			delete error;
+			terminate();
+		}
+		vhost->routeStanza(stanza);
 	}
 }
 
@@ -139,8 +161,6 @@ static void on_s2s_rbl(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data
   printf("\n");
 }
 
-
-
 /**
 * Обработка <db:result>
 */
@@ -182,6 +202,7 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 		terminate();
 		return;
 	}
+	remote_host = from;
 	
 	// Шаг 3. резолвим DNS записи сервера
 	// NOTE для оптимизации отправляем все DNS (асинхронные) запросы сразу
@@ -190,6 +211,15 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	server->adns->srv(from.c_str(), "xmpp-server", "tcp", on_srv_xmpp_server, this);
 	// TODO извлекать список DNSBL из конфига
 	server->adns->a4((from + ".dnsbl.jabber.ru").c_str(), on_s2s_rbl, this);
+	
+	// Шаг X. костыль - ответить сразу "authorized"
+	state = authorized;
+	Stanza result = new ATXmlTag("db:result");
+	result->setAttribute("to", from);
+	result->setAttribute("from", to);
+	result->setAttribute("type", "valid");
+	sendStanza(result);
+	delete result;
 }
 
 /**
