@@ -76,6 +76,7 @@ void S2SInputStream::onDBVerifyStanza(Stanza stanza)
 static void on_s2s_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
 {
   printf("on_s2s_a4\n");
+  if ( result )
   for(int i = 0; i < result->dnsa4_nrr; i++)
   {
     char buf[40];
@@ -90,6 +91,7 @@ static void on_s2s_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
 static void on_s2s_srv_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 {
   printf("on_s2s_srv_jabber\n");
+  if ( result )
   for(int i = 0; i < result->dnssrv_nrr; i++)
   {
     char buf[40];
@@ -108,6 +110,7 @@ static void on_s2s_srv_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, vo
 static void on_srv_xmpp_server(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 {
   printf("on_srv_xmpp_server\n");
+  if ( result )
   for(int i = 0; i < result->dnssrv_nrr; i++)
   {
     char buf[40];
