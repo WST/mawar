@@ -9,10 +9,11 @@ using namespace std;
 /**
 * Конструктор потока
 */
-S2SOutputStream::S2SOutputStream(XMPPServer *srv, int sock, const std::string &tohost): XMPPStream(srv, sock), XMPPDomain(srv, tohost)
+S2SOutputStream::S2SOutputStream(XMPPServer *srv, int sock, const std::string &tohost, const std::string &fromhost): XMPPStream(srv, sock), XMPPDomain(srv, tohost)
 {
 	state = init;
 	remote_host = tohost;
+	local_host = fromhost;
 }
 
 /**
@@ -77,6 +78,13 @@ void S2SOutputStream::onStanza(Stanza stanza)
 */
 void S2SOutputStream::onDBVerifyStanza(Stanza stanza)
 {
+	Stanza verify = new ATXmlTag("db:verify");
+	verify->setAttribute("from", local_host);
+	verify->setAttribute("to", remote_host);
+	verify->setAttribute("type", "valid");
+	verify->setAttribute("id", stanza->getAttribute("id"));
+	sendStanza(verify);
+	delete verify;
 }
 
 /**

@@ -27,6 +27,7 @@ protected:
 	* Удаленный хост
 	*/
 	std::string remote_host;
+	std::string local_host;
 	
 	/**
 	* Состояние потока
@@ -75,7 +76,7 @@ public:
 	/**
 	* Конструктор потока
 	*/
-	S2SOutputStream(XMPPServer *srv, int sock, const std::string &tohost);
+	S2SOutputStream(XMPPServer *srv, int sock, const std::string &tohost, const std::string &fromhost);
 	
 	/**
 	* Деструктор потока

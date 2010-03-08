@@ -86,7 +86,7 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 			{
 				fprintf(stderr, "  connected: %s\n", buf);
 				pending_t *p = static_cast<pending_t*>(data);
-				S2SOutputStream *stream = new S2SOutputStream(p->server, sock, p->to);
+				S2SOutputStream *stream = new S2SOutputStream(p->server, sock, p->to, p->from);
 				fcntl(sock, F_SETFL, O_NONBLOCK);
 				fprintf(stderr, "before addObject\n");
 				p->server->daemon->addObject(stream);
