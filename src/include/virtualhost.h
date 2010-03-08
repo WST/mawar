@@ -74,6 +74,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*/
 		virtual void onOffline(XMPPClient *client);
 		void saveOfflineMessage(Stanza stanza);
+		void sendOfflineMessages(XMPPClient *client);
 		
 		/**
 		* Вернуть пароль пользователя по логину

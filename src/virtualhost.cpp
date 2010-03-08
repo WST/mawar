@@ -269,6 +269,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 /**
 * Обработка станзы presence
 * @todo обработка атрибута type
+* @todo добавить отправку оффлайн-сообщений при смене приоритета с отрицательного на положительный
 */
 void VirtualHost::handlePresence(Stanza stanza) {
 	if ( stanza->getAttribute("type", "") == "error" ) {
@@ -473,24 +474,7 @@ XMPPClient *VirtualHost::getClientByJid(const JID &jid) {
 	return 0;
 }
 
-/**
-* Событие: Пользователь появился в online (thread-safe)
-* @param client поток
-*/
-void VirtualHost::onOnline(XMPPClient *client) {
-	mutex.lock();
-	if(onliners.find(client->jid().username()) != onliners.end()) {
-		onliners[client->jid().username()][client->jid().resource()] = client;
-	} else {
-		reslist_t reslist;
-		reslist[client->jid().resource()] = client;
-		onliners[client->jid().username()] = reslist;
-		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
-		id_users[client->jid().username()] = atoi(r["id_user"].c_str());
-		r.free();
-	}
-	mutex.unlock();
-	
+void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 	DB::result r = db.query("SELECT * FROM spool WHERE message_to = %s ORDER BY message_when ASC", db.quote(client->jid().bare()).c_str());
 	for(; !r.eof(); r.next())
 	{
@@ -510,6 +494,26 @@ void VirtualHost::onOnline(XMPPClient *client) {
 	}
 	r.free();
 	db.query("DELETE FROM spool WHERE message_to = %s", db.quote(client->jid().bare()).c_str());
+}
+
+/**
+* Событие: Пользователь появился в online (thread-safe)
+* @param client поток
+*/
+void VirtualHost::onOnline(XMPPClient *client) {
+	mutex.lock();
+	if(onliners.find(client->jid().username()) != onliners.end()) {
+		onliners[client->jid().username()][client->jid().resource()] = client;
+	} else {
+		reslist_t reslist;
+		reslist[client->jid().resource()] = client;
+		onliners[client->jid().username()] = reslist;
+		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
+		id_users[client->jid().username()] = atoi(r["id_user"].c_str());
+		r.free();
+	}
+	mutex.unlock();
+	sendOfflineMessages(client);
 }
 
 /**
