@@ -90,6 +90,13 @@ void S2SInputStream::onStanza(Stanza stanza)
 */
 void S2SInputStream::onDBVerifyStanza(Stanza stanza)
 {
+	Stanza verify = new ATXmlTag("db:verify");
+	verify->setAttribute("from", stanza->getAttribute("to"));
+	verify->setAttribute("to", stanza->getAttribute("from"));
+	verify->setAttribute("type", "valid");
+	verify->setAttribute("id", stanza->getAttribute("id"));
+	sendStanza(verify);
+	delete verify;
 }
 
 /**
