@@ -3,6 +3,7 @@
 #include <xmppclient.h>
 #include <xmppdomain.h>
 #include <virtualhost.h>
+#include <s2slistener.h>
 #include <configfile.h>
 #include <string>
 #include <iostream>
@@ -152,9 +153,6 @@ bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 	}
 	else
 	{ // неизвестный домен
-		// TODO addDomain( new s2s )...
-		cerr << "[TODO] XMPPServer::routeStanza() - s2s [" << host << "]\n";
-		cerr << stanza->asString() << endl;
-		return false;
+		return s2s->routeStanza(host, stanza);
 	}
 }

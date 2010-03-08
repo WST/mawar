@@ -48,6 +48,11 @@ public:
 	class AsyncDNS *adns;
 	
 	/**
+	* Ссылка на менеджер s2s-соединений
+	*/
+	class S2SListener *s2s;
+	
+	/**
 	* Конфигурация сервера
 	*/
 	ConfigFile *config;

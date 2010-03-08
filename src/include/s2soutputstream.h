@@ -2,6 +2,7 @@
 #define MAWAR_S2SOUTPUTSTREAM_H
 
 #include <xmppstream.h>
+#include <xmppdomain.h>
 
 /**
 * Класс потока вывода (s2s output)
@@ -14,7 +15,7 @@
 * S2SOutputStream - клиентский сокет
 * S2SInputStream - серверный сокет
 */
-class S2SOutputStream: public XMPPStream
+class S2SOutputStream: public XMPPStream, XMPPDomain
 {
 protected:
 	/**
@@ -74,7 +75,7 @@ public:
 	/**
 	* Конструктор потока
 	*/
-	S2SOutputStream(XMPPServer *srv, int sock);
+	S2SOutputStream(XMPPServer *srv, int sock, const std::string &tohost);
 	
 	/**
 	* Деструктор потока
@@ -87,6 +88,11 @@ public:
 	std::string remoteHost() const { return remote_host; }
 	
 	/**
+	* Открыть поток
+	*/
+	void startStream();
+	
+	/**
 	* Событие закрытие соединения
 	*
 	* Вызывается если peer закрыл соединение
@@ -94,9 +100,44 @@ public:
 	virtual void onShutdown();
 	
 	/**
+	* Обработка <db:verify>
+	*/
+	void onDBVerifyStanza(Stanza stanza);
+	
+	/**
+	* Обработка <db:result>
+	*/
+	void onDBResultStanza(Stanza stanza);
+	
+	/**
 	* Обработчик станзы
 	*/
 	virtual void onStanza(Stanza stanza);
+	
+	/**
+	* Роутер исходящих станз (thread-safe)
+	*
+	* Роутер передает станзу нужному потоку.
+	*
+	* @note Данная функция отвечает только за маршрутизацию, она не сохраняет офлайновые сообщения:
+	*   если адресат online, то пересылает ему станзу,
+	*   если offline, то вернет FALSE и вызывающая сторона должна сама сохранить офлайновое сообщение.
+	*
+	* @note Данный метод вызывается из глобального маршрутизатора станз XMPPServer::routeStanza()
+	*   вызывать его напрямую из других мест не рекомендуется - используйте XMPPServer::routeStanza()
+	*
+	* @note Данный метод в будущем станет виртуальным и будет перенесен в специальный
+	*   базовый класс, от которого будут наследовать VirtualHost (виртуальные узлы)
+	*   и, к примеру, MUC. Виртуальые узлы и MUC имеют общие черты, оба адресуются
+	*   доменом, оба принимают входящие станзы, но обрабатывают их по разному,
+	*   VirtualHost доставляет сообщения своим пользователям, а MUC доставляет
+	*   сообщения участникам комнат.
+	*
+	* @param to адресат которому надо направить станзу
+	* @param stanza станза
+	* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
+	*/
+	virtual bool routeStanza(Stanza stanza);
 };
 
 #endif // MAWAR_S2SOUTPUTSTREAM_H

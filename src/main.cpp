@@ -112,9 +112,9 @@ int main()
 	cerr << "[main] virtual hosts loaded" << endl;
 	
 	// асинхронный резолвер
-	AsyncDNS dns(&daemon);
-	daemon.addObject(&dns);
-	server->adns = &dns;
+	AsyncDNS *dns = new AsyncDNS(&daemon);
+	daemon.addObject(dns);
+	server->adns = dns;
 	
 	// добавляем сервер в демона
 	daemon.addObject(server);
@@ -132,7 +132,7 @@ int main()
 	port = config->s2s();
 	if ( port > 0 )
 	{
-		s2s = new S2SListener(server);
+		server->s2s = s2s = new S2SListener(server);
 		s2s->bind(port);
 		s2s->listen(10);
 		daemon.addObject(s2s);

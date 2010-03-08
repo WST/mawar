@@ -2,13 +2,63 @@
 #define MAWAR_S2SLISTENER_H
 
 #include <nanosoft/asyncserver.h>
+#include <nanosoft/mutex.h>
+#include <nanosoft/asyncdns.h>
+#include <stanza.h>
 
 /**
 * Класс сокета слушающего S2S
+*
+* И по совместительсвую ИО менеджера s2s :-D
 */
 class S2SListener: public AsyncServer
 {
+private:
+	/**
+	* Класс буфера исходящих станз
+	*/
+	typedef std::list<std::string> buffer_t;
+	
+	/**
+	* Структура описывающая ожидающие s2s-соединения
+	* И хранящая буфер исходящих станз
+	*/
+	struct pending_t
+	{
+		/**
+		* Ссылка на сервер
+		*/
+		class XMPPServer *server;
+		
+		std::string to;
+		std::string from;
+		
+		/**
+		* Буфер исходящих станз
+		*/
+		buffer_t buffer;
+	};
+	
+	/**
+	* Класс списка ожидающих соединений
+	*/
+	typedef std::map<std::string, pending_t *> pendings_t;
+	
+	/**
+	* Список ожидающих соединений
+	*/
+	pendings_t pendings;
+	
+	/**
+	* Резолвер s2s хоста, запись A (IPv4)
+	*/
+	static void on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data);
 protected:
+	/**
+	* Mutex для thread-safe доступа к общим данным
+	*/
+	nanosoft::Mutex mutex;
+	
 	/**
 	* Сигнал завершения работы
 	*
@@ -41,14 +91,17 @@ public:
 	AsyncObject* onAccept();
 	
 	/**
-	* Сигнал завершения
+	* Роутер исходящих s2s-станз (thread-safe)
+	* @param host домент в который надо направить станзу
+	* @param stanza станза
+	* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 	*/
-	void onSigTerm();
+	bool routeStanza(const std::string &host, Stanza stanza);
 	
 	/**
-	* Сигнал HUP
+	* Отправить буферизованные станзы
 	*/
-	void onSigHup();
+	void flush(class S2SOutputStream *stream);
 };
 
 #endif // MAWAR_S2SLISTENER_H
