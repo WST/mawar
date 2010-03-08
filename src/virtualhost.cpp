@@ -711,26 +711,6 @@ void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 * Вызывается из XMPPClient::onIqStanza()
 */
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
-	
-	if(client->isAuthorized()) {
-		Stanza iq = new ATXmlTag("iq");
-		iq->setAttribute("from", name);
-		iq->setAttribute("to", stanza.from().full());
-		iq->setAttribute("type", "result");
-		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-		TagHelper query = iq["query"];
-		query->setDefaultNameSpaceAttribute("jabber:iq:register");
-		ATXmlTag *registered = new ATXmlTag("registered");
-		ATXmlTag *username = new ATXmlTag("username"); // TODO: вписать сюда имя активного юзера
-		ATXmlTag *password = new ATXmlTag("password"); // TODO: вписать пасс активного юзера
-		query->insertChildElement(registered);
-		query->insertChildElement(username);
-		query->insertChildElement(password);
-		client->sendStanza(iq);
-		delete iq;
-		return;
-	}
-	
 	if(stanza.type() == "get") {
 		// Запрос регистрационной формы
 		Stanza iq = new ATXmlTag("iq");
@@ -755,7 +735,39 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		// Клиент прислал регистрационную информацию
 		ATXmlTag *username = stanza->find("query/username");
 		ATXmlTag *password = stanza->find("query/username");
+		ATXmlTag *remove = stanza->find("query/remove");
+		if(remove != 0) {
+			// Запрошено удаление учётной записи
+			db.query("DELETE FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
+			// TODO: удалять мусор из других таблиц
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			client->sendStanza(iq);
+			delete iq;
+			return;
+		}
 		if(username != 0 && password != 0) {
+			// Запрошена регистрация
+			
+			if(client->isAuthorized()) {
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("jabber:iq:register");
+				ATXmlTag *registered = new ATXmlTag("registered");
+				ATXmlTag *username = new ATXmlTag("username"); // TODO: вписать сюда имя активного юзера
+				ATXmlTag *password = new ATXmlTag("password"); // TODO: вписать пасс активного юзера
+				query->insertChildElement(registered);
+				query->insertChildElement(username);
+				query->insertChildElement(password);
+				client->sendStanza(iq);
+				delete iq;
+				return;
+			}
 			DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login = %s", db.quote(username->getCharacterData()).c_str());
 			bool exists = r["cnt"] == "1";
 			r.free();
