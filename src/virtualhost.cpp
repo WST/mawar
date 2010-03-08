@@ -605,6 +605,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 		// or an IQ-result containing an empty <vCard/> element.
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("from", stanza.to().bare());
 		iq->setAttribute("type", "result");
 		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 		
