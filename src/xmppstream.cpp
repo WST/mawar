@@ -117,6 +117,7 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 	}
 	endElement(tag->name());
 	// send(tag->asString()); — так будет куда проще…
+	// TODO: shade, что-то меня не очень такая реализация радует
 }
 
 /**
