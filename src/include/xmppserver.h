@@ -43,6 +43,11 @@ public:
 	NetDaemon *daemon;
 	
 	/**
+	* Ссылка на асинхронный резолвер DNS
+	*/
+	class AsyncDNS *adns;
+	
+	/**
 	* Конфигурация сервера
 	*/
 	ConfigFile *config;

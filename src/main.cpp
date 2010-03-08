@@ -16,30 +16,6 @@
 
 using namespace std;
 
-void on_dns_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
-{
-  printf("on_dns_a4\n");
-  for(int i = 0; i < result->dnsa4_nrr; i++)
-  {
-    char buf[40];
-    printf("addr: %s\n", dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)));
-  }
-}
-
-void on_dns_srv(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
-{
-  printf("on_dns_srv\n");
-  for(int i = 0; i < result->dnssrv_nrr; i++)
-  {
-    char buf[40];
-    printf("SRV priority: %d, weight: %d, port: %d, name: %s\n",
-      result->dnssrv_srv[i].priority,
-      result->dnssrv_srv[i].weight,
-      result->dnssrv_srv[i].port,
-      result->dnssrv_srv[i].name);
-  }
-}
-
 /**
 * Пример использования некоторых фишек TagHelper
 *
@@ -135,11 +111,10 @@ int main()
 	}
 	cerr << "[main] virtual hosts loaded" << endl;
 	
+	// асинхронный резолвер
 	AsyncDNS dns(&daemon);
-	//dns.a4("shamangrad.net", on_dns_a4, 0);
-	//dns.srv("shamangrad.net", "xmpp-client", "tcp", on_dns_srv, 0);
-	//dns.srv("shamangrad.net", "xmpp-server", "tcp", on_dns_srv, 0);
 	daemon.addObject(&dns);
+	server->adns = &dns;
 	
 	// добавляем сервер в демона
 	daemon.addObject(server);

@@ -28,6 +28,11 @@ protected:
 	std::string remote_host;
 	
 	/**
+	* ID сеанса
+	*/
+	std::string id;
+	
+	/**
 	* Состояние потока
 	*/
 	enum {
@@ -97,6 +102,16 @@ public:
 	* Обработчик станзы
 	*/
 	virtual void onStanza(Stanza stanza);
+	
+	/**
+	* Обработка <db:verify>
+	*/
+	void onDBVerifyStanza(Stanza stanza);
+	
+	/**
+	* Обработка <db:result>
+	*/
+	void onDBResultStanza(Stanza stanza);
 	
 	/**
 	* Завершить сессию

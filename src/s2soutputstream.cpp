@@ -24,6 +24,7 @@ S2SOutputStream::~S2SOutputStream()
 */
 void S2SOutputStream::onStartStream(const std::string &name, const attributes_t &attributes)
 {
+	
 }
 
 /**
