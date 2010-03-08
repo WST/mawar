@@ -36,6 +36,7 @@ class ConfigFile
 		
 		// listen
 		unsigned int c2s();
+		unsigned int s2s();
 		
 		/**
 		* Порт для XEP-0114

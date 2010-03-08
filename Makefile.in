@@ -65,6 +65,9 @@ MAWAR_OBJECTS+=xmppdomain.o
 MAWAR_OBJECTS+=virtualhost.o
 MAWAR_OBJECTS+=xep0114listener.o
 MAWAR_OBJECTS+=xep0114.o
+MAWAR_OBJECTS+=s2slistener.o
+MAWAR_OBJECTS+=s2sinputstream.o
+MAWAR_OBJECTS+=s2soutputstream.o
 
 MAWAR_TESTS=test-01 test-02
 
@@ -135,6 +138,15 @@ xep0114listener.o: $(srcdir)/xep0114listener.cpp $(srcdir)/include/xep0114listen
 
 xep0114.o: $(srcdir)/xep0114.cpp $(srcdir)/include/xep0114.h $(srcdir)/include/xmppstream.h $(srcdir)/include/xmppdomain.h
 	$(CXX) -c $(srcdir)/xep0114.cpp -o xep0114.o
+
+s2slistener.o: $(srcdir)/s2slistener.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/s2sinputstream.h $(srcdir)/include/s2soutputstream.h $(srcdir)/include/xmppserver.h
+	$(CXX) -c $(srcdir)/s2slistener.cpp -o s2slistener.o
+
+s2sinputstream.o: $(srcdir)/s2sinputstream.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/s2sinputstream.h $(srcdir)/include/xmppserver.h
+	$(CXX) -c $(srcdir)/s2sinputstream.cpp -o s2sinputstream.o
+
+s2soutputstream.o: $(srcdir)/s2soutputstream.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/s2soutputstream.h $(srcdir)/include/xmppserver.h
+	$(CXX) -c $(srcdir)/s2soutputstream.cpp -o s2soutputstream.o
 
 # CLEAN
 

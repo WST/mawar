@@ -3,6 +3,7 @@
 #include <nanosoft/netdaemon.h>
 #include <xmppserver.h>
 #include <xep0114listener.h>
+#include <s2slistener.h>
 #include <myconsole.h>
 #include <xml_tag.h>
 #include <configfile.h>
@@ -134,23 +135,33 @@ int main()
 	}
 	cerr << "[main] virtual hosts loaded" << endl;
 	
+	AsyncDNS dns(&daemon);
+	//dns.a4("shamangrad.net", on_dns_a4, 0);
+	//dns.srv("shamangrad.net", "xmpp-client", "tcp", on_dns_srv, 0);
+	//dns.srv("shamangrad.net", "xmpp-server", "tcp", on_dns_srv, 0);
+	daemon.addObject(&dns);
+	
 	// добавляем сервер в демона
 	daemon.addObject(server);
 	
 	XEP0114Listener *xep0114;
 	int port = config->xep0114();
-	if ( port >= 0 ) {
+	if ( port > 0 ) {
 		xep0114 = new XEP0114Listener(server);
 		xep0114->bind(port);
 		xep0114->listen(10);
 		daemon.addObject(xep0114);
 	}
 	
-	AsyncDNS dns(&daemon);
-	//dns.a4("shamangrad.net", on_dns_a4, 0);
-	//dns.srv("shamangrad.net", "xmpp-client", "tcp", on_dns_srv, 0);
-	//dns.srv("shamangrad.net", "xmpp-server", "tcp", on_dns_srv, 0);
-	daemon.addObject(&dns);
+	S2SListener *s2s;
+	port = config->s2s();
+	if ( port > 0 )
+	{
+		s2s = new S2SListener(server);
+		s2s->bind(port);
+		s2s->listen(10);
+		daemon.addObject(s2s);
+	}
 	
 	// консоль управления сервером
 	//MyConsole console(&daemon, 0);

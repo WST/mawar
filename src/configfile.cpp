@@ -6,6 +6,7 @@
 #define CONFIG_WORKERS "3"
 #define CONFIG_C2S_SESSIONS "1000"
 #define CONFIG_C2S "5222"
+#define CONFIG_S2S "5269"
 #define CONFIG_XEP0114 "-1"
 
 #include <iostream>
@@ -50,6 +51,13 @@ unsigned int ConfigFile::c2s() {
 		return atoi(listen->getChildValue("c2s", CONFIG_C2S).c_str());
 	}
 	return atoi(CONFIG_C2S);
+}
+
+unsigned int ConfigFile::s2s() {
+	if(listen) {
+		return atoi(listen->getChildValue("s2s", CONFIG_S2S).c_str());
+	}
+	return atoi(CONFIG_S2S);
 }
 
 /**
