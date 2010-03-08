@@ -1,6 +1,9 @@
 
 #include <s2sinputstream.h>
-#include <stanza.h>
+#include <virtualhost.h>
+#include <iostream>
+
+using namespace std;
 
 /**
 * Конструктор потока
@@ -28,6 +31,8 @@ void S2SInputStream::onStartStream(const std::string &name, const attributes_t &
 */
 void S2SInputStream::onEndStream()
 {
+	cerr << "s2s input stream closed" << endl;
+	endElement("stream:stream");
 }
 
 /**
@@ -44,6 +49,15 @@ void S2SInputStream::onStanza(Stanza stanza)
 */
 void S2SInputStream::onShutdown()
 {
+	cerr << "[s2s input]: peer shutdown connection" << endl;
+	if ( state != terminating ) {
+		AsyncXMLStream::onShutdown();
+		XMLWriter::flush();
+	}
+	server->daemon->removeObject(this);
+	shutdown(READ | WRITE);
+	delete this;
+	cerr << "[s2s input]: shutdown leave" << endl;
 }
 
 /**
@@ -54,4 +68,22 @@ void S2SInputStream::onShutdown()
 */
 void S2SInputStream::onTerminate()
 {
+	cerr << "[s2s input]: terminating connection..." << endl;
+	
+	switch ( state )
+	{
+	case terminating:
+		return;
+	case authorized:
+		break;
+	}
+	
+	mutex.lock();
+		if ( state != terminating ) {
+			state = terminating;
+			endElement("stream:stream");
+			flush();
+			shutdown(WRITE);
+		}
+	mutex.unlock();
 }

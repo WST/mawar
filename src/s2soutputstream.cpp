@@ -1,5 +1,9 @@
 
 #include <s2soutputstream.h>
+#include <virtualhost.h>
+#include <iostream>
+
+using namespace std;
 
 /**
 * Конструктор потока
@@ -27,6 +31,8 @@ void S2SOutputStream::onStartStream(const std::string &name, const attributes_t 
 */
 void S2SOutputStream::onEndStream()
 {
+	cerr << "s2s output stream closed" << endl;
+	endElement("stream:stream");
 }
 
 /**
@@ -43,6 +49,15 @@ void S2SOutputStream::onStanza(Stanza stanza)
 */
 void S2SOutputStream::onShutdown()
 {
+	cerr << "[s2s output]: peer shutdown connection" << endl;
+	if ( state != terminating ) {
+		AsyncXMLStream::onShutdown();
+		XMLWriter::flush();
+	}
+	server->daemon->removeObject(this);
+	shutdown(READ | WRITE);
+	delete this;
+	cerr << "[s2s output]: shutdown leave" << endl;
 }
 
 /**
@@ -53,4 +68,22 @@ void S2SOutputStream::onShutdown()
 */
 void S2SOutputStream::onTerminate()
 {
+	cerr << "[s2s output]: terminating connection..." << endl;
+	
+	switch ( state )
+	{
+	case terminating:
+		return;
+	case authorized:
+		break;
+	}
+	
+	mutex.lock();
+		if ( state != terminating ) {
+			state = terminating;
+			endElement("stream:stream");
+			flush();
+			shutdown(WRITE);
+		}
+	mutex.unlock();
 }

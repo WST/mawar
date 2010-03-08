@@ -44,7 +44,12 @@ protected:
 		/**
 		* Авторизован (можно пересылать станзы)
 		*/
-		authorized
+		authorized,
+		
+		/**
+		* Завершение сеанса
+		*/
+		terminating
 	} state;
 	
 	/**
