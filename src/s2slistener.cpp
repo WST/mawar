@@ -194,7 +194,7 @@ bool S2SListener::routeStanza(const std::string &host, Stanza stanza)
 		else
 		{
 			p = iter->second;
-			p->buffer.push_back(stanza);
+			p->buffer.push_back(stanza->asString());
 		}
 	mutex.unlock();
 	return true;
