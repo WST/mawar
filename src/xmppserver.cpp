@@ -59,9 +59,8 @@ AsyncObject* XMPPServer::onAccept()
 */
 void XMPPServer::onTerminate()
 {
-	onError("XMPPServer::onTerminate()...");
+	fprintf(stderr, "#%d: [XMPPServer: %d] onTerminate\n", getWorkerId(), fd);
 	daemon->removeObject(this);
-	onError("XMPPServer::onTerminate() leave...");
 }
 
 /**
@@ -69,9 +68,8 @@ void XMPPServer::onTerminate()
 */
 void XMPPServer::onSigTerm()
 {
-	cerr << "\n[XMPPServer]: onSigTerm() enter\n";
+	fprintf(stderr, "#%d: [XMPPServer: %d] SIGTERM\n", getWorkerId(), fd);
 	daemon->terminate();
-	cerr << "[XMPPServer]: onSigTerm() leave\n";
 }
 
 /**
@@ -79,7 +77,7 @@ void XMPPServer::onSigTerm()
 */
 void XMPPServer::onSigHup()
 {
-	//cerr << "[XMPPServer]: TODO XMPPServer::onSigHup\n";
+	//fprintf(stderr, "#%d: [XMPPServer: %d] SIGUP not implemented yet\n", getWorkerId(), fd);
 }
 
 /**

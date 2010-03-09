@@ -46,7 +46,6 @@ AsyncObject* XEP0114Listener::onAccept()
 */
 void XEP0114Listener::onTerminate()
 {
-	onError("XEP0114Listener::onTerminate()...");
+	fprintf(stderr, "#%d: [XEP0114Listener: %d] onTerminate\n", getWorkerId(), fd);
 	server->daemon->removeObject(this);
-	onError("XEP0114Listener::onTerminate() leave...");
 }

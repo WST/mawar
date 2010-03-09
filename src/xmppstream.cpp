@@ -101,6 +101,16 @@ void XMPPStream::onEndElement(const std::string &name)
 	depth --;
 }
 
+/**
+* Обработчик ошибок парсера
+*/
+void XMPPStream::onParseError(const char *message)
+{
+	fprintf(stderr, "#%d: [XMPPStream: %d] parse error: %s\n", getWorkerId(), fd, message);
+	server->daemon->removeObject(this);
+	delete this;
+}
+
 void XMPPStream::sendTag(ATXmlTag * tag) {
 	startElement(tag->name());
 	attributes_t attributes = tag->getAttributes();

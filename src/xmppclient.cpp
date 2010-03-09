@@ -31,62 +31,22 @@ XMPPClient::~XMPPClient()
 }
 
 /**
-* Событие закрытие соединения
-*
-* Вызывается если peer закрыл соединение
-*/
-void XMPPClient::onShutdown()
-{
-	cerr << "[XMPPStream]: peer shutdown connection" << endl;
-	if ( state != terminating ) {
-		AsyncXMLStream::onShutdown();
-		//server->onOffline(this);
-		vhost->onOffline(this);
-		XMLWriter::flush();
-	}
-	server->daemon->removeObject(this);
-	shutdown(READ | WRITE);
-	delete this;
-	cerr << "[XMPPStream]: onShutdown leave" << endl;
-}
-
-/**
-* Завершить сессию
-*
-* thread-safe
-*/
-void XMPPClient::terminate()
-{
-	cerr << "[XMPPStream]: terminating connection..." << endl;
-	
-	switch ( state )
-	{
-	case terminating:
-		return;
-	case authorized:
-		//server->onOffline(this);
-		break;
-	}
-	
-	mutex.lock();
-		if ( state != terminating ) {
-			state = terminating;
-			endElement("stream:stream");
-			flush();
-			shutdown(WRITE);
-		}
-	mutex.unlock();
-}
-
-/**
 * Сигнал завершения работы
 *
-* Объект должен закрыть файловый дескриптор
-* и освободить все занимаемые ресурсы
+* Сервер решил закрыть соединение, здесь ещё есть время
+* корректно попрощаться с пиром (peer).
 */
 void XMPPClient::onTerminate()
 {
-	terminate();
+	fprintf(stderr, "#%d: [XMPPClient: %d] onTerminate\n", getWorkerId(), fd);
+	
+	// if ( state == authorized ) server->onOffline(this);
+	
+	mutex.lock();
+		endElement("stream:stream");
+		flush();
+		shutdown(WRITE);
+	mutex.unlock();
 }
 
 /**
@@ -247,7 +207,9 @@ void XMPPClient::onPresenceStanza(Stanza stanza) {
 */
 void XMPPClient::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	fprintf(stderr, "#%d new stream to %s\n", getWorkerId(), attributes.find("to")->second.c_str());
+	attributes_t::const_iterator it = attributes.find("to");
+	string tohost = (it != attributes.end()) ? it->second : string();
+	fprintf(stderr, "#%d: [XMPPClient: %d] new stream to %s\n", getWorkerId(), fd, tohost.c_str());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
@@ -259,7 +221,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 	
 	if ( state == init )
 	{
-		vhost = dynamic_cast<VirtualHost*>(server->getHostByName(attributes.find("to")->second));
+		vhost = dynamic_cast<VirtualHost*>(server->getHostByName(tohost));
 		if ( vhost == 0 ) {
 			Stanza error = Stanza::streamError("host-unknown", "Неизвестный хост", "ru");
 			sendStanza(error);
@@ -305,8 +267,8 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 */
 void XMPPClient::onEndStream()
 {
-	cerr << "session closed" << endl;
-	endElement("stream:stream");
+	fprintf(stderr, "#%d: [XMPPClient: %d] end of stream\n", getWorkerId(), fd);
+	terminate();
 }
 
 /**

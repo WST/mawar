@@ -50,6 +50,10 @@ protected:
 	*/
 	virtual void onEndStream() = 0;
 	
+	/**
+	* Обработчик ошибок парсера
+	*/
+	virtual void onParseError(const char *message);
 public:
 	/**
 	* Конструктор потока

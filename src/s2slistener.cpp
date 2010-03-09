@@ -51,9 +51,8 @@ AsyncObject* S2SListener::onAccept()
 */
 void S2SListener::onTerminate()
 {
-	onError("S2SListener::onTerminate()...");
+	fprintf(stderr, "#%d: [S2SListener: %d] onTerminate\n", getWorkerId(), fd);
 	server->daemon->removeObject(this);
-	onError("S2SListener::onTerminate() leave...");
 }
 
 #include <sys/socket.h>

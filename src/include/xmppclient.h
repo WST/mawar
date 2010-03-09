@@ -70,11 +70,10 @@ protected:
 	/**
 	* Сигнал завершения работы
 	*
-	* Объект должен закрыть файловый дескриптор
-	* и освободить все занимаемые ресурсы
+	* Сервер решил закрыть соединение, здесь ещё есть время
+	* корректно попрощаться с пиром (peer).
 	*/
 	virtual void onTerminate();
-	
 public:
 	/**
 	* Конструктор потока
@@ -107,13 +106,6 @@ public:
 	* Приоритет ресурса
 	*/
 	ClientPresence presence();
-	
-	/**
-	* Событие закрытие соединения
-	*
-	* Вызывается если peer закрыл соединение
-	*/
-	virtual void onShutdown();
 	
 	/**
 	* Обработчик станзы
@@ -149,13 +141,6 @@ public:
 	* Обработчик presence-станзы
 	*/
 	virtual void onPresenceStanza(Stanza stanza);
-	
-	/**
-	* Завершить сессию
-	*
-	* thread-safe
-	*/
-	void terminate();
 };
 
 #endif // MAWAR_XMPPCLIENT_H
