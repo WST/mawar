@@ -16,6 +16,7 @@ XEP0114Listener::XEP0114Listener(XMPPServer *srv): server(srv)
 */
 XEP0114Listener::~XEP0114Listener()
 {
+	fprintf(stderr, "#%d: [XEP0114Listener: %d] deleting\n", getWorkerId(), fd);
 }
 
 #include <xmppclient.h>
@@ -24,18 +25,14 @@ XEP0114Listener::~XEP0114Listener()
 *
 * thread-safe
 */
-AsyncObject* XEP0114Listener::onAccept()
+void XEP0114Listener::onAccept()
 {
-	mutex.lock();
-		int sock = accept();
-		XMPPStream *client = 0;
-		if ( sock )
-		{
-			client = new XEP0114(server, sock);
-			server->daemon->addObject(client);
-		}
-	mutex.unlock();
-	return client;
+	int sock = accept();
+	if ( sock )
+	{
+		XMPPStream *client = new XEP0114(server, sock);
+		server->daemon->addObject(client);
+	}
 }
 
 /**

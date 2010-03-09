@@ -48,12 +48,7 @@ protected:
 		/**
 		* Авторизован (можно пересылать станзы)
 		*/
-		authorized,
-		
-		/**
-		* Завершение сеанса
-		*/
-		terminating
+		authorized
 	} state;
 	
 	/**
@@ -69,8 +64,8 @@ protected:
 	/**
 	* Сигнал завершения работы
 	*
-	* Объект должен закрыть файловый дескриптор
-	* и освободить все занимаемые ресурсы
+	* Сервер решил закрыть соединение, здесь ещё есть время
+	* корректно попрощаться с пиром (peer).
 	*/
 	virtual void onTerminate();
 	
@@ -91,13 +86,6 @@ public:
 	std::string remoteHost() const { return remote_host; }
 	
 	/**
-	* Событие закрытие соединения
-	*
-	* Вызывается если peer закрыл соединение
-	*/
-	virtual void onShutdown();
-	
-	/**
 	* Обработчик станзы
 	*/
 	virtual void onStanza(Stanza stanza);
@@ -111,13 +99,6 @@ public:
 	* Обработка <db:result>
 	*/
 	void onDBResultStanza(Stanza stanza);
-	
-	/**
-	* Завершить сессию
-	*
-	* thread-safe
-	*/
-	void terminate();
 };
 
 #endif // MAWAR_S2SINPUTSTREAM_H

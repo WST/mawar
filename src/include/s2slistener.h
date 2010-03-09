@@ -88,7 +88,7 @@ public:
 	*
 	* thread-safe
 	*/
-	AsyncObject* onAccept();
+	void onAccept();
 	
 	/**
 	* Роутер исходящих s2s-станз (thread-safe)

@@ -31,61 +31,20 @@ XEP0114::~XEP0114()
 }
 
 /**
-* Событие закрытие соединения
-*
-* Вызывается если peer закрыл соединение
-*/
-void XEP0114::onShutdown()
-{
-	cerr << "[XEP0114]: peer shutdown connection" << endl;
-	if ( state != terminating ) {
-		XMLWriter::flush();
-	}
-	XMPPStream::server->daemon->removeObject(this);
-	if ( state == authorized ) XMPPStream::server->removeDomain(this);
-	shutdown(READ | WRITE);
-	delete this;
-	cerr << "[XEP0114]: onShutdown leave" << endl;
-}
-
-/**
-* Завершить сессию
-*
-* thread-safe
-*/
-void XEP0114::terminate()
-{
-	cerr << "[XEP0114]: terminating connection..." << endl;
-	
-	switch ( state )
-	{
-	case terminating:
-		return;
-	case authorized:
-		//server->onOffline(this);
-		break;
-	}
-	
-	mutex.lock();
-		if ( state != terminating ) {
-			state = terminating;
-			XMPPStream::server->removeDomain(this);
-			endElement("stream:stream");
-			flush();
-			shutdown(WRITE);
-		}
-	mutex.unlock();
-}
-
-/**
 * Сигнал завершения работы
 *
-* Объект должен закрыть файловый дескриптор
-* и освободить все занимаемые ресурсы
+* Сервер решил закрыть соединение, здесь ещё есть время
+* корректно попрощаться с пиром (peer).
 */
 void XEP0114::onTerminate()
 {
-	terminate();
+	fprintf(stderr, "#%d: [XEP0114: %d] onTerminate\n", getWorkerId(), fd);
+	
+	mutex.lock();
+		endElement("stream:stream");
+		flush();
+		shutdown(WRITE);
+	mutex.unlock();
 }
 
 /**
@@ -156,8 +115,8 @@ void XEP0114::onStartStream(const std::string &name, const attributes_t &attribu
 */
 void XEP0114::onEndStream()
 {
-	cerr << "session closed" << endl;
-	endElement("stream:stream");
+	fprintf(stderr, "#%d: [XEP0114: %d] end of stream\n", getWorkerId(), fd);
+	terminate();
 }
 
 /**

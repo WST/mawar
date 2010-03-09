@@ -51,8 +51,8 @@ void S2SOutputStream::onStartStream(const std::string &name, const attributes_t 
 */
 void S2SOutputStream::onEndStream()
 {
-	cerr << "s2s output stream closed" << endl;
-	endElement("stream:stream");
+	fprintf(stderr, "#%d: [S2SOutputStream: %d] end of stream\n", getWorkerId(), fd);
+	terminate();
 }
 
 /**
@@ -105,48 +105,19 @@ void S2SOutputStream::onDBResultStanza(Stanza stanza)
 }
 
 /**
-* Событие закрытие соединения
-*
-* Вызывается если peer закрыл соединение
-*/
-void S2SOutputStream::onShutdown()
-{
-	cerr << "[s2s output]: peer shutdown connection" << endl;
-	if ( state != terminating ) {
-		AsyncXMLStream::onShutdown();
-		XMLWriter::flush();
-	}
-	XMPPStream::server->daemon->removeObject(this);
-	shutdown(READ | WRITE);
-	delete this;
-	cerr << "[s2s output]: shutdown leave" << endl;
-}
-
-/**
 * Сигнал завершения работы
 *
-* Объект должен закрыть файловый дескриптор
-* и освободить все занимаемые ресурсы
+* Сервер решил закрыть соединение, здесь ещё есть время
+* корректно попрощаться с пиром (peer).
 */
 void S2SOutputStream::onTerminate()
 {
-	cerr << "[s2s output]: terminating connection..." << endl;
-	
-	switch ( state )
-	{
-	case terminating:
-		return;
-	case authorized:
-		break;
-	}
+	fprintf(stderr, "#%d: [S2SOutputStream: %d] onTerminate\n", getWorkerId(), fd);
 	
 	mutex.lock();
-		if ( state != terminating ) {
-			state = terminating;
-			endElement("stream:stream");
-			flush();
-			shutdown(WRITE);
-		}
+		endElement("stream:stream");
+		flush();
+		shutdown(WRITE);
 	mutex.unlock();
 }
 

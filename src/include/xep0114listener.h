@@ -28,7 +28,7 @@ protected:
 	*
 	* thread-safe
 	*/
-	virtual AsyncObject* onAccept();
+	virtual void onAccept();
 	
 	/**
 	* Сигнал завершения работы

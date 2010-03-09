@@ -24,6 +24,8 @@ XMPPServer::XMPPServer(NetDaemon *d): daemon(d)
 */
 XMPPServer::~XMPPServer()
 {
+	fprintf(stderr, "#%d: [XMPPServer: %d] deleting\n", getWorkerId(), fd);
+	
 	// delete domains
 	for(domains_t::iterator iter = domains.begin(); iter != domains.end(); ++iter)
 	{
@@ -33,29 +35,20 @@ XMPPServer::~XMPPServer()
 }
 
 /**
-* Обработчик события: подключение клиента
-*
-* thread-safe
+* Принять входящее соединение
 */
-AsyncObject* XMPPServer::onAccept()
+void XMPPServer::onAccept()
 {
-	mutex.lock();
-		int sock = accept();
-		XMPPStream *client = 0;
-		if ( sock )
-		{
-			client = new XMPPClient(this, sock);
-			daemon->addObject(client);
-		}
-	mutex.unlock();
-	return client;
+	int sock = accept();
+	if ( sock )
+	{
+		XMPPStream *client = new XMPPClient(this, sock);
+		daemon->addObject(client);
+	}
 }
 
 /**
 * Сигнал завершения работы
-*
-* Объект должен закрыть файловый дескриптор
-* и освободить все занимаемые ресурсы
 */
 void XMPPServer::onTerminate()
 {

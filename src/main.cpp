@@ -9,7 +9,7 @@
 #include <configfile.h>
 #include <signal.h>
 #include <string.h>
-#include <nanosoft/mysql.h>
+#include <stdio.h>
 
 #include <taghelper.h>
 #include <nanosoft/asyncdns.h>
@@ -103,13 +103,13 @@ int main()
 	server->listen(10);
 	
 	// добавляем виртуальные хосты
-	cerr << "[main] loading virtual hosts..." << endl;
+	cerr << "#0: [main] loading virtual hosts..." << endl;
 	for(VirtualHostConfig vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost))
 	{
-		cerr << "vhost: " << vhost.hostname() << endl;
+		cerr << "#0: [main] load vhost: " << vhost.hostname() << endl;
 		server->addHost(vhost.hostname(), vhost);
 	}
-	cerr << "[main] virtual hosts loaded" << endl;
+	cerr << "#0: [main] virtual hosts loaded" << endl;
 	
 	// асинхронный резолвер
 	AsyncDNS *dns = new AsyncDNS(&daemon);
@@ -128,7 +128,7 @@ int main()
 		daemon.addObject(xep0114);
 	}
 	
-	S2SListener *s2s;
+	S2SListener *s2s = 0;
 	port = config->s2s();
 	if ( port > 0 )
 	{
@@ -150,12 +150,14 @@ int main()
 	sigaction(SIGINT, &sa, 0);
 	
 	// запускаем демона
-	cerr << "[main] running daemon..." << endl;
+	fprintf(stderr, "#0: [main] run daemon\n");
 	daemon.run();
-	cerr << "[main] daemon exited" << endl;
+	fprintf(stderr, "#0: [main] daemon exited\n");
 	
+	if ( s2s ) delete s2s;
 	delete xep0114;
 	delete server;
 	
+	fprintf(stderr, "#0: [main] exit\n");
 	return 0;
 }

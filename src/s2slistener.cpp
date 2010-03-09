@@ -22,6 +22,7 @@ S2SListener::S2SListener(XMPPServer *srv)
 */
 S2SListener::~S2SListener()
 {
+	fprintf(stderr, "#%d: [S2SListener: %d] deleting\n", getWorkerId(), fd);
 }
 
 /**
@@ -29,18 +30,14 @@ S2SListener::~S2SListener()
 *
 * thread-safe
 */
-AsyncObject* S2SListener::onAccept()
+void S2SListener::onAccept()
 {
-	XMPPStream *client;
-	
 	int sock = accept();
 	if ( sock )
 	{
-		client = new S2SInputStream(server, sock);
+		XMPPStream *client = new S2SInputStream(server, sock);
 		server->daemon->addObject(client);
 	}
-	
-	return client;
 }
 
 /**
