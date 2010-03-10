@@ -30,7 +30,8 @@ CREATE TABLE roster (
 	contact_nick VARCHAR(64) NOT NULL,
 	contact_group VARCHAR(64) NOT NULL, -- для обозначения отсутствия группы будет использована пустая строка
 	contact_subscription CHAR(1) NOT NULL,
-	contact_pending CHAR(1) NOT NULL
+	contact_pending CHAR(1) NOT NULL,
+	UNIQUE INDEX contact (id_user, contact_jid)
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
 
 CREATE TABLE vcard (

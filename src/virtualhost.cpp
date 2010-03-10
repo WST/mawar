@@ -700,6 +700,7 @@ void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 {
 	TagHelper query = stanza["query"];
 	if ( stanza->getAttribute("type") == "get" ) {
+		client->use_roster = true;
 		sendRoster(stanza);
 		return;
 	}

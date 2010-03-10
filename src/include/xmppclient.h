@@ -52,10 +52,12 @@ protected:
 	ClientPresence client_presence;
 	
 	/**
+	* Маркер online/offline
+	*
 	* TRUE - Initial presense уже отправлен
 	* FLASE - Initial presense ещё не отправлен
 	*/
-	bool initialPresenceSent;
+	bool available;
 	
 	/**
 	* Событие: начало потока
@@ -75,6 +77,13 @@ protected:
 	*/
 	virtual void onTerminate();
 public:
+	/**
+	* Признак использования ростера
+	* TRUE - пользователь запросил ростер
+	* FALSE - пользователь не запрашивал ростер и хочет с ним работать
+	*/
+	bool use_roster;
+	
 	/**
 	* Конструктор потока
 	*/
@@ -136,6 +145,36 @@ public:
 	* Обработчик message-станзы
 	*/
 	virtual void onMessageStanza(Stanza stanza);
+	
+	/**
+	* RFC 3921 (5.1.1) Initial Presence
+	*/
+	void handleInitialPresence(Stanza stanza);
+	
+	/**
+	* RFC 3921 (5.1.2) Presence Broadcast
+	*/
+	void handlePresenceBroadcast(Stanza stanza);
+	
+	/**
+	* RFC 3921 (5.1.3) Presence Probes
+	*/
+	void handlePresenceProbes();
+	
+	/**
+	* RFC 3921 (5.1.4) Directed Presence
+	*/
+	void handleDirectedPresence(Stanza stanza);
+	
+	/**
+	* RFC 3921 (5.1.5) Unavailable Presence
+	*/
+	void handleUnavailablePresence();
+	
+	/**
+	* RFC 3921 (5.1.6) Presence Subscriptions
+	*/
+	void handlePresenceSubscriptions(Stanza stanza);
 	
 	/**
 	* Обработчик presence-станзы
