@@ -22,6 +22,7 @@ void ConfigFile::reload() {
 	
 	if(!config_tag) {
 		// ошибка!
+		exit(100);
 	}
 	
 	if(config_tag->name() != "maward") {
