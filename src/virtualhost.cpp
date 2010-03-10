@@ -5,6 +5,7 @@
 #include <attagparser.h>
 #include <string>
 #include <iostream>
+#include <stdio.h>
 #include <nanosoft/error.h>
 #include <nanosoft/gsaslserver.h>
 #include <db.h>
@@ -269,40 +270,102 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 }
 
 /**
-* Обработка станзы presence
-* @todo обработка атрибута type
-* @todo добавить отправку оффлайн-сообщений при смене приоритета с отрицательного на положительный
+* Обслуживание обычного презенса
 */
-void VirtualHost::handlePresence(Stanza stanza) {
-	if ( stanza->getAttribute("type", "") == "error" ) {
-		// TODO somethink...
-		//return;
-	}
+void VirtualHost::serveCommonPresence(Stanza stanza)
+{
+	JID to = stanza.to();
+	JID from = stanza.from();
 	
-	if ( stanza->getAttribute("type", "") == "probe" ) {
-		cout << "probe " << stanza.to().full() << " from " << stanza.from().full() << endl;
-		DB::result r = db.query(
-			"SELECT count(*) AS cnt FROM roster JOIN users ON roster.id_user = users.id_user "
-			"WHERE user_login = %s AND contact_jid = %s AND contact_subscription IN ('F', 'B')",
-				db.quote(stanza.to().username()).c_str(), db.quote(stanza.from().bare()).c_str());
-		cout << "status: " << r["cnt"] << endl;
-		if ( r["cnt"] != "0" ) {
-			//mutex.lock();
-				sessions_t::iterator it = onliners.find(stanza.to().username());
-				if(it != onliners.end()) {
-					for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
-					{
-						Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
-						server->routeStanza(p.to().hostname(), p);
-						delete p;
-					}
-				}
-			//mutex.unlock();
-		}
-		r.free();
+	fprintf(stderr, "[VirtualHost]: serve common presence from: %s to: %s\n", from.full().c_str(), to.full().c_str());
+	
+	if ( to.resource() != "" )
+	{
+		XMPPClient *client = getClientByJid(to);
+		if ( client ) client->sendStanza(stanza);
 		return;
 	}
 	
+	mutex.lock();
+		sessions_t::iterator it = onliners.find(to.username());
+		if(it != onliners.end()) {
+			for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
+			{
+				stanza->setAttribute("to", jt->second->jid().full());
+				jt->second->sendStanza(stanza);
+			}
+		}
+	mutex.unlock();
+}
+
+/**
+* Обслуживание Presence Probes
+*
+* RFC 3921 (5.1.3) Presence Probes
+*/
+void VirtualHost::servePresenceProbes(Stanza stanza)
+{
+	JID to = stanza.to();
+	JID from = stanza.from();
+	
+	fprintf(stderr, "[VirtualHost]: RFC 3921 (5.1.3) Presence Probes from: %s to: %s\n", from.full().c_str(), to.full().c_str());
+	
+	DB::result r = db.query(
+		"SELECT count(*) AS cnt FROM roster JOIN users ON roster.id_user = users.id_user "
+		"WHERE user_login = %s AND contact_jid = %s AND contact_subscription IN ('F', 'B')",
+			db.quote(to.username()).c_str(), db.quote(from.bare()).c_str());
+	if ( r["cnt"] != "0" )
+	{
+		// TODO (dead lock) mutex.lock();
+			sessions_t::iterator it = onliners.find(stanza.to().username());
+			if(it != onliners.end()) {
+				for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
+				{
+					Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
+					server->routeStanza(p.to().hostname(), p);
+					delete p;
+				}
+			}
+		//mutex.unlock();
+	}
+	r.free();
+	return;
+}
+
+/**
+* Серверная часть обработки станзы presence
+*
+* Вся клиентская часть находиться в классе XMPPClinet.
+* Сюда попадают только станзы из сети (s2s)
+* или из других виртуальных хостов.
+*
+* @todo обработка атрибута type
+* @todo добавить отправку оффлайн-сообщений при смене приоритета с отрицательного на положительный
+*/
+void VirtualHost::servePresence(Stanza stanza)
+{
+	if ( ! stanza->hasAttribute("type") || stanza->getAttribute("type") == "unavailable" )
+	{
+		serveCommonPresence(stanza);
+		return;
+	}
+	
+	if ( stanza->hasAttribute("type") )
+	{
+		if ( stanza->getAttribute("type") == "error" )
+		{
+			fprintf(stderr, "[VirtualHost]: drop presence error: %s\n", stanza->asString().c_str());
+			return;
+		}
+		
+		if ( stanza->getAttribute("type") == "probe" )
+		{
+			servePresenceProbes(stanza);
+			return;
+		}
+	}
+	
+	/*
 	if ( stanza->getAttribute("type", "") == "subscribed" ) {
 		handleSubscribed(stanza);
 		//return;
@@ -313,22 +376,10 @@ void VirtualHost::handlePresence(Stanza stanza) {
 		// TODO
 		//return;
 	}
+	*/
 	
-	if ( stanza.to().resource() == "" ) {
-		mutex.lock();
-			sessions_t::iterator it = onliners.find(stanza.to().username());
-			if(it != onliners.end()) {
-				for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
-				{
-					stanza->setAttribute("to", jt->second->jid().full());
-					jt->second->sendStanza(stanza);
-				}
-			}
-		mutex.unlock();
-	} else {
-		XMPPClient *client = getClientByJid(stanza.to());
-		if ( client ) client->sendStanza(stanza);
-	}
+	fprintf(stderr, "[VirtualHost]: drop unknown presence: %s\n", stanza->asString().c_str());
+	return;
 }
 
 /**
@@ -352,45 +403,6 @@ void VirtualHost::handleSubscribed(Stanza stanza)
 		return ; // ???
 	}
 	r.free();
-}
-
-/**
-* Presence Broadcast (RFC 3921, 5.1.2)
-*/
-void VirtualHost::broadcastPresence(Stanza stanza)
-{
-	cerr << "broadcast presence\n";
-	if ( stanza->hasAttribute("type") && stanza->getAttribute("type", "") != "unavailable" ) {
-		// костыль? удаляем атрибут type, из RFC мне не понятно как правильно поступать
-		// быть может надо возращать ошибку
-		// (с) shade
-		stanza->removeAttribute("type");
-	}
-	DB::result r = db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", db.quote(stanza.from().username()).c_str());
-	for(; ! r.eof(); r.next()) {
-		stanza->setAttribute("to", r["contact_jid"]);
-		server->routeStanza(stanza.to().hostname(), stanza);
-	}
-	r.free();
-}
-
-/**
-* Presence Broadcast (RFC 3921, 5.1.1)
-*/
-void VirtualHost::initialPresence(Stanza stanza)
-{
-	cerr << "initial presence\n";
-	Stanza probe = new ATXmlTag("presence");
-	probe->setAttribute("type", "probe");
-	probe->setAttribute("from", stanza.from().full());
-	DB::result r = db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('T', 'B')", db.quote(stanza.from().username()).c_str());
-	for(; ! r.eof(); r.next()) {
-		probe->setAttribute("to", r["contact_jid"]);
-		server->routeStanza(probe.to().hostname(), probe);
-	}
-	r.free();
-	delete probe;
-	broadcastPresence(stanza);
 }
 
 /**
@@ -667,7 +679,7 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	}
 	
 	if ( stanza->name() == "presence" ) {
-		handlePresence(stanza);
+		servePresence(stanza);
 		return true;
 	}
 	

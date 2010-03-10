@@ -183,7 +183,7 @@ void XMPPClient::onMessageStanza(Stanza stanza) {
 */
 void XMPPClient::handleInitialPresence(Stanza stanza)
 {
-	fprintf(stderr, "#d: [XMPPClient: %d] RFC 3921 (5.1.1) Initial Presence\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.1) Initial Presence\n", getWorkerId(), fd);
 	available = true;
 	handlePresenceProbes();
 	handlePresenceBroadcast(stanza);
@@ -194,7 +194,7 @@ void XMPPClient::handleInitialPresence(Stanza stanza)
 */
 void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 {
-	fprintf(stderr, "#d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Broadcast\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Broadcast\n", getWorkerId(), fd);
 	
 	client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
 	client_presence.status_text = stanza->getChildValue("status", "");
@@ -215,7 +215,7 @@ void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 */
 void XMPPClient::handlePresenceProbes()
 {
-	fprintf(stderr, "#d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Probes\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Probes\n", getWorkerId(), fd);
 	
 	Stanza probe = new ATXmlTag("presence");
 	probe->setAttribute("type", "probe");
@@ -223,6 +223,7 @@ void XMPPClient::handlePresenceProbes()
 	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('T', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		probe->setAttribute("to", r["contact_jid"]);
+		fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Probes: %s\n", getWorkerId(), fd, probe->asString().c_str());
 		server->routeStanza(probe.to().hostname(), probe);
 	}
 	r.free();
@@ -234,7 +235,7 @@ void XMPPClient::handlePresenceProbes()
 */
 void XMPPClient::handleDirectedPresence(Stanza stanza)
 {
-	fprintf(stderr, "#d: [XMPPClient: %d] RFC 3921 (5.1.4) Directed Presence\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.4) Directed Presence\n", getWorkerId(), fd);
 	
 	if ( stanza->hasAttribute("type") && stanza->getAttribute("type") != "unavailable" )
 	{
@@ -263,7 +264,7 @@ void XMPPClient::handleDirectedPresence(Stanza stanza)
 */
 void XMPPClient::handleUnavailablePresence()
 {
-	fprintf(stderr, "#d: [XMPPClient: %d] RFC 3921 (5.1.5) Unavailable Presence\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.5) Unavailable Presence\n", getWorkerId(), fd);
 	available = false;
 	
 	Stanza presence = new ATXmlTag("presence");
@@ -286,7 +287,7 @@ void XMPPClient::handleUnavailablePresence()
 */
 void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
 {
-	fprintf(stderr, "#d: [XMPPClient: %d] RFC 3921 (5.1.6) Presence Subscriptions\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.6) Presence Subscriptions\n", getWorkerId(), fd);
 }
 
 void XMPPClient::onPresenceStanza(Stanza stanza) {
@@ -334,7 +335,7 @@ void XMPPClient::onPresenceStanza(Stanza stanza) {
 	// что с ним делать в RFC не нашел, можно конечно послать ошибку
 	// не будем напрягаться, просто выкинем станзу в /dev/null
 	// (c) shade
-	fprintf(stderr, "#d: [XMPPClient: %d] drop unknown presence: %s\n", getWorkerId(), fd, stanza->asString().c_str());
+	fprintf(stderr, "#%d: [XMPPClient: %d] drop unknown presence: %s\n", getWorkerId(), fd, stanza->asString().c_str());
 }
 
 /**

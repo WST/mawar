@@ -38,18 +38,29 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		~VirtualHost();
 		
 		virtual void handleMessage(Stanza stanza); // Обработать message
-		virtual void handlePresence(Stanza stanza); // Обработать presence
+		
+		/**
+		* Обслуживание обычного презенса
+		*/
+		void serveCommonPresence(Stanza stanza);
+		
+		/**
+		* Обслуживание Presence Probes
+		*
+		* RFC 3921 (5.1.3) Presence Probes
+		*/
+		void servePresenceProbes(Stanza stanza);
+		
+		/**
+		* Серверная часть обработки станзы presence
+		*
+		* Вся клиентская часть находиться в классе XMPPClinet.
+		* Сюда попадают только станзы из сети (s2s)
+		* или из других виртуальных хостов.
+		*/
+		void servePresence(Stanza stanza);
+		
 		virtual void handleSubscribed(Stanza stanza); // обработать presence[type=subscribed]
-		
-		/**
-		* Presence Broadcast (RFC 3921, 5.1.2)
-		*/
-		void broadcastPresence(Stanza stanza);
-		
-		/**
-		* Initial Presence (RFC 3921, 5.1.1)
-		*/
-		void initialPresence(Stanza stanza);
 		
 		/**
 		* Отправить станзу всем ресурсам указаного пользователя
