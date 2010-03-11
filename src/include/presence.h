@@ -5,13 +5,14 @@
 #include <string>
 #include <cstdio>
 
-
 struct ClientPresence {
-	enum show_t {Available, Unavailable, XA, DND, Free} show;
+	enum show_t { Available, Unavailable, XA, DND, Free };
+
+	std::string show; // не надо мудрить, храним как есть (c) shade
 	std::string status_text;
 	int priority;
 	
-	ClientPresence(): show(Available), status_text(), priority(0) {
+	ClientPresence(): show("available"), status_text(), priority(0) {
 	}
 	
 	std::string getPriority() {
@@ -19,7 +20,7 @@ struct ClientPresence {
 		sprintf(buf, "%d", priority);
 		return std::string(buf);
 	}
-	void setShow(std::string show) {
+	/*void setShow(std::string show) {
 		// lowercase(show)
 		if(show == "available") show = Available;
 		if(show == "unavailable") show = Unavailable;
@@ -33,7 +34,7 @@ struct ClientPresence {
 		if(show == XA) return std::string("xa");
 		if(show == DND) return std::string("dnd");
 		if(show == Free) return std::string("free");
-	}
+	}*/
 };
 
 #endif

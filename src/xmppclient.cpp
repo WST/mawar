@@ -28,6 +28,7 @@ XMPPClient::XMPPClient(XMPPServer *srv, int sock):
 */
 XMPPClient::~XMPPClient()
 {
+	if ( vhost ) vhost->onOffline(this);
 }
 
 /**
@@ -39,8 +40,6 @@ XMPPClient::~XMPPClient()
 void XMPPClient::onTerminate()
 {
 	fprintf(stderr, "#%d: [XMPPClient: %d] onTerminate\n", getWorkerId(), fd);
-	
-	// if ( state == authorized ) server->onOffline(this);
 	
 	mutex.lock();
 		endElement("stream:stream");
@@ -198,7 +197,7 @@ void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 	
 	client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
 	client_presence.status_text = stanza->getChildValue("status", "");
-	client_presence.setShow(stanza->getChildValue("show", "Available"));
+	client_presence.show = stanza->getChildValue("show", "Available");
 	
 	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {

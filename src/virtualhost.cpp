@@ -316,17 +316,25 @@ void VirtualHost::servePresenceProbes(Stanza stanza)
 			db.quote(to.username()).c_str(), db.quote(from.bare()).c_str());
 	if ( r["cnt"] != "0" )
 	{
-		// TODO (dead lock) mutex.lock();
-			sessions_t::iterator it = onliners.find(stanza.to().username());
-			if(it != onliners.end()) {
-				for(reslist_t::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
-				{
-					Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
-					server->routeStanza(p.to().hostname(), p);
-					delete p;
-				}
-			}
-		//mutex.unlock();
+		// TODO optimize
+		// 1. получаем копию списка ресурсов (иначе dead lock)
+		// (c) shade
+		mutex.lock();
+			sessions_t::iterator user = onliners.find(stanza.to().username());
+			reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
+		mutex.unlock();
+		
+		// 2. проходимся по копии списка и делаем рассылку
+		// TODO но есть опасность, что пока мы будем работать со списком
+		// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
+		// впрочем эта проблема могла быть и раньше
+		// (c) shade
+		for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
+		{
+			Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
+			server->routeStanza(p.to().hostname(), p);
+			delete p;
+		}
 	}
 	r.free();
 	return;
@@ -514,18 +522,23 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 * Событие: Пользователь появился в online (thread-safe)
 * @param client поток
 */
-void VirtualHost::onOnline(XMPPClient *client) {
+void VirtualHost::onOnline(XMPPClient *client)
+{
+	fprintf(stderr, "[VirtualHost]: online %s\n", client->jid().full().c_str());
+	
 	mutex.lock();
-	if(onliners.find(client->jid().username()) != onliners.end()) {
-		onliners[client->jid().username()][client->jid().resource()] = client;
-	} else {
-		reslist_t reslist;
-		reslist[client->jid().resource()] = client;
-		onliners[client->jid().username()] = reslist;
-		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
-		id_users[client->jid().username()] = atoi(r["id_user"].c_str());
-		r.free();
-	}
+		sessions_t::iterator user = onliners.find(client->jid().username());
+		if( user != onliners.end())
+		{
+			user->second[client->jid().resource()] = client;
+		}
+		else
+		{
+			onliners[client->jid().username()][client->jid().resource()] = client;
+			DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
+			id_users[client->jid().username()] = atoi(r["id_user"].c_str());
+			r.free();
+		}
 	mutex.unlock();
 	sendOfflineMessages(client);
 }
@@ -534,7 +547,10 @@ void VirtualHost::onOnline(XMPPClient *client) {
 * Событие: Пользователь ушел в offline (thread-safe)
 * @param client поток
 */
-void VirtualHost::onOffline(XMPPClient *client) {
+void VirtualHost::onOffline(XMPPClient *client)
+{
+	fprintf(stderr, "[VirtualHost]: offline %s\n", client->jid().full().c_str());
+	
 	mutex.lock();
 		onliners[client->jid().username()].erase(client->jid().resource());
 		if(onliners[client->jid().username()].empty()) {
@@ -542,7 +558,6 @@ void VirtualHost::onOffline(XMPPClient *client) {
 			onliners.erase(client->jid().username());
 			id_users.erase(client->jid().username());
 		}
-		//cout << client->jid().full() << " is offline :-(\n";
 	mutex.unlock();
 }
 

@@ -51,7 +51,7 @@ Stanza Stanza::presence(JID from, JID to, ClientPresence p) {
 	Stanza presence = new ATXmlTag("presence");
 	presence->setAttribute("from", from.full());
 	presence->setAttribute("to", to.full());
-	presence["show"] = p.getShow();
+	presence["show"] = p.show;
 	presence["priority"] = p.getPriority();
 	presence["status"] = p.status_text;
 	return presence;
