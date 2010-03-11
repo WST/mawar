@@ -52,6 +52,23 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void servePresenceProbes(Stanza stanza);
 		
 		/**
+		* RFC 3921 (8.2.6) Presence Subscribe
+		*/
+		void servePresenceSubscribe(Stanza stanza);
+		
+		/**
+		* RFC 3921 (8.2.7) Presence Subscribed
+		*/
+		void servePresenceSubscribed(Stanza stanza);
+		
+		/**
+		* Обслуживаение Presence Subscriptions
+		*
+		* RFC 3921 (5.1.6) Presence Subscriptions
+		*/
+		void servePresenceSubscriptions(Stanza stanza);
+		
+		/**
 		* Серверная часть обработки станзы presence
 		*
 		* Вся клиентская часть находиться в классе XMPPClinet.
@@ -127,6 +144,16 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 		*/
 		virtual bool routeStanza(Stanza stanza);
+		
+		/**
+		* Roster Push
+		*
+		* Отправить станзу всем активным ресурсам пользователя
+		* @NOTE если ресурс не запрашивал ростер, то отправлять не нужно
+		* @param username логин пользователя которому надо отправить
+		* @param stanza станза которую надо отправить
+		*/
+		void rosterPush(const std::string &username, Stanza stanza);
 		
 		/**
 		* Обработка ростера

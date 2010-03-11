@@ -88,6 +88,7 @@ bool VirtualHost::sendRoster(Stanza stanza) {
 * @param item элемент описывающий изменения в контакте
 */
 void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item) {
+	fprintf(stderr, "[VirtualHost: %s]: roster set in %s item %s\n", hostname().c_str(), client->jid().username().c_str(), item->getAttribute("jid").c_str());
 	/*
 	The server MUST update the roster information in persistent storage,
 	and also push the change out to all of the user's available resources
@@ -96,18 +97,19 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 	available resources to remain in sync with the server-based roster
 	information.
 	*/
-	
+	fprintf(stderr, "lookup roster item\n");
 	DB::result r = db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s", client->userId(), db.quote(item->getAttribute("jid")).c_str());
 	if(r.eof()) {
 		// добавить контакт
 		r.free();
+		fprintf(stderr, "not found, insert\n");
 		db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
 			client->userId(), // id_user
 			db.quote(item->getAttribute("jid")).c_str(), // contact_jid
 			db.quote(item->getAttribute("name")).c_str(), // contact_nick
 			db.quote(item["group"]).c_str() // contact_group
 		);
-		
+		fprintf(stderr, "inserted, broadcast roster set\n");
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("to", "");
 		iq->setAttribute("type", "set");
@@ -121,8 +123,10 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 			item2["group"] = string(item["group"]);
 		broadcast(iq, client->jid().username());
 		delete iq;
+		fprintf(stderr, "broadcased\n");
 	} else {
 		// обновить контакт
+		fprintf(stderr, "found, before update\n");
 		std::string subscription;
 		if(r["contact_subscription"] == "F") { // from
 			subscription = "from";
@@ -135,13 +139,16 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 		}
 		std::string name = item->hasAttribute("name") ? item->getAttribute("name") : r["contact_nick"];
 		std::string group = item->hasChild("group") ? string(item["group"]) : r["contact_group"];
+		std::string contact_jid = r["contact_jid"];
 		int contact_id = atoi(r["id_contact"].c_str());
 		r.free();
+		fprintf(stderr, "update\n");
 		db.query("UPDATE roster SET contact_nick = %s, contact_group = %s WHERE id_contact = %d",
 			db.quote(name).c_str(),
 			db.quote(group).c_str(),
 			contact_id
 			);
+		fprintf(stderr, "updated, broadcast roster set\n");
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("to", "");
 		iq->setAttribute("type", "set");
@@ -149,20 +156,23 @@ void VirtualHost::setRosterItem(XMPPClient *client, Stanza stanza, TagHelper ite
 		TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item2 = query["item"];
-			item2->setAttribute("jid", r["contact_jid"]);
+			item2->setAttribute("jid", contact_jid);
 			item2->setAttribute("name", name);
 			item2->setAttribute("subscription", subscription);
 			if ( group != "" ) item2["group"] = group;
 		broadcast(iq, client->jid().username());
 		delete iq;
+		fprintf(stderr, "broadcasted\n");
 	}
 	
+	fprintf(stderr, "send resutl\n");
 	Stanza result = new ATXmlTag("iq");
 	result->setAttribute("to", client->jid().full());
 	result->setAttribute("type", "result");
 	result->setAttribute("id", stanza->getAttribute("id"));
 	client->sendStanza(result);
 	delete result;
+	fprintf(stderr, "leave\n");
 }
 
 /**
@@ -341,6 +351,134 @@ void VirtualHost::servePresenceProbes(Stanza stanza)
 }
 
 /**
+* RFC 3921 (8.2.6) Presence Subscribe
+*/
+void VirtualHost::servePresenceSubscribe(Stanza stanza)
+{
+	string from = stanza.from().bare();
+	string to = stanza.to().username();
+	
+	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2.6) Presence Subscribe from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
+	
+	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
+		db.quote(to).c_str(),
+		db.quote(from).c_str()
+		);
+	if ( ! r.eof() )
+	{
+		if ( r["contact_subscription"] == "F" || r["contact_subscription"] == "B" )
+		{ // уже авторизован, просто повторно отправим подтвержение
+			Stanza presence = new ATXmlTag("presence");
+			presence->setAttribute("from", stanza.to().bare());
+			presence->setAttribute("to", from);
+			presence->setAttribute("type", "subscribed");
+			server->routeStanza(presence);
+			delete presence;
+			
+			r.free();
+			return;
+		}
+	}
+	else
+	{ // сохранить запрос в БД
+		db.query("INSERT INTO roster (id_user, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'N', 'P')", id_users[to], db.quote(from).c_str());
+	}
+	r.free();
+	
+	// TODO broadcast only to whom requested roster
+	broadcast(stanza, to);
+}
+
+/**
+* RFC 3921 (8.2.7) Presence Subscribed
+*/
+void VirtualHost::servePresenceSubscribed(Stanza stanza)
+{
+	string from = stanza.from().bare();
+	string to = stanza.to().username();
+	
+	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2.7) Presence Subscribed from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
+	
+	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
+		db.quote(to).c_str(),
+		db.quote(from).c_str()
+		);
+	
+	if ( ! r.eof() )
+	{
+		if ( r["contact_subscription"] == "N" || r["contact_subscription"] == "F" )
+		{
+			Stanza iq = new ATXmlTag("iq");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item = query["item"];
+			item->setAttribute("jid", from);
+			item->setAttribute("subscription", "to");
+			if ( r["contact_nick"] != "" ) item->setAttribute("name", r["contact_nick"]);
+			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
+			
+			const char *subscription = (r["contact_subscription"] == "N") ? "T" : "B";
+			db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+				subscription,
+				r["id_contact"].c_str()
+				);
+			
+			rosterPush(to, iq);
+			delete iq;
+			
+			serveCommonPresence(stanza);
+			
+			// отправить презенсы со всех ресурсов
+			
+			// TODO optimize
+			// 1. получаем копию списка ресурсов (иначе dead lock)
+			// (c) shade
+			mutex.lock();
+				sessions_t::iterator user = onliners.find(to);
+				reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
+			mutex.unlock();
+			
+			// 2. проходимся по копии списка и делаем рассылку
+			// TODO но есть опасность, что пока мы будем работать со списком
+			// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
+			// впрочем эта проблема могла быть и раньше
+			// (c) shade
+			for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
+			{
+				Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
+				server->routeStanza(p.to().hostname(), p);
+				delete p;
+			}
+		}
+	}
+	r.free();
+}
+
+/**
+* Обслуживаение Presence Subscriptions
+*
+* RFC 3921 (5.1.6) Presence Subscriptions
+*/
+void VirtualHost::servePresenceSubscriptions(Stanza stanza)
+{
+	fprintf(stderr, "[VirtualHost]: RFC 3921 (5.1.6) Presence Subscriptions\n");
+	
+	if ( stanza->getAttribute("type") == "subscribe" )
+	{
+		servePresenceSubscribe(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "subscribed" )
+	{
+		servePresenceSubscribed(stanza);
+		return;
+	}
+	
+	fprintf(stderr, "[VirtualHost]: drop unknown presence subscription: %s\n", stanza->asString().c_str());
+}
+
+/**
 * Серверная часть обработки станзы presence
 *
 * Вся клиентская часть находиться в классе XMPPClinet.
@@ -371,20 +509,10 @@ void VirtualHost::servePresence(Stanza stanza)
 			servePresenceProbes(stanza);
 			return;
 		}
+		
+		servePresenceSubscriptions(stanza);
+		return;
 	}
-	
-	/*
-	if ( stanza->getAttribute("type", "") == "subscribed" ) {
-		handleSubscribed(stanza);
-		//return;
-		// Закомментировал return, надо передавать ету станзу
-	}
-	
-	if ( stanza->getAttribute("type", "") == "subscribe" ) {
-		// TODO
-		//return;
-	}
-	*/
 	
 	fprintf(stderr, "[VirtualHost]: drop unknown presence: %s\n", stanza->asString().c_str());
 	return;
@@ -717,6 +845,29 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	}
 	
 	return false;
+}
+
+/**
+* Roster Push
+*
+* Отправить станзу всем активным ресурсам пользователя
+* @NOTE если ресурс не запрашивал ростер, то отправлять не нужно
+* @param username логин пользователя которому надо отправить
+* @param stanza станза которую надо отправить
+*/
+void VirtualHost::rosterPush(const std::string &username, Stanza stanza)
+{
+	mutex.lock();
+		sessions_t::iterator user = onliners.find(username);
+		if( user != onliners.end() )
+		{
+			for(reslist_t::const_iterator iter = user->second.begin(); iter != user->second.end(); ++iter)
+			{
+				//stanza->setAttribute("to", iter->second->jid().full());
+				iter->second->sendStanza(stanza);
+			}
+		}
+	mutex.unlock();
 }
 
 /**

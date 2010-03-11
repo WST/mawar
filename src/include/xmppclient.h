@@ -172,6 +172,16 @@ public:
 	void handleUnavailablePresence();
 	
 	/**
+	* RFC 3921 (8.2.4) Presence Subscribe
+	*/
+	void handlePresenceSubscribe(Stanza stanza);
+	
+	/**
+	* RFC 3921 (8.2.7) Presence Subscribed
+	*/
+	void handlePresenceSubscribed(Stanza stanza);
+	
+	/**
 	* RFC 3921 (5.1.6) Presence Subscriptions
 	*/
 	void handlePresenceSubscriptions(Stanza stanza);
