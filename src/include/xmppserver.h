@@ -122,6 +122,13 @@ public:
 	*/
 	bool routeStanza(const std::string &host, Stanza stanza);
 	
+	/**
+	* Роутер исходящих станз (thread-safe)
+	*
+	* Упрощенный врапер для routeStanza(host, stanza), хост извлекается
+	* из атрибута to
+	*/
+	bool routeStanza(Stanza stanza);
 private:
 	/**
 	* Список доменов

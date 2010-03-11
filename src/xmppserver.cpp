@@ -147,3 +147,14 @@ bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 		return s2s->routeStanza(host, stanza);
 	}
 }
+
+/**
+* Роутер исходящих станз (thread-safe)
+*
+* Упрощенный врапер для routeStanza(host, stanza), хост извлекается
+* из атрибута to
+*/
+bool XMPPServer::routeStanza(Stanza stanza)
+{
+	return routeStanza(stanza.to().hostname(), stanza);
+}

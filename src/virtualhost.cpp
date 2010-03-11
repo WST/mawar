@@ -613,7 +613,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
 			}
 			r.free();
-			routeStanza(iq);
+			server->routeStanza(iq);
 			delete iq;
 		} else if(stanza.type() == "set") {
 			// Установка собственной vcard
@@ -625,7 +625,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			ATXmlTag *vCard = new ATXmlTag("vCard");
 			vCard->setDefaultNameSpaceAttribute("vcard-temp");
 			iq->insertChildElement(vCard);
-			routeStanza(iq);
+			server->routeStanza(iq);
 			delete iq;
 		}
 	} else {
@@ -648,7 +648,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
 		}
 		r.free();
-		routeStanza(iq);
+		server->routeStanza(iq);
 		delete iq;
 	}
 }
