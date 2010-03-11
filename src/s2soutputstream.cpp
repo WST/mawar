@@ -21,6 +21,7 @@ S2SOutputStream::S2SOutputStream(XMPPServer *srv, int sock, const std::string &t
 */
 S2SOutputStream::~S2SOutputStream()
 {
+	XMPPStream::server->removeDomain(this);
 }
 
 /**
