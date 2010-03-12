@@ -900,7 +900,6 @@ void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 * Вызывается из XMPPClient::onIqStanza()
 */
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
-	// TODO: учесть registration_allowed
 	if(!registration_allowed) {
 		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
 		server->routeStanza(stanza.from().hostname(), error);
