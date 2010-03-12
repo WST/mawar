@@ -8,6 +8,7 @@
 #define CONFIG_C2S "5222"
 #define CONFIG_S2S "5269"
 #define CONFIG_XEP0114 "-1"
+#define CONFIG_USERNAME "nobody"
 
 #include <iostream>
 using namespace std;
@@ -31,6 +32,14 @@ void ConfigFile::reload() {
 	
 	limits = config_tag->getChild("limits");
 	listen = config_tag->getChild("listen");
+	system = config_tag->getChild("system");
+}
+
+const char *ConfigFile::user() {
+	if(system) {
+		return system->getChildValue("user", CONFIG_USERNAME).c_str();
+	}
+	return CONFIG_USERNAME;
 }
 
 unsigned short int ConfigFile::workers() {

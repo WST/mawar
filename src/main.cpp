@@ -10,6 +10,9 @@
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include <taghelper.h>
 #include <nanosoft/asyncdns.h>
@@ -83,6 +86,15 @@ int main()
 {
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
+	
+	fprintf(stderr, "Trying to switch to user: ");
+	fprintf(stderr, config->user());
+	fprintf(stderr, "\n");
+	struct passwd *pw = getpwnam(config->user());
+	if(pw) {
+		if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "setuid fault\n");
+		if(setgid(pw->pw_gid) != 0) fprintf(stderr, "setgid fault\n");
+	}
 	
 	//test_TagHelper();
 	

@@ -37,6 +37,9 @@ class ConfigFile
 		// listen
 		unsigned int c2s();
 		unsigned int s2s();
+	
+		//system
+		const char *user();
 		
 		/**
 		* Порт для XEP-0114
@@ -58,6 +61,7 @@ class ConfigFile
 		ATXmlTag *config_tag;
 		ATXmlTag *listen;
 		ATXmlTag *limits;
+		ATXmlTag *system;
 		ATXmlTag *current;
 		std::string config_filename;
 };
