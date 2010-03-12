@@ -52,14 +52,24 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void servePresenceProbes(Stanza stanza);
 		
 		/**
-		* RFC 3921 (8.2.6) Presence Subscribe
+		* RFC 3921 (8.2) Presence Subscribe
 		*/
 		void servePresenceSubscribe(Stanza stanza);
 		
 		/**
-		* RFC 3921 (8.2.7) Presence Subscribed
+		* RFC 3921 (8.2) Presence Subscribed
 		*/
 		void servePresenceSubscribed(Stanza stanza);
+		
+		/**
+		* RFC 3921 (8.4) Presence Unsubscribe
+		*/
+		void servePresenceUnsubscribe(Stanza stanza);
+		
+		/**
+		* RFC 3921 (8.2.1) Presence Unsubscribed
+		*/
+		void servePresenceUnsubscribed(Stanza stanza);
 		
 		/**
 		* Обслуживаение Presence Subscriptions

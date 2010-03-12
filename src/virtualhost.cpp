@@ -354,14 +354,14 @@ void VirtualHost::servePresenceProbes(Stanza stanza)
 }
 
 /**
-* RFC 3921 (8.2.6) Presence Subscribe
+* RFC 3921 (8.2) Presence Subscribe
 */
 void VirtualHost::servePresenceSubscribe(Stanza stanza)
 {
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2.6) Presence Subscribe from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
+	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2) Presence Subscribe from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
 	
 	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
@@ -393,14 +393,14 @@ void VirtualHost::servePresenceSubscribe(Stanza stanza)
 }
 
 /**
-* RFC 3921 (8.2.7) Presence Subscribed
+* RFC 3921 (8.2) Presence Subscribed
 */
 void VirtualHost::servePresenceSubscribed(Stanza stanza)
 {
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2.7) Presence Subscribed from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
+	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2) Presence Subscribed from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
 	
 	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
@@ -430,28 +430,142 @@ void VirtualHost::servePresenceSubscribed(Stanza stanza)
 			delete iq;
 			
 			serveCommonPresence(stanza);
+		}
+		
+		// отправить презенсы со всех ресурсов
+		
+		// TODO optimize
+		// 1. получаем копию списка ресурсов (иначе dead lock)
+		// (c) shade
+		mutex.lock();
+			sessions_t::iterator user = onliners.find(to);
+			reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
+		mutex.unlock();
+		
+		// 2. проходимся по копии списка и делаем рассылку
+		// TODO но есть опасность, что пока мы будем работать со списком
+		// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
+		// впрочем эта проблема могла быть и раньше
+		// (c) shade
+		for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
+		{
+			Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
+			server->routeStanza(p.to().hostname(), p);
+			delete p;
+		}
+	}
+	r.free();
+}
+
+/**
+* RFC 3921 (8.4) Presence Unsubscribe
+*/
+void VirtualHost::servePresenceUnsubscribe(Stanza stanza)
+{
+	string from = stanza.from().bare();
+	string to = stanza.to().username();
+	
+	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.4) Presence Unsubscribe from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
+	
+	DB::result r = db.query(
+		"SELECT roster.* FROM roster"
+		" JOIN users ON roster.id_user = users.id_user"
+		" WHERE user_login = %s AND contact_jid = %s",
+		db.quote(to).c_str(),
+		db.quote(from).c_str()
+		);
+	if ( ! r.eof() )
+	{
+		if ( r["contact_subscription"] == "F" || r["contact_subscription"] == "B" )
+		{ // уже авторизован, просто повторно отправим подтвержение
+			Stanza iq = new ATXmlTag("iq");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item = query["item"];
+			item->setAttribute("jid", from);
+			item->setAttribute("subscription", (r["contact_subscription"] == "B") ? "to" : "none");
+			if ( r["contact_nick"] != "" ) item->setAttribute("name", r["contact_nick"]);
+			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 			
-			// отправить презенсы со всех ресурсов
+			const char *subscription = (r["contact_subscription"] == "B") ? "T" : "N";
+			db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+				subscription,
+				r["id_contact"].c_str()
+				);
 			
-			// TODO optimize
-			// 1. получаем копию списка ресурсов (иначе dead lock)
-			// (c) shade
-			mutex.lock();
-				sessions_t::iterator user = onliners.find(to);
-				reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
-			mutex.unlock();
+			// TODO broadcast only to whom requested roster
+			broadcast(stanza, to);
+		}
+	}
+	r.free();
+	
+	// отправить презенсы со всех ресурсов
+	
+	// TODO optimize
+	// 1. получаем копию списка ресурсов (иначе dead lock)
+	// (c) shade
+	mutex.lock();
+		sessions_t::iterator user = onliners.find(to);
+		reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
+	mutex.unlock();
+	
+	// 2. проходимся по копии списка и делаем рассылку
+	// TODO но есть опасность, что пока мы будем работать со списком
+	// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
+	// впрочем эта проблема могла быть и раньше
+	// (c) shade
+	Stanza p = new ATXmlTag("presence");
+	p->setAttribute("to", from);
+	p->setAttribute("type", "unavailable");
+	for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
+	{
+		p->setAttribute("from", jt->second->jid().full());
+		server->routeStanza(p);
+	}
+	delete p;
+}
+
+/**
+* RFC 3921 (8.2.1) Presence Unsubscribed
+*/
+void VirtualHost::servePresenceUnsubscribed(Stanza stanza)
+{
+	string from = stanza.from().bare();
+	string to = stanza.to().username();
+	
+	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2.1) Presence Unsubscribed from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
+	
+	DB::result r = db.query(
+		"SELECT roster.* FROM roster"
+		" JOIN users ON roster.id_user = users.id_user"
+		" WHERE user_login = %s AND contact_jid = %s",
+		db.quote(to).c_str(),
+		db.quote(from).c_str()
+		);
+	
+	if ( ! r.eof() )
+	{
+		if ( r["contact_subscription"] == "T" || r["contact_subscription"] == "B" )
+		{
+			Stanza iq = new ATXmlTag("iq");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item = query["item"];
+			item->setAttribute("jid", from);
+			item->setAttribute("subscription", (r["contact_subscription"] == "B") ? "from" : "none");
+			if ( r["contact_nick"] != "" ) item->setAttribute("name", r["contact_nick"]);
+			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 			
-			// 2. проходимся по копии списка и делаем рассылку
-			// TODO но есть опасность, что пока мы будем работать со списком
-			// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
-			// впрочем эта проблема могла быть и раньше
-			// (c) shade
-			for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
-			{
-				Stanza p = Stanza::presence(jt->second->jid(), stanza.from(), jt->second->presence());
-				server->routeStanza(p.to().hostname(), p);
-				delete p;
-			}
+			const char *subscription = (r["contact_subscription"] == "B") ? "F" : "N";
+			db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+				subscription,
+				r["id_contact"].c_str()
+				);
+			
+			rosterPush(to, iq);
+			delete iq;
+			
+			serveCommonPresence(stanza);
 		}
 	}
 	r.free();
@@ -468,13 +582,29 @@ void VirtualHost::servePresenceSubscriptions(Stanza stanza)
 	
 	if ( stanza->getAttribute("type") == "subscribe" )
 	{
+		// RFC 3921 (8.2) Presence Subscribe
 		servePresenceSubscribe(stanza);
 		return;
 	}
 	
 	if ( stanza->getAttribute("type") == "subscribed" )
 	{
+		// RFC 3921 (8.2) Presence Subscribed
 		servePresenceSubscribed(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "unsubscribe" )
+	{
+		// RFC 3921 (8.4) Presence Unsubscribe
+		servePresenceUnsubscribe(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "unsubscribed" )
+	{
+		// RFC 3921 (8.2.1) Presence Unsubscribed
+		servePresenceUnsubscribed(stanza);
 		return;
 	}
 	

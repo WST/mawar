@@ -282,11 +282,11 @@ void XMPPClient::handleUnavailablePresence()
 }
 
 /**
-* RFC 3921 (8.2.4) Presence Subscribe
+* RFC 3921 (8.2) Presence Subscribe
 */
 void XMPPClient::handlePresenceSubscribe(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2.4) Presence Subscribe\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2) Presence Subscribe\n", getWorkerId(), fd);
 	
 	std::string to = stanza.to().bare();
 	
@@ -319,11 +319,11 @@ void XMPPClient::handlePresenceSubscribe(Stanza stanza)
 }
 
 /**
-* RFC 3921 (8.2.7) Presence Subscribed
+* RFC 3921 (8.2) Presence Subscribed
 */
 void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2.7) Presence Subscribed\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2) Presence Subscribed\n", getWorkerId(), fd);
 	
 	std::string to = stanza.to().bare();
 	
@@ -367,6 +367,94 @@ void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 }
 
 /**
+* RFC 3921 (8.4) Presence Unsubscribe
+*/
+void XMPPClient::handlePresenceUnsubscribe(Stanza stanza)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.4) Presence Unsubscribe\n", getWorkerId(), fd);
+	
+	std::string to = stanza.to().bare();
+	
+	DB::result r = vhost->db.query(
+		"SELECT roster.* FROM roster"
+		" JOIN users ON roster.id_user = users.id_user"
+		" WHERE user_login = %s AND contact_jid = %s",
+		vhost->db.quote(client_jid.username()).c_str(),
+		vhost->db.quote(to).c_str()
+		);
+	if ( ! r.eof() )
+	{
+		Stanza iq = new ATXmlTag("iq");
+		TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+		TagHelper item = query["item"];
+		item->setAttribute("jid", to);
+		item->setAttribute("subscription", (r["contact_subscription"] == "F" || r["contact_subscription"] == "B") ? "from" : "none");
+		if ( r["contact_nick"] != "" ) item->setAttribute("name", r["contact_nick"]);
+		if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
+		
+		const char *subscription = (r["contact_subscription"] == "F" || r["contact_subscription"] == "B") ? "F" : "B";
+		vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+			subscription,
+			vhost->db.quote(r["id_contact"]).c_str()
+		);
+		
+		vhost->rosterPush(client_jid.username(), iq);
+		delete iq;
+		
+	}
+	r.free();
+	
+	stanza->setAttribute("from", client_jid.bare());
+	server->routeStanza(stanza);
+}
+
+/**
+* RFC 3921 (8.2.1) Presence Unsubscribed
+*/
+void XMPPClient::handlePresenceUnsubscribed(Stanza stanza)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2.1) Presence Unsubscribed\n", getWorkerId(), fd);
+	
+	std::string to = stanza.to().bare();
+	
+	DB::result r = vhost->db.query(
+		"SELECT roster.* FROM roster"
+		" JOIN users ON roster.id_user = users.id_user"
+		" WHERE user_login = %s AND contact_jid = %s",
+		vhost->db.quote(client_jid.username()).c_str(),
+		vhost->db.quote(to).c_str()
+		);
+	
+	if ( ! r.eof() )
+	{
+		if ( r["contact_subscription"] == "F" || r["contact_subscription"] == "B" )
+		{
+			Stanza iq = new ATXmlTag("iq");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item = query["item"];
+			item->setAttribute("jid", to);
+			item->setAttribute("subscription", (r["contact_subscription"] == "B") ? "to" : "none");
+			if ( r["contact_nick"] != "" ) item->setAttribute("name", r["contact_nick"]);
+			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
+			
+			const char *subscription = (r["contact_subscription"] == "B") ? "T" : "N";
+			vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+				subscription,
+				vhost->db.quote(r["id_contact"]).c_str()
+			);
+			
+			vhost->rosterPush(client_jid.username(), iq);
+			delete iq;
+		}
+	}
+	
+	stanza->setAttribute("from", client_jid.bare());
+	server->routeStanza(stanza);
+}
+
+/**
 * RFC 3921 (5.1.6) Presence Subscriptions
 */
 void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
@@ -382,8 +470,22 @@ void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
 	
 	if ( stanza->getAttribute("type") == "subscribed" )
 	{
-		// RFC 3921 (8.2.7) Presence Subscribed
+		// RFC 3921 (8.2) Presence Subscribed
 		handlePresenceSubscribed(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "unsubscribe" )
+	{
+		// RFC 3921 (8.4) Presence Unsubscribe
+		handlePresenceUnsubscribe(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "unsubscribed" )
+	{
+		// RFC 3921 (8.2.1) Presence Unsubscribed
+		handlePresenceUnsubscribed(stanza);
 		return;
 	}
 	
