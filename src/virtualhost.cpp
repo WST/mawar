@@ -23,6 +23,9 @@ using namespace nanosoft;
 VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config):
 	XMPPDomain(srv, aName)
 {
+	TagHelper registration = config["registration"];
+	registration_allowed = registration->getAttribute("enabled", "no") == "yes";
+	
 	TagHelper storage = config["storage"];
 	if ( storage->getAttribute("engine", "mysql") != "mysql" ) ::error("[VirtualHost] unknown storage engine: " + storage->getAttribute("engine"));
 	
@@ -897,6 +900,13 @@ void VirtualHost::handleRosterIq(XMPPClient *client, Stanza stanza)
 * Вызывается из XMPPClient::onIqStanza()
 */
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
+	// TODO: учесть registration_allowed
+	if(!registration_allowed) {
+		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+		server->routeStanza(stanza.from().hostname(), error);
+		delete error;
+		return;
+	}
 	if(stanza.type() == "get") {
 		// Запрос регистрационной формы
 		Stanza iq = new ATXmlTag("iq");
