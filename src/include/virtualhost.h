@@ -94,8 +94,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*/
 		void servePresence(Stanza stanza);
 		
-		virtual void handleSubscribed(Stanza stanza); // обработать presence[type=subscribed]
-		
 		/**
 		* Отправить станзу всем ресурсам указаного пользователя
 		*/
@@ -173,34 +171,12 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void rosterPush(const std::string &username, Stanza stanza);
 		
 		/**
-		* Обработка ростера
-		*/
-		virtual void handleRosterIq(XMPPClient *client, Stanza stanza);
-		
-		/**
 		* Регистрация пользователей
 		*/
 		void handleRegisterIq(XMPPClient *client, Stanza stanza);
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
 		void handleVcardRequest(Stanza stanza); // Обработать запрос vCard
-		bool sendRoster(Stanza stanza); // Отправить ростер в ответ на станзу stanza
-		
-		/**
-		* Добавить/обновить контакт в ростере
-		* @param client клиент чей ростер обновляем
-		* @param stanza станза управления ростером
-		* @param item элемент описывающий изменения в контакте
-		*/
-		void setRosterItem(XMPPClient *client, Stanza stanza, TagHelper item);
-		
-		/**
-		* Удалить контакт из ростера
-		* @param client клиент чей ростер обновляем
-		* @param stanza станза управления ростером
-		* @param item элемент описывающий изменения в контакте
-		*/
-		void removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper item);
 		
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
