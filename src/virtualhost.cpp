@@ -222,9 +222,19 @@ void VirtualHost::removeRosterItem(XMPPClient *client, Stanza stanza, TagHelper 
 /**
 * Информационные запросы без атрибута to
 * Адресованные клиентом данному узлу
-* TODO: передавать ответы роутеру, сейчас жёстко завязаны на c2s
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
+	if(stanza->hasChild("ping")) {
+		// ping (XEP-0199)
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", name);
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		server->routeStanza(iq);
+		delete iq;
+		return;
+	}
 	if(stanza->hasChild("query")) {
 		// Входящие запросы информации
 		
@@ -233,8 +243,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
 			Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
-			//getClientByJid(stanza.from())->sendStanza(version); // c2s only
-			server->routeStanza(stanza.from().hostname(), version);
+			server->routeStanza(version);
 			delete version;
 			return;
 		}
@@ -259,7 +268,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->setDefaultNameSpaceAttribute("jabber:iq:private");
 				
 				TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
-				DB::result r = db.query("SELECT block_data FROM private_storage WHERE id_user = %d AND block_xmlns = %s", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str());
+				DB::result r = db.query("SELECT block_data FROM private_storage WHERE username = %s AND block_xmlns = %s", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str());
 				if(!r.eof()) {
 					ATXmlTag *res = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
 					iq["query"]->insertChildElement(res);
@@ -268,7 +277,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				r.free();
 			} else { // set
 				TagHelper block = stanza["query"]->firstChild();
-				db.query("REPLACE INTO private_storage (id_user, block_xmlns, block_data) VALUES (%d, %s, %s)", id_users[stanza.from().username()], db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
+				db.query("REPLACE INTO private_storage (username, block_xmlns, block_data) VALUES (%s, %s, %s)", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
 				iq->setAttribute("to", stanza.from().full());
