@@ -321,6 +321,37 @@ void VirtualHost::serveCommonPresence(Stanza stanza)
 }
 
 /**
+* Отправить presence unavailable со всех ресурсов пользователя
+* @param from логин пользователя от имени которого надо отправить
+* @param to jid (bare) которому надо отправить
+*/
+void VirtualHost::broadcastUnavailable(const std::string &from, const std::string &to)
+{
+	// TODO optimize
+	// 1. получаем копию списка ресурсов (иначе dead lock)
+	// (c) shade
+	mutex.lock();
+		sessions_t::iterator user = onliners.find(to);
+		reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
+	mutex.unlock();
+	
+	// 2. проходимся по копии списка и делаем рассылку
+	// TODO но есть опасность, что пока мы будем работать со списком
+	// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
+	// впрочем эта проблема могла быть и раньше
+	// (c) shade
+	Stanza p = new ATXmlTag("presence");
+	p->setAttribute("to", from);
+	p->setAttribute("type", "unavailable");
+	for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
+	{
+		p->setAttribute("from", jt->second->jid().full());
+		server->routeStanza(p);
+	}
+	delete p;
+}
+
+/**
 * Обслуживание Presence Probes
 *
 * RFC 3921 (5.1.3) Presence Probes
@@ -509,29 +540,7 @@ void VirtualHost::servePresenceUnsubscribe(Stanza stanza)
 	r.free();
 	
 	// отправить презенсы со всех ресурсов
-	
-	// TODO optimize
-	// 1. получаем копию списка ресурсов (иначе dead lock)
-	// (c) shade
-	mutex.lock();
-		sessions_t::iterator user = onliners.find(to);
-		reslist_t res = (user != onliners.end()) ? user->second : reslist_t();
-	mutex.unlock();
-	
-	// 2. проходимся по копии списка и делаем рассылку
-	// TODO но есть опасность, что пока мы будем работать со списком
-	// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
-	// впрочем эта проблема могла быть и раньше
-	// (c) shade
-	Stanza p = new ATXmlTag("presence");
-	p->setAttribute("to", from);
-	p->setAttribute("type", "unavailable");
-	for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
-	{
-		p->setAttribute("from", jt->second->jid().full());
-		server->routeStanza(p);
-	}
-	delete p;
+	broadcastUnavailable(from, to);
 }
 
 /**

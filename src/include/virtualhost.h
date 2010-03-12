@@ -45,6 +45,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void serveCommonPresence(Stanza stanza);
 		
 		/**
+		* Отправить presence unavailable со всех ресурсов пользователя
+		* @param from логин пользователя от имени которого надо отправить
+		* @param to jid (bare) которому надо отправить
+		*/
+		void broadcastUnavailable(const std::string &from, const std::string &to);
+		
+		/**
 		* Обслуживание Presence Probes
 		*
 		* RFC 3921 (5.1.3) Presence Probes

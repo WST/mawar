@@ -200,6 +200,41 @@ public:
 	* Обработчик presence-станзы
 	*/
 	virtual void onPresenceStanza(Stanza stanza);
+	
+	/**
+	* Чтение ростера клиентом
+	*
+	* RFC 3921 (7.3) Retrieving One's Roster on Login
+	*/
+	void handleRosterGet(Stanza stanza);
+	
+	/**
+	* Добавить/обновить контакт в ростере
+	*
+	* RFC 3921 (7.4) Adding a Roster Item
+	* RFC 3921 (7.5) Updating a Roster Item
+	*/
+	void handleRosterItemSet(TagHelper item);
+	
+	/**
+	* Удалить контакт из ростера
+	*
+	* RFC 3921 (7.6) Deleting a Roster Item
+	* RFC 3921 (8.6) Removing a Roster Item and Canceling All Subscriptions
+	*/
+	void handleRosterItemRemove(TagHelper item);
+	
+	/**
+	* Обновить ростер
+	*/
+	void handleRosterSet(Stanza stanza);
+	
+	/**
+	* Обработка станз jabber:iq:roster
+	*
+	* RFC 3921 (7.) Roster Managment
+	*/
+	void handleRosterIq(Stanza stanza);
 };
 
 #endif // MAWAR_XMPPCLIENT_H

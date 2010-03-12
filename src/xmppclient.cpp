@@ -155,7 +155,7 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 		}
 		
 		if ( query->getAttribute("xmlns") == "jabber:iq:roster" ) {
-			vhost->handleRosterIq(this, stanza);
+			handleRosterIq(stanza);
 			return;
 		}
 	}
@@ -538,6 +538,247 @@ void XMPPClient::onPresenceStanza(Stanza stanza) {
 	// не будем напрягаться, просто выкинем станзу в /dev/null
 	// (c) shade
 	fprintf(stderr, "#%d: [XMPPClient: %d] drop unknown presence: %s\n", getWorkerId(), fd, stanza->asString().c_str());
+}
+
+/**
+* Чтение ростера клиентом
+*
+* RFC 3921 (7.3) Retrieving One's Roster on Login
+*/
+void XMPPClient::handleRosterGet(Stanza stanza)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] roster get\n", getWorkerId(), fd);
+	
+	use_roster = true;
+	
+	Stanza iq = new ATXmlTag("iq");
+	iq->setAttribute("to", client_jid.full());
+	iq->setAttribute("type", "result");
+	if( stanza->hasAttribute("id") ) iq->setAttribute("id", stanza.id());
+	
+	TagHelper query = iq["query"];
+	query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+	
+	// Впихнуть элементы ростера тут
+	// TODO: ожидание авторизации (pending)
+	const char *subscription;
+	ATXmlTag *item;
+	
+	DB::result r = vhost->db.query(
+		"SELECT roster.* FROM roster"
+		" JOIN users ON roster.id_user = users.id_user"
+		" WHERE users.user_login=%s",
+		vhost->db.quote(client_jid.username()).c_str()
+		);
+	
+	for(; ! r.eof(); r.next())
+	{
+		if ( r["contact_subscription"] == "F" ) subscription = "from";
+		else if( r["contact_subscription"] == "T" ) subscription = "to";
+		else if( r["contact_subscription"] == "B" ) subscription = "both";
+		else subscription = "none";
+		
+		item = new ATXmlTag("item");
+		item->setAttribute("subscription", subscription);
+		item->setAttribute("jid", r["contact_jid"]);
+		item->setAttribute("name", r["contact_nick"]);
+		query += item;
+	}
+	r.free();
+	
+	sendStanza(iq);
+	delete iq;
+}
+
+/**
+* Добавить/обновить контакт в ростере
+*
+* RFC 3921 (7.4) Adding a Roster Item
+* RFC 3921 (7.5) Updating a Roster Item
+*/
+void XMPPClient::handleRosterItemSet(TagHelper item)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] roster set item\n", getWorkerId(), fd);
+	
+	// The server MUST update the roster information in persistent storage,
+	// and also push the change out to all of the user's available resources
+	// that have requested the roster.  This "roster push" consists of an IQ
+	// stanza of type "set" from the server to the client and enables all
+	// available resources to remain in sync with the server-based roster
+	// information.
+	
+	DB::result r = vhost->db.query(
+		"SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+		user_id,
+		vhost->db.quote(item->getAttribute("jid")).c_str()
+		);
+	
+	if(r.eof())
+	{
+		// добавить контакт: RFC 3921 (7.4) Adding a Roster Item
+		fprintf(stderr, "#%d: [XMPPClient: %d] roster add item: %s\n", getWorkerId(), fd, item->getAttribute("jid").c_str());
+		
+		vhost->db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
+			user_id,
+			vhost->db.quote(item->getAttribute("jid")).c_str(), // contact_jid
+			vhost->db.quote(item->getAttribute("name")).c_str(), // contact_nick
+			vhost->db.quote(item["group"]).c_str() // contact_group
+		);
+		
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("type", "set");
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item2 = query["item"];
+			item2->setAttribute("jid", item->getAttribute("jid"));
+			item2->setAttribute("name", item->getAttribute("name"));
+			item2->setAttribute("subscription", "none");
+			if ( item["group"]->getCharacterData() != "" ) item2["group"] += item["group"]->getCharacterData();
+		vhost->rosterPush(client_jid.username(), iq);
+		delete iq;
+	}
+	else
+	{
+		// обновить контакт: RFC 3921 (7.5) Updating a Roster Item
+		fprintf(stderr, "#%d: [XMPPClient: %d] roster update item: %s\n", getWorkerId(), fd, item->getAttribute("jid").c_str());
+		
+		const char *subscription;
+		if( r["contact_subscription"] == "F" ) subscription = "from";
+		else if ( r["contact_subscription"] == "T" ) subscription = "to";
+		else if ( r["contact_subscription"] == "B") subscription = "both";
+		else subscription = "none";
+		
+		std::string name = item->hasAttribute("name") ? item->getAttribute("name") : r["contact_nick"];
+		std::string group = item->hasChild("group") ? item["group"] : r["contact_group"];
+		std::string contact_jid = r["contact_jid"];
+		int contact_id = atoi(r["id_contact"].c_str());
+		
+		vhost->db.query("UPDATE roster SET contact_nick = %s, contact_group = %s WHERE id_contact = %d",
+			vhost->db.quote(name).c_str(),
+			vhost->db.quote(group).c_str(),
+			contact_id
+			);
+		
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("type", "set");
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+			TagHelper item2 = query["item"];
+			item2->setAttribute("jid", contact_jid);
+			item2->setAttribute("name", name);
+			item2->setAttribute("subscription", subscription);
+			if ( group != "" ) item2["group"] = group;
+		
+		vhost->rosterPush(client_jid.username(), iq);
+		delete iq;
+	}
+	r.free();
+}
+
+/**
+* Удалить контакт из ростера
+*
+* RFC 3921 (7.6) Deleting a Roster Item
+* RFC 3921 (8.6) Removing a Roster Item and Canceling All Subscriptions
+*/
+void XMPPClient::handleRosterItemRemove(TagHelper item)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] roster remove item\n", getWorkerId(), fd);
+	
+	DB::result r = vhost->db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+		user_id,
+		vhost->db.quote(item->getAttribute("jid")).c_str()
+		);
+	
+	if ( r.eof() )
+	{
+		r.free();
+		return;
+	}
+	
+	int contact_id = atoi(r["id_contact"].c_str());
+	r.free();
+	
+	Stanza presence = new ATXmlTag("presence");
+	presence->setAttribute("from", client_jid.bare());
+	presence->setAttribute("to", item->getAttribute("jid"));
+	
+	vhost->broadcastUnavailable(client_jid.username(), item->getAttribute("jid"));
+	
+	presence->setAttribute("type", "unsubscribed");
+	server->routeStanza(presence);
+	
+	presence->setAttribute("type", "unsubscribe");
+	server->routeStanza(presence);
+	
+	delete presence;
+	
+	vhost->db.query("DELETE FROM roster WHERE id_contact = %d", contact_id);
+	
+	Stanza iq = new ATXmlTag("iq");
+	iq->setAttribute("type", "set");
+	TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:roster");
+		TagHelper item2 = query["item"];
+		item2->setAttribute("jid", item->getAttribute("jid"));
+		item2->setAttribute("subscription", "remove");
+	vhost->rosterPush(client_jid.username(), iq);
+	delete iq;
+}
+
+/**
+* Обновить ростер
+*/
+void XMPPClient::handleRosterSet(Stanza stanza)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] roster set\n", getWorkerId(), fd);
+	
+	TagHelper query = stanza["query"];
+	TagHelper item = query->firstChild("item");
+	while ( item )
+	{
+		if ( item->getAttribute("subscription", "") != "remove" )
+		{
+			// RFC 3921 (7.4) Adding a Roster Item
+			// RFC 3921 (7.5) Updating a Roster Item
+			handleRosterItemSet(item);
+		}
+		else
+		{
+			// RFC 3921 (7.6) Deleting a Roster Item
+			handleRosterItemRemove(item);
+		}
+		item = query->nextChild("item", item);
+	}
+	
+	Stanza result = new ATXmlTag("iq");
+	result->setAttribute("to", client_jid.full());
+	result->setAttribute("type", "result");
+	if ( stanza->hasAttribute("to") ) result->setAttribute("id", stanza.id());
+	sendStanza(result);
+	delete result;
+}
+
+/**
+* Обработка станз jabber:iq:roster
+*
+* RFC 3921 (7.) Roster Managment
+*/
+void XMPPClient::handleRosterIq(Stanza stanza)
+{
+	fprintf(stderr, "#%d: [XMPPClient: %d] jabber:iq:roster\n", getWorkerId(), fd);
+	
+	if ( stanza->getAttribute("type") == "get" )
+	{
+		handleRosterGet(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "set" )
+	{
+		handleRosterSet(stanza);
+		return;
+	}
 }
 
 /**
