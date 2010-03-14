@@ -40,9 +40,9 @@ Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
 	
 	TagHelper query = iq["query"];
 		query->setDefaultNameSpaceAttribute("jabber:iq:version");
-		query["name"] = "Mawar Jabber/XMPP engine";
+		query["name"] = "@}->--";
 		query["version"] = "development branch";
-		query["os"] = "UNIX";
+		query["os"] = "Linux";
 	
 	return iq;
 }
