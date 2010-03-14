@@ -1,5 +1,17 @@
 #!/bin/bash
 
+### BEGIN INIT INFO
+# Provides:          maward
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Mawar init script
+# Description:       Init script for mawar Jabber/XMPP server
+### END INIT INFO
+
+# Author: Alexey Zolotov <zolotov-alex@shamangrad.net>.
+# Author: Ilja Averkov <admin@jsmart.web.id>.
+#
+
 MAWAR_BIN="/media/DATA/svn-soft/mawar/trunk/maward"
 MAWAR_HOME="/media/DATA/svn-soft/mawar/trunk"
 
