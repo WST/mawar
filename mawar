@@ -1,0 +1,23 @@
+#!/bin/bash
+
+MAWAR_BIN="/media/DATA/svn-soft/mawar/trunk/maward"
+MAWAR_HOME="/media/DATA/svn-soft/mawar/trunk"
+
+case "$1" in
+	start)
+		D=`pwd`
+		cd "${MAWAR_HOME}"
+		$MAWAR_BIN 2> /dev/null > /dev/null
+		cd "${D}"
+		exit 0;
+	;;
+	stop)
+		killall maward
+		exit 0;
+	;;
+	restart)
+		exit 0;
+	;;
+esac
+
+echo "usage: $0 {start|stop|restart}"

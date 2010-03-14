@@ -13,53 +13,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <cstdlib>
+
 
 #include <taghelper.h>
 #include <nanosoft/asyncdns.h>
 
 using namespace std;
-
-/**
-* Пример использования некоторых фишек TagHelper
-*
-* Расскоментируй вызов в main() чтобы поигаться
-*/
-void test_TagHelper()
-{
-	// создаем тег foo
-	TagHelper tag = new ATXmlTag("foo");
-	
-	// устанавливаем в нем атрибут bar=test
-	tag->setAttribute("bar", "test");
-	
-	// записываем в него текст (если есть потомки, то они удаляются)
-	tag = "Hello world";
-	
-	// добавить тег проще пареной репы :-)
-	tag["message"] = "Hello world";
-	
-	// добавить стразу два вложенных тега <iq><bind> тоже просто:
-	tag["iq/bind"] = ":-)";
-	
-	// добавить ещё текста? :-)
-	tag += "bla bla bla";
-	
-	// добавить тег?
-	TagHelper bar = tag += new ATXmlTag("bar");
-	bar->setAttribute("name", "bar");
-	
-	// здесь мы не копируем объект, мы берем ссылку/указатель
-	TagHelper iq = tag["iq"];
-	iq["session"]->setAttribute("id", "12345");
-	
-	cout << "iq: " << iq->asString() << endl;
-	
-	cout << "foo: " << tag->asString() << endl;
-	
-
-	// и даже удаляется :-]
-	delete tag;
-}
 
 // XMPP-сервер
 XMPPServer *server;
@@ -92,11 +52,18 @@ int main()
 	fprintf(stderr, "\n");
 	struct passwd *pw = getpwnam(config->user());
 	if(pw) {
-		if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "setuid fault\n");
-		if(setgid(pw->pw_gid) != 0) fprintf(stderr, "setgid fault\n");
+		if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "Failed to setuid!\n");
+		if(setgid(pw->pw_gid) != 0) fprintf(stderr, "Failed to setgid!\n");
 	}
-	
-	//test_TagHelper();
+	pid_t parpid;
+	if((parpid = fork()) < 0) {
+		printf("\nFailed to fork!");
+		exit(99);
+	}
+	else if(parpid != 0) {
+		exit(0); // успешно создан дочерний процесс, основной можно завершить
+	}
+	setsid();
 	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
