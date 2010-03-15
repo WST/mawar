@@ -23,6 +23,7 @@ RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 MKDIR = @MKDIR@
 LIBS = @LIBS@ -lgsasl
+PROXY_LIBS = @LIBS@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -70,11 +71,18 @@ MAWAR_OBJECTS+=s2sinputstream.o
 MAWAR_OBJECTS+=s2soutputstream.o
 MAWAR_OBJECTS+=geoip.o
 
+PROXY_OBJECTS=xmppproxy.o xmppproxystream.o
+
 MAWAR_TESTS=test-01 test-02
 
 .PHONY: all install
+all: maward proxyd
+
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS) libns_core.a libns_netd.a libns_xml.a libns_sasl.a
 	$(CXX) $(srcdir)/main.cpp $(MAWAR_OBJECTS) $(LDFLAGS) -lns_core -lns_netd -lns_xml -lns_sasl $(MYSQL_LIBS) $(LIBS) -o maward
+
+proxyd: $(srcdir)/proxy.cpp $(PROXY_OBJECTS) libns_core.a libns_netd.a
+	$(CXX) $(srcdir)/proxy.cpp $(PROXY_OBJECTS) $(LDFLAGS) -lns_core -lns_netd $(PROXY_LIBS) -o proxyd
 
 include $(ns_root)/core.mf
 include $(ns_root)/xml.mf
@@ -89,8 +97,8 @@ tests: $(MAWAR_TESTS)
 test-01: $(srcdir)/tests/test-01.cpp $(MAWAR_OBJECTS)
 	$(CXX) $(srcdir)/tests/test-01.cpp $(MAWAR_OBJECTS) $(LDFLAGS) $(LIBS) -o test-01
 
-test-02: $(srcdir)/tests/test-02.cpp $(MAWAR_OBJECTS)
-	$(CXX) $(srcdir)/tests/test-02.cpp $(MAWAR_OBJECTS) $(LDFLAGS) $(LIBS) -o test-02
+test-02: $(srcdir)/tests/test-02.cpp $(PROXY_OBJECTS)
+	$(CXX) $(srcdir)/tests/test-02.cpp $(PROXY_OBJECTS) $(LDFLAGS) $(LIBS) -o test-02
 	touch test1.xml test2.xml
 
 # modules
@@ -152,6 +160,12 @@ s2soutputstream.o: $(srcdir)/s2soutputstream.cpp $(srcdir)/include/s2slistener.h
 geoip.o: $(srcdir)/geoip.cpp $(srcdir)/include/geoip.h
 	$(CXX) -c $(srcdir)/geoip.cpp -o geoip.o
 
+xmppproxy.o: $(srcdir)/xmppproxy.cpp $(srcdir)/include/xmppproxy.h $(srcdir)/include/xmppproxystream.h
+	$(CXX) -c $(srcdir)/xmppproxy.cpp -o xmppproxy.o
+
+xmppproxystream.o: $(srcdir)/xmppproxystream.cpp $(srcdir)/include/xmppproxystream.h
+	$(CXX) -c $(srcdir)/xmppproxystream.cpp -o xmppproxystream.o
+
 # CLEAN
 
 .PHONY: clean distclean
@@ -160,4 +174,4 @@ distclean: clean
 	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS) test1.xml test2.xml lib*.a
 
 clean:
-	rm -f *.o maward
+	rm -f *.o maward proxyd
