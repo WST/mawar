@@ -212,7 +212,7 @@ void S2SListener::flush(S2SOutputStream *stream)
 		if ( iter != pendings.end() )
 		{
 			p = iter->second;
-			//pendings.erase(iter);
+			pendings.erase(iter);
 		} else p = 0;
 	mutex.unlock();
 	printf("flush: %s send\n", stream->remoteHost().c_str());
