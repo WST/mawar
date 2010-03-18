@@ -37,7 +37,8 @@ class ConfigFile
 		// listen
 		unsigned int c2s();
 		unsigned int s2s();
-	
+		std::string status(); // status socket
+		
 		//system
 		const char *user();
 		

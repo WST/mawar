@@ -4,6 +4,7 @@
 #include <xmppserver.h>
 #include <xep0114listener.h>
 #include <s2slistener.h>
+#include <serverstatus.h>
 #include <myconsole.h>
 #include <xml_tag.h>
 #include <configfile.h>
@@ -117,6 +118,16 @@ int main()
 		daemon.addObject(s2s);
 	}
 	
+	ServerStatus *status = 0;
+	string path = config->status();
+	if ( path != "" )
+	{
+		status = new ServerStatus(server);
+		status->bind(path.c_str());
+		status->listen(1);
+		daemon.addObject(status);
+	}
+	
 	// консоль управления сервером
 	//MyConsole console(&daemon, 0);
 	//daemon.addObject(&console);
@@ -133,6 +144,7 @@ int main()
 	daemon.run();
 	fprintf(stderr, "#0: [main] daemon exited\n");
 	
+	if ( status ) delete status;
 	if ( s2s ) delete s2s;
 	delete xep0114;
 	delete server;

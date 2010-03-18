@@ -7,6 +7,7 @@
 #define CONFIG_C2S_SESSIONS "1000"
 #define CONFIG_C2S "5222"
 #define CONFIG_S2S "5269"
+#define CONFIG_STATUS ""
 #define CONFIG_XEP0114 "-1"
 #define CONFIG_USERNAME "nobody"
 
@@ -68,6 +69,14 @@ unsigned int ConfigFile::s2s() {
 		return atoi(listen->getChildValue("s2s", CONFIG_S2S).c_str());
 	}
 	return atoi(CONFIG_S2S);
+}
+
+string ConfigFile::status()
+{
+	if( listen ) {
+		return listen->getChildValue("status", CONFIG_STATUS);
+	}
+	return CONFIG_STATUS;
 }
 
 /**
