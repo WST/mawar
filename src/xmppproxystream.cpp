@@ -148,7 +148,7 @@ void XMPPProxyStream::onRead()
 			{
 				fprintf(stderr, "recieved %d bytes per second, block for a while: %d\n", rxsec, fd);
 				lock(); // костыль однако
-				proxy->daemon->setTimer(tm+5, unblock, this);
+				proxy->daemon->setTimer(tm+1, unblock, this);
 			}
 		}
 	}
