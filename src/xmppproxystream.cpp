@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 #include <string.h>
 
 using namespace std;
@@ -20,6 +21,7 @@ XMPPProxyStream::XMPPProxyStream(XMPPProxy *prx):
 	ready_read(false), ready_write(false),
 	pair(0), finish_count(0)
 {
+	rx = rxsec = rxsec_limit = rxsec_switch = 0;
 }
 
 /**
@@ -34,6 +36,7 @@ XMPPProxyStream::XMPPProxyStream(class XMPPProxy *prx, XMPPProxyStream *s, int s
 	ready_read(true), ready_write(false),
 	pair(s), finish_count(0)
 {
+	rx = rxsec = rxsec_limit = rxsec_switch = 0;
 }
 
 /**
@@ -89,9 +92,22 @@ bool XMPPProxyStream::accept(int sock, const char *ip, int port)
 uint32_t XMPPProxyStream::getEventsMask()
 {
 	uint32_t mask = EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR;
-	if ( ready_read ) mask |= EPOLLIN;
+	if ( ready_read && ((rxsec_limit == 0) || (rxsec < rxsec_limit)) ) mask |= EPOLLIN;
 	if ( ready_write ) mask |= EPOLLOUT;
 	return mask;
+}
+
+/**
+* Таймер-функция разблокировки потока
+* @param data указатель на XMPPProxyStream который надо разблочить
+*/
+void XMPPProxyStream::unblock(int wid, void *data)
+{
+	XMPPProxyStream *stream = static_cast<XMPPProxyStream *>(data);
+	fprintf(stderr, "unlock stream: %d\n", stream->fd);
+	stream->rxsec = 0;
+	stream->proxy->daemon->modifyObject(stream);
+	stream->finish(); // костыль однако
 }
 
 /**
@@ -106,13 +122,34 @@ void XMPPProxyStream::onRead()
 	fprintf(stderr, "#%d: [XMPPProxyStream] read from: %d, size: %d\n", getWorkerId(), fd, r);
 	if ( r > 0 )
 	{
+		rx += r;
 		pair->len = r;
 		pair->written = 0;
+		
 		//if ( ! pair->writeChunk() )
 		{
 			ready_read = false;
 			pair->ready_write = true;
 			proxy->daemon->modifyObject(pair);
+		}
+		
+		// проверка ограничений
+		if ( rxsec_limit > 0 )
+		{
+			time_t tm = time(0);
+			int mask = tm & 1;
+			if ( rxsec_switch != mask )
+			{
+				rxsec = 0;
+				rxsec_switch = mask;
+			}
+			rxsec += r;
+			if ( rxsec > rxsec_limit )
+			{
+				fprintf(stderr, "recieved %d bytes per second, block for a while: %d\n", rxsec, fd);
+				lock(); // костыль однако
+				proxy->daemon->setTimer(tm+5, unblock, this);
+			}
 		}
 	}
 }
@@ -151,14 +188,25 @@ void XMPPProxyStream::onWrite()
 }
 
 /**
+* Блокировка потка от удаления
+*/
+void XMPPProxyStream::lock()
+{
+	mutex.lock();
+		int x = --finish_count;
+		fprintf(stderr, "#%d: [XMPPProxyStream: %d] lock %d\n", getWorkerId(), fd, x);
+	mutex.unlock();
+}
+
+/**
 * Финализация
 */
 void XMPPProxyStream::finish()
 {
 	int x;
 	mutex.lock();
-		fprintf(stderr, "#%d: [XMPPProxyStream: %d] finish %d\n", getWorkerId(), fd, finish_count);
 		x = ++finish_count;
+		fprintf(stderr, "#%d: [XMPPProxyStream: %d] finish %d\n", getWorkerId(), fd, x);
 	mutex.unlock();
 	if ( x == 1 )
 	{

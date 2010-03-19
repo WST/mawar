@@ -41,6 +41,21 @@ private:
 	bool ready_write;
 	
 	/**
+	* Число прочитанных байт за секунду
+	*/
+	int rxsec;
+	
+	/**
+	* Переключатель для rxsec
+	*/
+	int rxsec_switch;
+	
+	/**
+	* Общее число прочитанных байт
+	*/
+	int64_t rx;
+	
+	/**
 	* Размер буферизованных данных
 	*/
 	size_t len;
@@ -59,6 +74,12 @@ protected:
 	* Вернуть маску ожидаемых событий
 	*/
 	virtual uint32_t getEventsMask();
+	
+	/**
+	* Таймер-функция разблокировки потока
+	* @param data указатель на XMPPProxyStream который надо разблочить
+	*/
+	static void unblock(int wid, void *data);
 	
 	/**
 	* Событие готовности к чтению
@@ -105,6 +126,11 @@ public:
 	class XMPPProxy *proxy;
 	
 	/**
+	* Ограничение на размер трафика в секунду
+	*/
+	int rxsec_limit;
+	
+	/**
 	* Конструктор потока XMPP-прокси
 	*/
 	XMPPProxyStream(class XMPPProxy *prx);
@@ -131,6 +157,11 @@ public:
 	* @return TRUE - сокет принят, FALSE сокет отклонен
 	*/
 	bool accept(int sock, const char *ip, int port);
+	
+	/**
+	* Блокировка потка от удаления
+	*/
+	void lock();
 	
 	/**
 	* Финализация

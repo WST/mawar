@@ -39,6 +39,7 @@ void XMPPProxy::onAccept()
 			delete client;
 			return;
 		}
+		client->rxsec_limit = 10240;
 	}
 }
 
