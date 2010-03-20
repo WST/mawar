@@ -15,6 +15,8 @@ using namespace std;
 XMPPProxy *proxy_c2s;
 XMPPProxy *proxy_s2s;
 
+#define WHITELIST_PATH "whitelist.txt"
+
 void on_signal(int sig)
 {
 	switch ( sig )
@@ -25,6 +27,9 @@ void on_signal(int sig)
 		break;
 	case SIGHUP:
 		proxy_c2s->onSigHup();
+		break;
+	case SIGUSR1:
+		proxy_c2s->reloadWhiteList(WHITELIST_PATH);
 		break;
 	default:
 		// обычно мы не должны сюда попадать,
@@ -70,6 +75,7 @@ int main()
 	proxy_c2s = new XMPPProxy(&daemon, "127.0.0.1", 5242);
 	//proxy_s2s = new XMPPProxy(&daemon, "127.0.0.1", 5243);
 	
+	proxy_c2s->reloadWhiteList(WHITELIST_PATH);
 	
 	proxy_c2s->bind(5222);
 	//proxy_s2s->bind(5269);
@@ -87,6 +93,7 @@ int main()
 	sigaction(SIGTERM, &sa, 0);
 	sigaction(SIGHUP, &sa, 0);
 	sigaction(SIGINT, &sa, 0);
+	sigaction(SIGUSR1, &sa, 0);
 	
 	// запускаем демона
 	fprintf(stderr, "#0: [main] run daemon\n");

@@ -27,6 +27,16 @@ private:
 	* Порт проксируемого сервера
 	*/
 	int server_port;
+	
+	/**
+	* Число записей в белом списке
+	*/
+	int whitecount;
+	
+	/**
+	* Белый список IP адресов которые не надо ограничивать по скорости
+	*/
+	char whitelist[100][20];
 protected:
 	/**
 	* Mutex для thread-safe доступа к общим данным
@@ -70,6 +80,11 @@ public:
 	* Сигнал HUP
 	*/
 	void onSigHup();
+	
+	/**
+	* Перезагрузить белый список из файла
+	*/
+	void reloadWhiteList(const char *path);
 };
 
 #endif // MAWAR_XMPPPROXY_H

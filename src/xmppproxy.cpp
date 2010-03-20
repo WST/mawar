@@ -17,6 +17,7 @@ using namespace nanosoft;
 XMPPProxy::XMPPProxy(NetDaemon *d, const char *ip, int port):
 	daemon(d), server_ip(ip), server_port(port)
 {
+	whitecount = 0;
 }
 
 /**
@@ -41,7 +42,14 @@ void XMPPProxy::onAccept()
 		XMPPProxyStream *client = new XMPPProxyStream(this);
 		
 		inet_ntop(target.sin_family, &(target.sin_addr), client->remoteIP, sizeof(client->remoteIP));
-		fprintf(stdlog, "%s [proxyd] connect from: %s\n", logtime().c_str(), client->remoteIP);
+		
+		client->rxsec_limit = 10240;
+		for(int i = 0; i < whitecount; i++)
+		{
+			if ( strcmp(whitelist[i], client->remoteIP) == 0 ) client->rxsec_limit = 0;
+		}
+		
+		fprintf(stdlog, "%s [proxyd] connect from: %s limit: %d\n", logtime().c_str(), client->remoteIP, client->rxsec_limit);
 		
 		if ( ! client->accept(sock, server_ip, server_port) )
 		{
@@ -49,7 +57,7 @@ void XMPPProxy::onAccept()
 			delete client;
 			return;
 		}
-		client->rxsec_limit = 10240;
+		
 	}
 }
 
@@ -77,4 +85,25 @@ void XMPPProxy::onSigTerm()
 void XMPPProxy::onSigHup()
 {
 	//fprintf(stderr, "#%d: [XMPPServer: %d] SIGUP not implemented yet\n", getWorkerId(), fd);
+}
+
+/**
+* Перезагрузить белый список из файла
+*/
+void XMPPProxy::reloadWhiteList(const char *path)
+{
+	FILE *f = fopen(path, "r");
+	if ( f )
+	{
+		whitecount = 0;
+		do
+		{
+			if ( fscanf(f, "%s", whitelist[whitecount]) > 0 )
+			{
+				fprintf(stderr, "whitelist: '%s'\n", whitelist[whitecount]);
+				whitecount++;
+			}
+		} while ( ! feof(f) );
+		fclose(f);
+	}
 }
