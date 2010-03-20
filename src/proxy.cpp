@@ -56,7 +56,7 @@ int main()
 	setsid();
 	*/
 	
-	stdlog = fopen("proxyd.log", "a");
+	open_stdlog("proxyd.log");
 	fprintf(stdlog, "%s [proxyd] started\n", logtime().c_str());
 	
 	// демон управляющий воркерами вводом-выводом

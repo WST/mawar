@@ -3,7 +3,23 @@
 #include <time.h>
 #include <string>
 
-FILE *stdlog;
+FILE *stdlog = 0;
+
+/**
+* Открыть стандартый поток лог-файла
+*/
+bool open_stdlog(const char *path)
+{
+	FILE *f = fopen(path, "a");
+	if ( f )
+	{
+		setlinebuf(f);
+		if ( stdlog ) fclose(stdlog);
+		stdlog = f;
+		return true;
+	}
+	return false;
+}
 
 std::string logtime()
 {
