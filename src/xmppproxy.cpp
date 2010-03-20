@@ -1,6 +1,9 @@
 
 #include <xmppproxy.h>
 #include <xmppproxystream.h>
+#include <logs.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -32,6 +35,13 @@ void XMPPProxy::onAccept()
 	int sock = accept();
 	if ( sock )
 	{
+		struct sockaddr_in target;
+		socklen_t socklen = sizeof( struct sockaddr );
+		getsockname(sock, (struct sockaddr *)&target, &socklen);
+		char tmp[INET_ADDRSTRLEN];
+		inet_ntop(target.sin_family, &(target.sin_addr), tmp, sizeof(tmp));
+		fprintf(stdlog, "%s [proxyd] connect from: %s\n", logtime().c_str(), tmp);
+		
 		XMPPProxyStream *client = new XMPPProxyStream(this);
 		if ( ! client->accept(sock, server_ip, server_port) )
 		{

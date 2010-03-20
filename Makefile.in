@@ -71,8 +71,9 @@ MAWAR_OBJECTS+=s2sinputstream.o
 MAWAR_OBJECTS+=s2soutputstream.o
 MAWAR_OBJECTS+=serverstatus.o
 MAWAR_OBJECTS+=geoip.o
+MAWAR_OBJECTS+=logs.o
 
-PROXY_OBJECTS=xmppproxy.o xmppproxystream.o
+PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 
 MAWAR_TESTS=test-01 test-02
 
@@ -169,6 +170,9 @@ xmppproxy.o: $(srcdir)/xmppproxy.cpp $(srcdir)/include/xmppproxy.h $(srcdir)/inc
 
 xmppproxystream.o: $(srcdir)/xmppproxystream.cpp $(srcdir)/include/xmppproxystream.h
 	$(CXX) -c $(srcdir)/xmppproxystream.cpp -o xmppproxystream.o
+
+logs.o: $(srcdir)/logs.cpp $(srcdir)/include/logs.h
+	$(CXX) -c $(srcdir)/logs.cpp -o logs.o
 
 # CLEAN
 

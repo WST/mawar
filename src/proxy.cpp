@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <cstdlib>
+#include <logs.h>
 
 using namespace std;
 
@@ -55,6 +56,9 @@ int main()
 	setsid();
 	*/
 	
+	stdlog = fopen("proxyd.log", "a");
+	fprintf(stdlog, "%s [proxyd] started\n", logtime().c_str());
+	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(1000);
 	
@@ -93,5 +97,6 @@ int main()
 	//delete proxy_s2s;
 	
 	fprintf(stderr, "#0: [main] exit\n");
+	fprintf(stdlog, "%s [proxyd] exited\n", logtime().c_str());
 	return 0;
 }

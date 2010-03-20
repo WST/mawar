@@ -1,6 +1,7 @@
 
 #include <xmppproxystream.h>
 #include <xmppproxy.h>
+#include <logs.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 //#include <netinet/in.h>
@@ -21,7 +22,8 @@ XMPPProxyStream::XMPPProxyStream(XMPPProxy *prx):
 	ready_read(false), ready_write(false),
 	pair(0), finish_count(0)
 {
-	rx = rxsec = rxsec_limit = rxsec_switch = 0;
+	tx = rx = rxsec = rxsec_limit = rxsec_switch = 0;
+	client = true;
 }
 
 /**
@@ -36,7 +38,8 @@ XMPPProxyStream::XMPPProxyStream(class XMPPProxy *prx, XMPPProxyStream *s, int s
 	ready_read(true), ready_write(false),
 	pair(s), finish_count(0)
 {
-	rx = rxsec = rxsec_limit = rxsec_switch = 0;
+	tx = rx = rxsec = rxsec_limit = rxsec_switch = 0;
+	client = false;
 }
 
 /**
@@ -92,8 +95,9 @@ bool XMPPProxyStream::accept(int sock, const char *ip, int port)
 uint32_t XMPPProxyStream::getEventsMask()
 {
 	uint32_t mask = EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR;
-	if ( ready_read && ((rxsec_limit == 0) || (rxsec < rxsec_limit)) ) mask |= EPOLLIN;
+	if ( ready_read && ((rxsec_limit == 0) || (rxsec <= rxsec_limit)) ) mask |= EPOLLIN;
 	if ( ready_write ) mask |= EPOLLOUT;
+	fprintf(stderr, "#%d: [XMPPProxyStream: %d] event mask: %X\n", getWorkerId(), fd, mask);
 	return mask;
 }
 
@@ -104,11 +108,12 @@ uint32_t XMPPProxyStream::getEventsMask()
 void XMPPProxyStream::unblock(int wid, void *data)
 {
 	XMPPProxyStream *stream = static_cast<XMPPProxyStream *>(data);
-	fprintf(stderr, "unlock stream: %d\n", stream->fd);
+	fprintf(stderr, "#%d [XMPPProxyStream: %d] unlock stream\n", wid, stream->fd);
 	stream->rxsec = 0;
-	stream->proxy->daemon->modifyObject(stream);
 	stream->finish(); // костыль однако
 }
+
+#include <stdlib.h>
 
 /**
 * Событие готовности к чтению
@@ -118,8 +123,12 @@ void XMPPProxyStream::unblock(int wid, void *data)
 */
 void XMPPProxyStream::onRead()
 {
+	mutex.lock();
+	
+	int x = random();
+	fprintf(stderr, "[%d - %d] read enter\n", fd, x);
 	ssize_t r = read(pair->buffer, sizeof(pair->buffer));
-	fprintf(stderr, "#%d: [XMPPProxyStream] read from: %d, size: %d\n", getWorkerId(), fd, r);
+	fprintf(stderr, "#%d: [XMPPProxyStream #%d] read from: %d, size: %d\n", getWorkerId(), x, fd, r);
 	if ( r > 0 )
 	{
 		rx += r;
@@ -134,24 +143,32 @@ void XMPPProxyStream::onRead()
 		}
 		
 		// проверка ограничений
+		
 		if ( rxsec_limit > 0 )
 		{
-			time_t tm = time(0);
-			int mask = tm & 1;
-			if ( rxsec_switch != mask )
-			{
-				rxsec = 0;
-				rxsec_switch = mask;
-			}
-			rxsec += r;
-			if ( rxsec > rxsec_limit )
-			{
-				fprintf(stderr, "recieved %d bytes per second, block for a while: %d\n", rxsec, fd);
-				lock(); // костыль однако
-				proxy->daemon->setTimer(tm+1, unblock, this);
-			}
+			
+				time_t tm = time(0);
+				int mask = tm & 1;
+				if ( rxsec_switch != mask )
+				{
+					rxsec = 0;
+					rxsec_switch = mask;
+				}
+				rxsec += r;
+				if ( rxsec > rxsec_limit )
+				{
+					fprintf(stderr, "#%d recieved %d bytes per second, block for a while: %d\n", x, rxsec, fd);
+					lock(); // костыль однако
+					proxy->daemon->setTimer(tm+1, unblock, this);
+				}
+			
 		}
+		
 	}
+	getEventsMask();
+	fprintf(stderr, "[%d - %d] read leave\n\n", fd, x);
+	
+	mutex.unlock();
 }
 
 /**
@@ -166,6 +183,7 @@ bool XMPPProxyStream::writeChunk()
 		fprintf(stderr, "#%d: [XMPPProxyStream] written to: %d, size: %d, remain: %d\n", getWorkerId(), fd, r, len - r);
 		len -= r;
 		written += r;
+		tx += r;
 		return len == 0;
 	}
 	return false;
@@ -182,8 +200,10 @@ void XMPPProxyStream::onWrite()
 	if ( writeChunk() )
 	{
 		ready_write = false;
-		pair->ready_read = true;
-		proxy->daemon->modifyObject(pair);
+		pair->mutex.lock();
+			pair->ready_read = true;
+			proxy->daemon->modifyObject(pair);
+		pair->mutex.unlock();
 	}
 }
 
@@ -192,10 +212,10 @@ void XMPPProxyStream::onWrite()
 */
 void XMPPProxyStream::lock()
 {
-	mutex.lock();
+	//mutex.lock();
 		int x = --finish_count;
 		fprintf(stderr, "#%d: [XMPPProxyStream: %d] lock %d\n", getWorkerId(), fd, x);
-	mutex.unlock();
+	//mutex.unlock();
 }
 
 /**
@@ -208,9 +228,23 @@ void XMPPProxyStream::finish()
 		x = ++finish_count;
 		fprintf(stderr, "#%d: [XMPPProxyStream: %d] finish %d\n", getWorkerId(), fd, x);
 	mutex.unlock();
+	if ( x <= 0 )
+	{
+		proxy->daemon->modifyObject(this);
+	}
 	if ( x == 1 )
 	{
 		::shutdown(pair->fd, SHUT_RDWR);
+		
+		if ( client )
+		{
+			struct sockaddr_in target;
+			socklen_t socklen = sizeof( struct sockaddr );
+			getsockname(fd, (struct sockaddr *)&target, &socklen);
+			char tmp[INET_ADDRSTRLEN];
+			inet_ntop(target.sin_family, &(target.sin_addr), tmp, sizeof(tmp));
+			fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), tmp, rx, tx);
+		}
 	}
 	if ( x == 2 )
 	{
