@@ -238,12 +238,7 @@ void XMPPProxyStream::finish()
 		
 		if ( client )
 		{
-			struct sockaddr_in target;
-			socklen_t socklen = sizeof( struct sockaddr );
-			getsockname(fd, (struct sockaddr *)&target, &socklen);
-			char tmp[INET_ADDRSTRLEN];
-			inet_ntop(target.sin_family, &(target.sin_addr), tmp, sizeof(tmp));
-			fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), tmp, rx, tx);
+			fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), remoteIP, rx, tx);
 		}
 	}
 	if ( x == 2 )

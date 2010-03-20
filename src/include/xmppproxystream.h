@@ -136,6 +136,11 @@ public:
 	class XMPPProxy *proxy;
 	
 	/**
+	* IP клиента
+	*/
+	char remoteIP[40];
+	
+	/**
 	* Ограничение на размер трафика в секунду
 	*/
 	int rxsec_limit;

@@ -38,11 +38,11 @@ void XMPPProxy::onAccept()
 	
 	if ( sock > 0 )
 	{
-		char tmp[INET_ADDRSTRLEN];
-		inet_ntop(target.sin_family, &(target.sin_addr), tmp, sizeof(tmp));
-		fprintf(stdlog, "%s [proxyd] connect from: %s\n", logtime().c_str(), tmp);
-		
 		XMPPProxyStream *client = new XMPPProxyStream(this);
+		
+		inet_ntop(target.sin_family, &(target.sin_addr), client->remoteIP, sizeof(client->remoteIP));
+		fprintf(stdlog, "%s [proxyd] connect from: %s\n", logtime().c_str(), client->remoteIP);
+		
 		if ( ! client->accept(sock, server_ip, server_port) )
 		{
 			// shit!
