@@ -32,12 +32,12 @@ XMPPProxy::~XMPPProxy()
 */
 void XMPPProxy::onAccept()
 {
-	int sock = accept();
-	if ( sock )
+	struct sockaddr_in target;
+	socklen_t sl = sizeof( struct sockaddr );
+	int sock = ::accept(fd, (struct sockaddr *)&target, &sl);
+	
+	if ( sock > 0 )
 	{
-		struct sockaddr_in target;
-		socklen_t socklen = sizeof( struct sockaddr );
-		getsockname(sock, (struct sockaddr *)&target, &socklen);
 		char tmp[INET_ADDRSTRLEN];
 		inet_ntop(target.sin_family, &(target.sin_addr), tmp, sizeof(tmp));
 		fprintf(stdlog, "%s [proxyd] connect from: %s\n", logtime().c_str(), tmp);
