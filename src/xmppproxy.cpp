@@ -41,15 +41,19 @@ void XMPPProxy::onAccept()
 	{
 		XMPPProxyStream *client = new XMPPProxyStream(this);
 		
-		inet_ntop(target.sin_family, &(target.sin_addr), client->remoteIP, sizeof(client->remoteIP));
+		inet_ntop(target.sin_family, &(target.sin_addr), client->remoteIP.ptr(), client->remoteIP.bufsz());
 		
 		client->rxsec_limit = 10240;
 		for(int i = 0; i < whitecount; i++)
 		{
-			if ( strcmp(whitelist[i], client->remoteIP) == 0 ) client->rxsec_limit = 0;
+			if ( client->remoteIP == whitelist[i] )
+			{
+				client->rxsec_limit = 0;
+				break;
+			}
 		}
 		
-		fprintf(stdlog, "%s [proxyd] connect from: %s limit: %d\n", logtime().c_str(), client->remoteIP, client->rxsec_limit);
+		fprintf(stdlog, "%s [proxyd] connect from: %s limit: %d\n", logtime().c_str(), client->remoteIP.c_str(), client->rxsec_limit);
 		
 		if ( ! client->accept(sock, server_ip, server_port) )
 		{
@@ -98,9 +102,9 @@ void XMPPProxy::reloadWhiteList(const char *path)
 		whitecount = 0;
 		do
 		{
-			if ( fscanf(f, "%s", whitelist[whitecount]) > 0 )
+			if ( fscanf(f, "%s", whitelist[whitecount].ptr()) > 0 )
 			{
-				fprintf(stderr, "whitelist: '%s'\n", whitelist[whitecount]);
+				fprintf(stderr, "whitelist: '%s'\n", whitelist[whitecount].c_str());
 				whitecount++;
 			}
 		} while ( ! feof(f) );

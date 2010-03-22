@@ -4,13 +4,8 @@
 #include <nanosoft/netdaemon.h>
 #include <nanosoft/asyncserver.h>
 #include <nanosoft/mutex.h>
-#include <configfile.h>
-#include <jid.h>
-#include <stanza.h>
-#include <string>
-
-class XMPPStream;
-class XMPPDomain;
+#include <nanosoft/string.h>
+#include <config.h>
 
 /**
 * Класс XMPP сервера
@@ -36,7 +31,7 @@ private:
 	/**
 	* Белый список IP адресов которые не надо ограничивать по скорости
 	*/
-	char whitelist[100][20];
+	nanosoft::tstrbuf<IPv4_LEN> whitelist[100];
 protected:
 	/**
 	* Mutex для thread-safe доступа к общим данным

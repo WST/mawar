@@ -1,10 +1,10 @@
 #ifndef MAWAR_XMPPPROXYSTREAM_H
 #define MAWAR_XMPPPROXYSTREAM_H
 
+#include <config.h>
 #include <nanosoft/asyncstream.h>
 #include <nanosoft/mutex.h>
-
-#define PROXY_BUFFER_SIZE 4096
+#include <nanosoft/string.h>
 
 /**
 * Класс потока XMPP-прокси
@@ -138,7 +138,7 @@ public:
 	/**
 	* IP клиента
 	*/
-	char remoteIP[40];
+	nanosoft::tstrbuf<IPv4_LEN> remoteIP;
 	
 	/**
 	* Ограничение на размер трафика в секунду

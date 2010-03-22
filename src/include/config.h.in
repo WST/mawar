@@ -1,3 +1,12 @@
 
 #undef UNIX
 #undef WINDOWS
+
+#define IPv4_LEN 16
+#define IPv6_LEN ??
+
+#define USERNAME_LEN 80
+#define HOSTNAME_LEN 80
+#define RESOURCE_LEN 80
+
+#define PROXY_BUFFER_SIZE 4096

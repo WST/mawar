@@ -238,7 +238,7 @@ void XMPPProxyStream::finish()
 		
 		if ( client )
 		{
-			fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), remoteIP, rx, tx);
+			fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), remoteIP.c_str(), rx, tx);
 		}
 	}
 	if ( x == 2 )
