@@ -6,7 +6,6 @@
 #include <string>
 #include <iostream>
 #include <stdio.h>
-#include <nanosoft/error.h>
 #include <nanosoft/gsaslserver.h>
 #include <db.h>
 #include <time.h>
@@ -27,14 +26,23 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 	registration_allowed = registration->getAttribute("enabled", "no") == "yes";
 	
 	TagHelper storage = config["storage"];
-	if ( storage->getAttribute("engine", "mysql") != "mysql" ) ::error("[VirtualHost] unknown storage engine: " + storage->getAttribute("engine"));
+	if ( storage->getAttribute("engine", "mysql") != "mysql" )
+	{
+		fprintf(stderr, "[VirtualHost] unknown storage engine: %s\n", storage->getAttribute("engine").c_str());
+	}
 	
 	// Подключаемся к БД
 	string server = storage["server"];
 	if( server.substr(0, 5) == "unix:" ) {
-		if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
+		if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) )
+		{
+			fprintf(stderr, "[VirtualHost] cannot connect to database\n");
+		}
 	} else {
-		if ( ! db.connect(server, storage["database"], storage["username"], storage["password"]) ) ::error("[VirtualHost] cannot connect to database");
+		if ( ! db.connect(server, storage["database"], storage["username"], storage["password"]) )
+		{
+			fprintf(stderr, "[VirtualHost] cannot connect to database\n");
+		}
 	}
 	
 	// кодировка только UTF-8

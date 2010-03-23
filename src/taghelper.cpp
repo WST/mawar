@@ -1,6 +1,6 @@
 #include <taghelper.h>
 #include <string.h>
-#include <nanosoft/error.h>
+#include <stdio.h>
 
 /**
 * Добавить тег
@@ -13,7 +13,11 @@
 */
 ATXmlTag* TagHelper::operator += (ATXmlTag *t)
 {
-	if ( t->getParent() != 0 ) nanosoft::error("[TagHelper::operator += (ATXmlTag *)] TODO Если у тега есть родитель, то добавляется его копия");
+	if ( t->getParent() != 0 )
+	{
+		fprintf(stderr, "[TagHelper::operator += (ATXmlTag *)] TODO Если у тега есть родитель, то добавляется его копия\n");
+		return t;
+	}
 	tag->insertChildElement(t);
 	return t;
 }

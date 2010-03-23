@@ -123,52 +123,53 @@ void XMPPProxyStream::unblock(int wid, void *data)
 */
 void XMPPProxyStream::onRead()
 {
-	mutex.lock();
-	
-	int x = random();
-	fprintf(stderr, "[%d - %d] read enter\n", fd, x);
-	ssize_t r = read(pair->buffer, sizeof(pair->buffer));
-	fprintf(stderr, "#%d: [XMPPProxyStream #%d] read from: %d, size: %d\n", getWorkerId(), x, fd, r);
-	if ( r > 0 )
+	if ( mutex.lock() )
 	{
-		rx += r;
-		pair->len = r;
-		pair->written = 0;
-		
-		//if ( ! pair->writeChunk() )
+		int x = random();
+		fprintf(stderr, "[%d - %d] read enter\n", fd, x);
+		ssize_t r = read(pair->buffer, sizeof(pair->buffer));
+		fprintf(stderr, "#%d: [XMPPProxyStream #%d] read from: %d, size: %d\n", getWorkerId(), x, fd, r);
+		if ( r > 0 )
 		{
-			ready_read = false;
-			pair->ready_write = true;
-			proxy->daemon->modifyObject(pair);
-		}
-		
-		// проверка ограничений
-		
-		if ( rxsec_limit > 0 )
-		{
+			rx += r;
+			pair->len = r;
+			pair->written = 0;
 			
-				time_t tm = time(0);
-				int mask = tm & 1;
-				if ( rxsec_switch != mask )
-				{
-					rxsec = 0;
-					rxsec_switch = mask;
-				}
-				rxsec += r;
-				if ( rxsec > rxsec_limit )
-				{
-					fprintf(stderr, "#%d recieved %d bytes per second, block for a while: %d\n", x, rxsec, fd);
-					lock(); // костыль однако
-					proxy->daemon->setTimer(tm+1, unblock, this);
-				}
+			//if ( ! pair->writeChunk() )
+			{
+				ready_read = false;
+				pair->ready_write = true;
+				proxy->daemon->modifyObject(pair);
+			}
+			
+			// проверка ограничений
+			
+			if ( rxsec_limit > 0 )
+			{
+				
+					time_t tm = time(0);
+					int mask = tm & 1;
+					if ( rxsec_switch != mask )
+					{
+						rxsec = 0;
+						rxsec_switch = mask;
+					}
+					rxsec += r;
+					if ( rxsec > rxsec_limit )
+					{
+						fprintf(stderr, "#%d recieved %d bytes per second, block for a while: %d\n", x, rxsec, fd);
+						lock(); // костыль однако
+						proxy->daemon->setTimer(tm+1, unblock, this);
+					}
+				
+			}
 			
 		}
+		getEventsMask();
+		fprintf(stderr, "[%d - %d] read leave\n\n", fd, x);
 		
+		mutex.unlock();
 	}
-	getEventsMask();
-	fprintf(stderr, "[%d - %d] read leave\n\n", fd, x);
-	
-	mutex.unlock();
 }
 
 /**
@@ -200,10 +201,13 @@ void XMPPProxyStream::onWrite()
 	if ( writeChunk() )
 	{
 		ready_write = false;
-		pair->mutex.lock();
+		if ( pair->mutex.lock() )
+		{
 			pair->ready_read = true;
 			proxy->daemon->modifyObject(pair);
-		pair->mutex.unlock();
+			
+			pair->mutex.unlock();
+		}
 	}
 }
 
@@ -224,10 +228,13 @@ void XMPPProxyStream::lock()
 void XMPPProxyStream::finish()
 {
 	int x;
-	mutex.lock();
+	if ( mutex.lock() )
+	{
 		x = ++finish_count;
 		fprintf(stderr, "#%d: [XMPPProxyStream: %d] finish %d\n", getWorkerId(), fd, x);
-	mutex.unlock();
+		
+		mutex.unlock();
+	}
 	if ( x <= 0 )
 	{
 		proxy->daemon->modifyObject(this);
