@@ -47,7 +47,7 @@ int main()
 {
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
-	
+	/*
 	fprintf(stderr, "Trying to switch to user: ");
 	fprintf(stderr, config->user());
 	fprintf(stderr, "\n");
@@ -65,7 +65,8 @@ int main()
 		exit(0); // успешно создан дочерний процесс, основной можно завершить
 	}
 	setsid();
-	
+	*/
+	printf("test\n");
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
 	

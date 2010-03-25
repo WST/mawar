@@ -2,6 +2,7 @@
 #define MAWAR_XMPPPROXYSTREAM_H
 
 #include <config.h>
+#include <nanosoft/object.h>
 #include <nanosoft/asyncstream.h>
 #include <nanosoft/mutex.h>
 #include <nanosoft/string.h>
@@ -28,7 +29,7 @@ private:
 	/**
 	* Ссылка на противоположный сокет
 	*/
-	XMPPProxyStream *pair;
+	nanosoft::ptr<XMPPProxyStream> pair;
 	
 	/**
 	* TRUE - это поток клиента
@@ -172,16 +173,6 @@ public:
 	* @return TRUE - сокет принят, FALSE сокет отклонен
 	*/
 	bool accept(int sock, const char *ip, int port);
-	
-	/**
-	* Блокировка потка от удаления
-	*/
-	void lock();
-	
-	/**
-	* Финализация
-	*/
-	void finish();
 };
 
 #endif // MAWAR_XMPPPROXYSTREAM_H

@@ -39,7 +39,7 @@ void XMPPProxy::onAccept()
 	
 	if ( sock > 0 )
 	{
-		XMPPProxyStream *client = new XMPPProxyStream(this);
+		ptr<XMPPProxyStream> client = new XMPPProxyStream(this);
 		
 		inet_ntop(target.sin_family, &(target.sin_addr), client->remoteIP.ptr(), client->remoteIP.bufsz());
 		
@@ -55,13 +55,7 @@ void XMPPProxy::onAccept()
 		
 		fprintf(stdlog, "%s [proxyd] connect from: %s limit: %d\n", logtime().c_str(), client->remoteIP.c_str(), client->rxsec_limit);
 		
-		if ( ! client->accept(sock, server_ip, server_port) )
-		{
-			// shit!
-			delete client;
-			return;
-		}
-		
+		client->accept(sock, server_ip, server_port);
 	}
 }
 

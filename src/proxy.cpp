@@ -1,5 +1,6 @@
 
 #include <xmppproxy.h>
+#include <nanosoft/object.h>
 #include <nanosoft/netdaemon.h>
 #include <signal.h>
 #include <stdio.h>
@@ -12,8 +13,8 @@
 using namespace std;
 
 // XMPP-proxy
-XMPPProxy *proxy_c2s;
-XMPPProxy *proxy_s2s;
+nanosoft::ptr<XMPPProxy> proxy_c2s;
+nanosoft::ptr<XMPPProxy> proxy_s2s;
 
 #define WHITELIST_PATH "whitelist.txt"
 
@@ -99,9 +100,6 @@ int main()
 	fprintf(stderr, "#0: [main] run daemon\n");
 	daemon.run();
 	fprintf(stderr, "#0: [main] daemon exited\n");
-	
-	delete proxy_c2s;
-	//delete proxy_s2s;
 	
 	fprintf(stderr, "#0: [main] exit\n");
 	fprintf(stdlog, "%s [proxyd] exited\n", logtime().c_str());

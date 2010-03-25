@@ -84,7 +84,7 @@ bool XMPPProxyStream::accept(int sock, const char *ip, int port)
 	::close(server_socket);
 	
 	// shit!
-	fprintf(stderr, "connect() fault\n");
+	fprintf(stderr, "connect(%s:%d) fault\n", ip, port);
 	::shutdown(fd, SHUT_RDWR);
 	return false;
 }
@@ -97,7 +97,6 @@ uint32_t XMPPProxyStream::getEventsMask()
 	uint32_t mask = EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR;
 	if ( ready_read && ((rxsec_limit == 0) || (rxsec <= rxsec_limit)) ) mask |= EPOLLIN;
 	if ( ready_write ) mask |= EPOLLOUT;
-	fprintf(stderr, "#%d: [XMPPProxyStream: %d] event mask: %X\n", getWorkerId(), fd, mask);
 	return mask;
 }
 
@@ -108,9 +107,10 @@ uint32_t XMPPProxyStream::getEventsMask()
 void XMPPProxyStream::unblock(int wid, void *data)
 {
 	XMPPProxyStream *stream = static_cast<XMPPProxyStream *>(data);
-	fprintf(stderr, "#%d [XMPPProxyStream: %d] unlock stream\n", wid, stream->fd);
+	printf("[XMPPProxyStream: %d] unlock stream\n", stream->fd);
 	stream->rxsec = 0;
-	stream->finish(); // костыль однако
+	stream->proxy->daemon->modifyObject(stream);
+	stream->release();
 }
 
 #include <stdlib.h>
@@ -126,9 +126,7 @@ void XMPPProxyStream::onRead()
 	if ( mutex.lock() )
 	{
 		int x = random();
-		fprintf(stderr, "[%d - %d] read enter\n", fd, x);
 		ssize_t r = read(pair->buffer, sizeof(pair->buffer));
-		fprintf(stderr, "#%d: [XMPPProxyStream #%d] read from: %d, size: %d\n", getWorkerId(), x, fd, r);
 		if ( r > 0 )
 		{
 			rx += r;
@@ -157,17 +155,14 @@ void XMPPProxyStream::onRead()
 					rxsec += r;
 					if ( rxsec > rxsec_limit )
 					{
-						fprintf(stderr, "#%d recieved %d bytes per second, block for a while: %d\n", x, rxsec, fd);
-						lock(); // костыль однако
+						printf("[XMPPProxyStream: %d] lock stream, recieved %d bytes per second\n", fd, rxsec);
+						this->lock();
 						proxy->daemon->setTimer(tm+1, unblock, this);
 					}
 				
 			}
 			
 		}
-		getEventsMask();
-		fprintf(stderr, "[%d - %d] read leave\n\n", fd, x);
-		
 		mutex.unlock();
 	}
 }
@@ -181,7 +176,6 @@ bool XMPPProxyStream::writeChunk()
 	ssize_t r = write(buffer + written, len - written);
 	if ( r > 0 )
 	{
-		fprintf(stderr, "#%d: [XMPPProxyStream] written to: %d, size: %d, remain: %d\n", getWorkerId(), fd, r, len - r);
 		len -= r;
 		written += r;
 		tx += r;
@@ -212,50 +206,6 @@ void XMPPProxyStream::onWrite()
 }
 
 /**
-* Блокировка потка от удаления
-*/
-void XMPPProxyStream::lock()
-{
-	//mutex.lock();
-		int x = --finish_count;
-		fprintf(stderr, "#%d: [XMPPProxyStream: %d] lock %d\n", getWorkerId(), fd, x);
-	//mutex.unlock();
-}
-
-/**
-* Финализация
-*/
-void XMPPProxyStream::finish()
-{
-	int x;
-	if ( mutex.lock() )
-	{
-		x = ++finish_count;
-		fprintf(stderr, "#%d: [XMPPProxyStream: %d] finish %d\n", getWorkerId(), fd, x);
-		
-		mutex.unlock();
-	}
-	if ( x <= 0 )
-	{
-		proxy->daemon->modifyObject(this);
-	}
-	if ( x == 1 )
-	{
-		::shutdown(pair->fd, SHUT_RDWR);
-		
-		if ( client )
-		{
-			fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), remoteIP.c_str(), rx, tx);
-		}
-	}
-	if ( x == 2 )
-	{
-		//proxy->daemon->removeObject(this);
-		delete this;
-	}
-}
-
-/**
 * Пир (peer) закрыл поток.
 *
 * Мы уже ничего не можем отправить в ответ,
@@ -263,11 +213,10 @@ void XMPPProxyStream::finish()
 */
 void XMPPProxyStream::onPeerDown()
 {
-	fprintf(stderr, "#%d: [XMPPProxyStream: %d] peer down\n", getWorkerId(), fd);
-	::shutdown(pair->fd, SHUT_RDWR);
+	printf("#%d: [XMPPProxyStream: %d] peer down\n", getWorkerId(), fd);
+	::shutdown(pair->fd, SHUT_WR);
+	pair = 0;
 	proxy->daemon->removeObject(this);
-	finish();
-	pair->finish();
 }
 
 /**
@@ -278,10 +227,10 @@ void XMPPProxyStream::onPeerDown()
 */
 void XMPPProxyStream::onShutdown()
 {
-	fprintf(stderr, "#%d: [XMPPProxyStream: %d] shutdown\n", getWorkerId(), fd);
+	printf("#%d: [XMPPProxyStream: %d] shutdown\n", getWorkerId(), fd);
 	::shutdown(pair->fd, SHUT_RDWR);
 	proxy->daemon->removeObject(this);
-	terminate();
+	pair = 0;
 }
 
 /**
@@ -292,7 +241,7 @@ void XMPPProxyStream::onShutdown()
 */
 void XMPPProxyStream::onTerminate()
 {
-	fprintf(stderr, "#%d: [XMPPProxyStream: %d] onTerminate\n", getWorkerId(), fd);
+	printf("#%d: [XMPPProxyStream: %d] onTerminate\n", getWorkerId(), fd);
 	::shutdown(fd, SHUT_RDWR);
 	::shutdown(pair->fd, SHUT_RDWR);
 }
