@@ -47,6 +47,10 @@ XMPPProxyStream::XMPPProxyStream(class XMPPProxy *prx, XMPPProxyStream *s, int s
 */
 XMPPProxyStream::~XMPPProxyStream()
 {
+	if ( client )
+	{
+		fprintf(stdlog, "%s [proxyd] disconnect from: %s, rx: %lld, tx: %lld\n", logtime().c_str(), remoteIP.c_str(), rx, tx);
+	}
 }
 
 /**
@@ -84,7 +88,7 @@ bool XMPPProxyStream::accept(int sock, const char *ip, int port)
 	::close(server_socket);
 	
 	// shit!
-	fprintf(stderr, "connect(%s:%d) fault\n", ip, port);
+	fprintf(stdlog, "%s [proxyd] connect(%s:%d) for %s failed\n", logtime().c_str(), ip, port, remoteIP.c_str());
 	::shutdown(fd, SHUT_RDWR);
 	return false;
 }
@@ -113,8 +117,6 @@ void XMPPProxyStream::unblock(int wid, void *data)
 	stream->release();
 }
 
-#include <stdlib.h>
-
 /**
 * Событие готовности к чтению
 *
@@ -125,7 +127,6 @@ void XMPPProxyStream::onRead()
 {
 	if ( mutex.lock() )
 	{
-		int x = random();
 		ssize_t r = read(pair->buffer, sizeof(pair->buffer));
 		if ( r > 0 )
 		{
@@ -159,9 +160,7 @@ void XMPPProxyStream::onRead()
 						this->lock();
 						proxy->daemon->setTimer(tm+1, unblock, this);
 					}
-				
 			}
-			
 		}
 		mutex.unlock();
 	}
