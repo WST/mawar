@@ -33,6 +33,7 @@ class ConfigFile
 		// limits
 		unsigned short int workers();
 		unsigned long int c2s_sessions();
+		size_t getBufferSize();
 		
 		// listen
 		unsigned int c2s();

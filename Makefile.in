@@ -72,6 +72,7 @@ MAWAR_OBJECTS+=s2soutputstream.o
 MAWAR_OBJECTS+=serverstatus.o
 MAWAR_OBJECTS+=geoip.o
 MAWAR_OBJECTS+=logs.o
+MAWAR_OBJECTS+=stanzabuffer.o
 
 PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 
@@ -173,6 +174,9 @@ xmppproxystream.o: $(srcdir)/xmppproxystream.cpp $(srcdir)/include/xmppproxystre
 
 logs.o: $(srcdir)/logs.cpp $(srcdir)/include/logs.h
 	$(CXX) -c $(srcdir)/logs.cpp -o logs.o
+
+stanzabuffer.o: $(srcdir)/stanzabuffer.cpp $(srcdir)/include/stanzabuffer.h
+	$(CXX) -c $(srcdir)/stanzabuffer.cpp -o stanzabuffer.o
 
 # CLEAN
 

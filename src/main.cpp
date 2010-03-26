@@ -7,6 +7,7 @@
 #include <s2slistener.h>
 #include <serverstatus.h>
 #include <myconsole.h>
+#include <stanzabuffer.h>
 #include <xml_tag.h>
 #include <configfile.h>
 #include <signal.h>
@@ -70,6 +71,7 @@ int main()
 	printf("test\n");
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
+	StanzaBuffer buf(config->c2s_sessions(), 1000);
 	
 	// устанавливаем скорректированное число воркеров
 	daemon.setWorkerCount(config->workers() - 1);

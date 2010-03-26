@@ -5,6 +5,7 @@
 
 #define CONFIG_WORKERS "3"
 #define CONFIG_C2S_SESSIONS "1000"
+#define CONFIG_OUTPUT_BUFFER "10"
 #define CONFIG_C2S "5222"
 #define CONFIG_S2S "5269"
 #define CONFIG_STATUS ""
@@ -53,6 +54,14 @@ unsigned short int ConfigFile::workers() {
 unsigned long int ConfigFile::c2s_sessions() {
 	if(limits) {
 		return atoi(limits->getChildValue("c2s_sessions", CONFIG_C2S_SESSIONS).c_str());
+	}
+	return atoi(CONFIG_C2S_SESSIONS);
+}
+
+size_t ConfigFile::getBufferSize()
+{
+	if(limits) {
+		return atoi(limits->getChildValue("output-buffer", CONFIG_OUTPUT_BUFFER).c_str());
 	}
 	return atoi(CONFIG_C2S_SESSIONS);
 }

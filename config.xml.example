@@ -7,11 +7,12 @@
 	<limits>
 		<workers>3</workers>
 		<c2s_sessions>1000</c2s_sessions>
-		<!-- <status>/home/alex/prj/mawar/trunk/mawar.status</status> -->
+		<output-buffer>1000</output-buffer>
 	</limits>
 	<listen>
 		<c2s>5222</c2s>
 		<xep0114>4000</xep0114>
+		<!-- <status>/home/alex/prj/mawar/trunk/mawar.status</status> -->
 	</listen>
 	
 	<hosts>
