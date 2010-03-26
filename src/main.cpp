@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <nanosoft/object.h>
 #include <nanosoft/netdaemon.h>
 #include <xmppserver.h>
 #include <xep0114listener.h>
@@ -23,7 +24,7 @@
 using namespace std;
 
 // XMPP-сервер
-XMPPServer *server;
+nanosoft::ptr<XMPPServer> server;
 
 void on_signal(int sig)
 {
@@ -47,7 +48,7 @@ int main()
 {
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
-	/*
+	
 	fprintf(stderr, "Trying to switch to user: ");
 	fprintf(stderr, config->user());
 	fprintf(stderr, "\n");
@@ -65,7 +66,7 @@ int main()
 		exit(0); // успешно создан дочерний процесс, основной можно завершить
 	}
 	setsid();
-	*/
+	
 	printf("test\n");
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
@@ -93,37 +94,34 @@ int main()
 	cerr << "#0: [main] virtual hosts loaded" << endl;
 	
 	// асинхронный резолвер
-	AsyncDNS *dns = new AsyncDNS(&daemon);
+	nanosoft::ptr<AsyncDNS> dns = new AsyncDNS(&daemon);
 	daemon.addObject(dns);
 	server->adns = dns;
 	
 	// добавляем сервер в демона
 	daemon.addObject(server);
 	
-	XEP0114Listener *xep0114;
 	int port = config->xep0114();
 	if ( port > 0 ) {
-		xep0114 = new XEP0114Listener(server);
+		nanosoft::ptr<XEP0114Listener> xep0114 = new XEP0114Listener(server.getObject());
 		xep0114->bind(port);
 		xep0114->listen(10);
 		daemon.addObject(xep0114);
 	}
 	
-	S2SListener *s2s = 0;
 	port = config->s2s();
 	if ( port > 0 )
 	{
-		server->s2s = s2s = new S2SListener(server);
-		s2s->bind(port);
-		s2s->listen(10);
-		daemon.addObject(s2s);
+		server->s2s = new S2SListener(server.getObject());
+		server->s2s->bind(port);
+		server->s2s->listen(10);
+		daemon.addObject(server->s2s);
 	}
 	
-	ServerStatus *status = 0;
 	string path = config->status();
 	if ( path != "" )
 	{
-		status = new ServerStatus(server);
+		nanosoft::ptr<ServerStatus> status = new ServerStatus(server.getObject());
 		status->bind(path.c_str());
 		status->listen(1);
 		daemon.addObject(status);
@@ -144,12 +142,5 @@ int main()
 	fprintf(stderr, "#0: [main] run daemon\n");
 	daemon.run();
 	fprintf(stderr, "#0: [main] daemon exited\n");
-	
-	if ( status ) delete status;
-	if ( s2s ) delete s2s;
-	delete xep0114;
-	delete server;
-	
-	fprintf(stderr, "#0: [main] exit\n");
 	return 0;
 }

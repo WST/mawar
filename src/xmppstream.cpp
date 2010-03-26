@@ -109,7 +109,6 @@ void XMPPStream::onParseError(const char *message)
 	fprintf(stderr, "#%d: [XMPPStream: %d] parse error: %s\n", getWorkerId(), fd, message);
 	// TODO something...
 	server->daemon->removeObject(this);
-	delete this;
 }
 
 void XMPPStream::sendTag(ATXmlTag * tag) {

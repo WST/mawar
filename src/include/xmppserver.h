@@ -46,12 +46,12 @@ public:
 	/**
 	* Ссылка на асинхронный резолвер DNS
 	*/
-	class AsyncDNS *adns;
+	nanosoft::ptr<class AsyncDNS> adns;
 	
 	/**
 	* Ссылка на менеджер s2s-соединений
 	*/
-	class S2SListener *s2s;
+	nanosoft::ptr<class S2SListener> s2s;
 	
 	/**
 	* Конфигурация сервера
