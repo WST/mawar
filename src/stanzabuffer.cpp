@@ -1,7 +1,11 @@
 
 #include <stanzabuffer.h>
+#include <errno.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+
+#include <string>
 
 /**
 * Конструктор буфера
@@ -12,19 +16,20 @@ StanzaBuffer::StanzaBuffer(size_t fdmax, size_t bufsize)
 {
 	fd_max = fdmax;
 	fds = new fd_info_t[fd_max];
-	fd_info_t *fd, *fd_limit = fds + fd_max;
-	for(fd = fds; fd < fd_limit; fd++)
+	fd_info_t *fb, *fd_limit = fds + fd_max;
+	for(fb = fds; fb < fd_limit; fb++)
 	{
-		fd->size = 0;
-		fd->offset = 0;
-		fd->quota = 0;
-		fd->data = 0;
+		fb->size = 0;
+		fb->offset = 0;
+		fb->quota = 0;
+		fb->first = 0;
+		fb->last = 0;
 	}
 	
-	size = bufsize;
+	free = size = bufsize;
 	buffer = new block_t[size];
 	stack = 0;
-	block_t *block, *limit = block + size;
+	block_t *block, *limit = buffer + size;
 	for(block = buffer; block < limit; block++)
 	{
 		memset(block->data, 0, sizeof(block->data));
@@ -44,19 +49,67 @@ StanzaBuffer::~StanzaBuffer()
 
 /**
 * Выделить цепочку блоков достаточную для буферизации указаного размера
+* @param size требуемый размер в байтах
+* @return список блоков или NULL если невозможно выделить запрощенный размер
 */
 StanzaBuffer::block_t* StanzaBuffer::allocBlocks(size_t size)
 {
-	// TODO
+	printf("StanzaBuffer::allocBlocks(%d)\n", size);
+	
+	// размер в блоках
+	size_t count = (size + STANZABUFFER_BLOCKSIZE - 1) / STANZABUFFER_BLOCKSIZE;
+	
+	if ( count == 0 )
+	{
+		printf("StanzaBuffer::allocBlocks(%d) empty\n", size);
+		return 0;
+	}
+	
+	if ( mutex.lock() )
+	{
+		printf("StanzaBuffer::allocBlocks(%d) alloc %d blocks, free: %d\n", size, count, free);
+		block_t *block = 0;
+		if ( count <= free )
+		{
+			block = stack;
+			if ( count > 1 ) for(size_t i = 0; i < (count-1); i++) stack = stack->next;
+			block_t *last = stack;
+			stack = stack->next;
+			last->next = 0;
+			free -= count;
+		}
+		printf("StanzaBuffer::allocBlocks(%d) allocated %d blocks, free: %d\n", size, count, free);
+		mutex.unlock();
+		
+		return block;
+	}
+	
 	return 0;
 }
 
 /**
 * Освободить цепочку блоков
+* @param top цепочка блоков
 */
 void StanzaBuffer::freeBlocks(block_t *top)
 {
-	// TODO
+	if ( top == 0 ) return;
+	block_t *last = top;
+	size_t count = 1;
+	while ( last->next ) { count++; last = last->next; }
+	while ( 1 )
+	{
+		if ( mutex.lock() )
+		{
+			printf("StanzaBuffer::freeBlocks(%d), free = %d\n", count, free);
+			last->next = stack;
+			stack = top;
+			free += count;
+			printf("StanzaBuffer::freeBlocks(%d), deallocated free = %d\n", count, free);
+			mutex.unlock();
+			return;
+		}
+	}
 }
 
 /**
@@ -96,7 +149,102 @@ bool StanzaBuffer::setQuota(int fd, size_t quota)
 }
 
 /**
-* Добавить данные в буфер
+* Добавить данные в буфер (thread-unsafe)
+*
+* @param fd указатель на описание файлового буфера
+* @param data указатель на данные
+* @param len размер данных
+* @return TRUE данные приняты, FALSE данные не приняты - нет места
+*/
+bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
+{
+	if ( fb->quota != 0 && (fb->size + len) > fb->quota )
+	{
+		// превышение квоты
+		printf("StanzaBuffer: quota exceed: %d > %d\n",  (fb->size + len), fb->quota);
+		return false;
+	}
+	
+	block_t *block;
+	
+	if ( fb->size > 0 )
+	{
+		printf("add to buffer(%d)\n", fd);
+		
+		// смещение к свободной части последнего блока или 0, если последний
+		// блок заполнен полностью
+		size_t offset = (fb->offset + fb->size) % STANZABUFFER_BLOCKSIZE;
+		
+		// размер свободной части последнего блока
+		size_t rest = offset > 0 ? STANZABUFFER_BLOCKSIZE - offset : 0;
+		
+		// размер недостающей части, которую надо выделить из общего буфера
+		size_t need = len - rest;
+		
+		printf("size: %d, offset: %d, rest: %d, need: %d\n", (fb->offset + fb->size), offset, rest, need);
+		
+		if ( len <= rest ) rest = len;
+		else
+		{
+			// выделить недостающие блоки
+			block = allocBlocks(need);
+			if ( block == 0 ) return false;
+		}
+		
+		// если последний блок заполнен не полностью, то дописать в него
+		if ( offset > 0 )
+		{
+			memcpy(fb->last->data + offset, data, rest);
+			fb->size += rest;
+			data += rest;
+			len -= rest;
+			if ( len == 0 ) return true;
+		}
+		
+		fb->last->next = block;
+		fb->last = block;
+	}
+	else // fb->size == 0
+	{
+		block = allocBlocks(len);
+		if ( block == 0 )
+		{
+			// нет буфера
+			return false;
+		}
+		
+		fb->first = block;
+		fb->offset = 0;
+	}
+	
+	// записываем полные блоки
+	while ( len >= STANZABUFFER_BLOCKSIZE )
+	{
+		std::string s(data, STANZABUFFER_BLOCKSIZE);
+		printf("put block: \033[22;34m%s\033[0m\n", s.c_str());
+		memcpy(block->data, data, STANZABUFFER_BLOCKSIZE);
+		data += STANZABUFFER_BLOCKSIZE;
+		len -= STANZABUFFER_BLOCKSIZE;
+		fb->size += STANZABUFFER_BLOCKSIZE;
+		fb->last = block;
+		block = block->next;
+	}
+	
+	// если что-то осталось записываем частичный блок
+	if ( len > 0 )
+	{
+		std::string s(data, len);
+		printf("put last block: \033[22;34m%s\033[0m\n", s.c_str());
+		memcpy(block->data, data, len);
+		fb->size += len;
+		fb->last = block;
+	}
+	
+	return true;
+}
+
+/**
+* Добавить данные в буфер (thread-safe)
 *
 * @param fd файловый дескриптор в который надо записать
 * @param data указатель на данные
@@ -105,6 +253,9 @@ bool StanzaBuffer::setQuota(int fd, size_t quota)
 */
 bool StanzaBuffer::put(int fd, const char *data, size_t len)
 {
+	printf("StanzaBuffer: put(%d): %s\n", fd, data);
+	
+	// проверяем корректность файлового дескриптора
 	if ( fd < 0 || fd >= fd_max )
 	{
 		// плохой дескриптор
@@ -112,16 +263,43 @@ bool StanzaBuffer::put(int fd, const char *data, size_t len)
 		return false;
 	}
 	
-	fd_info_t *p = &fds[fd];
+	// проверяем размер, зачем делать лишние движения если len = 0?
+	if ( len == 0 ) return true;
 	
-	if ( p->quota != 0 && (p->size + len) > p->quota )
+	// находим описание файлового буфера
+	fd_info_t *fb = &fds[fd];
+	
+	if ( fb->mutex.lock() )
 	{
-		// превышение квоты
-		printf("StanzaBuffer[%d]: quota exceed: %d > %d\n", (p->size + len), p->quota);
-		return false;
+		// если буфер пуст, то сначала попробовать записать без буферизации,
+		// а всё, что не запишется поместить в буфер
+		/* плохо... часть станзы запишется, а для остатка не хватит места
+		   в буфере, что плохо, ибо нарушает структуру XML, поэтому желательно
+		   либо принимать блок целиком, либо не принимать вообще - так хоть
+		   не будет обрушать s2s-соединения
+		if ( fb->size == 0 )
+		{
+			ssize_t r = write(fd, data, len);
+			if ( r > 0 )
+			{
+				data += r;
+				len -= r;
+				
+				// все записалось?
+				if ( len == 0 )
+				{
+					mutex.unlock();
+					return true;
+				}
+			}
+		}*/
+		
+		// остатки добавляем в конец буфера
+		bool r = put(fd, fb, data, len);
+		fb->mutex.unlock();
+		return r;
 	}
 	
-	// TODO
 	return false;
 }
 
@@ -129,10 +307,64 @@ bool StanzaBuffer::put(int fd, const char *data, size_t len)
 * Записать данные из буфера в файл/сокет
 *
 * @param fd файловый дескриптор
+* @return TRUE буфер пуст, FALSE в буфере ещё есть данные
 */
 bool StanzaBuffer::push(int fd)
 {
-	// TODO
+	printf("StanzaBuffer: push(%d)\n", fd);
+	
+	// проверяем корректность файлового дескриптора
+	if ( fd < 0 || fd >= fd_max )
+	{
+		// плохой дескриптор
+		printf("StanzaBuffer[%d]: wrong descriptor\n", fd);
+		return false;
+	}
+	
+	// находим описание файлового буфера
+	fd_info_t *fb = &fds[fd];
+	
+	if ( fb->mutex.lock() )
+	{
+		// список освободившихся блоков
+		block_t *unused = 0;
+		
+		while ( fb->size > 0 )
+		{
+			// размер не записанной части блока
+			size_t rest = STANZABUFFER_BLOCKSIZE - fb->offset;
+			if ( rest > fb->size ) rest = fb->size;
+			
+			// попробовать записать
+			ssize_t r = write(fd, fb->first->data + fb->offset, rest);
+			if ( r <= 0 ) break;
+			
+			std::string s(fb->first->data + fb->offset, r);
+			printf("writen[%d]: \033[22;34m%s\033[0m\n", fd, s.c_str());
+			
+			fb->size -= r;
+			fb->offset += r;
+			
+			// если блок записан полностью,
+			if ( r == rest )
+			{
+				// добавить его в список освободившихся
+				block_t *block = fb->first;
+				fb->first = block->next;
+				fb->offset = 0;
+				block->next = unused;
+				unused = block;
+			}
+			else
+			{
+				// иначе пора прерваться и вернуться в epoll
+				break;
+			}
+		}
+		fb->mutex.unlock();
+		freeBlocks(unused);
+		return true;
+	}
 	return true;
 }
 
@@ -143,14 +375,21 @@ bool StanzaBuffer::push(int fd)
 */
 void StanzaBuffer::cleanup(int fd)
 {
-	if ( fd >= 0 && fd < fd_max )
+	printf("StanzaBuffer: cleanup(%d)\n", fd);
+	
+	// проверяем корректность файлового дескриптора
+	if ( fd < 0 || fd >= fd_max )
 	{
-		fd_info_t *p = &fds[fd];
-		freeBlocks(p->data);
-		p->size = 0;
-		p->offset = 0;
-		p->quota = 0;
-		p->data = 0;
+		// плохой дескриптор
+		printf("StanzaBuffer[%d]: wrong descriptor\n", fd);
+		return;
 	}
+	
+	fd_info_t *p = &fds[fd];
+	freeBlocks(p->first);
+	p->size = 0;
+	p->offset = 0;
+	p->quota = 0;
+	p->first = 0;
+	p->last = 0;
 }
-

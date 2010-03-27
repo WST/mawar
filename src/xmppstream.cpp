@@ -1,10 +1,12 @@
 
 #include <xmppstream.h>
 #include <xmppserver.h>
+#include <stanzabuffer.h>
 #include <virtualhost.h>
 #include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
+#include <stanzabuffer.h>
 
 // for debug only
 #include <string>
@@ -19,7 +21,7 @@ using namespace nanosoft;
 */
 XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 	AsyncXMLStream(sock), XMLWriter(1024),
-	server(srv), depth(0)
+	server(srv), depth(0), want_write(0), disable_write(0)
 {
 }
 
@@ -28,6 +30,17 @@ XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 */
 XMPPStream::~XMPPStream()
 {
+	server->buffer->cleanup(fd);
+}
+
+/**
+* Вернуть маску ожидаемых событий
+*/
+uint32_t XMPPStream::getEventsMask()
+{
+	uint32_t mask = EPOLLIN | EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR;
+	if ( want_write && ! disable_write ) mask |= EPOLLOUT;
+	return mask;
 }
 
 /**
@@ -35,9 +48,13 @@ XMPPStream::~XMPPStream()
 */
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
-	int r = write(data, len);
-	if ( r != len ) onError("write fault");
-	printf("#%d written: \033[22;34m%s\033[0m\n", getWorkerId(), string(data, len).c_str());
+	fprintf(stderr, "[XMPPStream: %d] onWriteXML deprecated\n", fd);
+	if ( server->buffer->put(fd, data, len) )
+	{
+		want_write = true;
+		server->daemon->modifyObject(this);
+	}
+	else onError("write buffer fault");
 }
 
 /**
@@ -48,7 +65,8 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 */
 void XMPPStream::onWrite()
 {
-	cerr << "not implemented XMPPStream::onWrite()" << endl;
+	//cerr << "not implemented XMPPStream::onWrite()" << endl;
+	want_write = ! server->buffer->push(fd);
 }
 
 /**
@@ -135,10 +153,13 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 * @param stanza станза
 * @return TRUE - станза отправлена (или буферизована для отправки), FALSE что-то не получилось
 */
-bool XMPPStream::sendStanza(Stanza stanza) {
-	mutex.lock();
-		sendTag(stanza);
-		flush();
-	mutex.unlock();
-	return true;
+bool XMPPStream::sendStanza(Stanza stanza)
+{
+	string data = stanza->asString();
+	if ( server->buffer->put(fd, data.c_str(), data.length()) )
+	{
+		want_write = true;
+		server->daemon->modifyObject(this);
+	}
+	else onError("[XMPPStream: %d] sendStanza() fault");
 }

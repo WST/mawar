@@ -49,7 +49,7 @@ int main()
 {
 	// Конфигурация
 	ConfigFile *config = new ConfigFile("config.xml");
-	
+	/*
 	fprintf(stderr, "Trying to switch to user: ");
 	fprintf(stderr, config->user());
 	fprintf(stderr, "\n");
@@ -66,9 +66,8 @@ int main()
 	else if(parpid != 0) {
 		exit(0); // успешно создан дочерний процесс, основной можно завершить
 	}
-	setsid();
+	setsid(); */
 	
-	printf("test\n");
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(config->c2s_sessions());
 	StanzaBuffer buf(config->c2s_sessions(), 1000);
@@ -79,6 +78,7 @@ int main()
 	// XMPP-сервер
 	server = new XMPPServer(&daemon);
 	server->config = config;
+	server->buffer = &buf;
 	
 	// подключемся к c2s-порту из конфига
 	server->bind(config->c2s());

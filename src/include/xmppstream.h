@@ -25,6 +25,9 @@ protected:
 	*/
 	class XMPPServer *server;
 	
+	bool want_write;
+	bool disable_write;
+	
 	/**
 	* Построитель дерева тегов
 	*/
@@ -34,6 +37,11 @@ protected:
 	* Глубина обрабатываемого тега
 	*/
 	int depth;
+	
+	/**
+	* Вернуть маску ожидаемых событий
+	*/
+	virtual uint32_t getEventsMask();
 	
 	/**
 	* Запись XML

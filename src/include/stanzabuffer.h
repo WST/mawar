@@ -1,6 +1,7 @@
 #ifndef MAWAR_STANZABUFFER_H
 #define MAWAR_STANZABUFFER_H
 
+#include <config.h>
 #include <sys/types.h>
 #include <nanosoft/mutex.h>
 
@@ -23,7 +24,7 @@ private:
 		/**
 		* Данные блока
 		*/
-		char data[1024];
+		char data[STANZABUFFER_BLOCKSIZE];
 	};
 	
 	/**
@@ -32,7 +33,12 @@ private:
 	struct fd_info_t
 	{
 		/**
-		* Размер буферизованных данных
+		* Мьютекс для сихронизации файлового буфера
+		*/
+		nanosoft::Mutex mutex;
+		
+		/**
+		* Размер буферизованных данных (в байтах)
 		*/
 		size_t size;
 		
@@ -42,19 +48,19 @@ private:
 		size_t offset;
 		
 		/**
-		* Размер квоты для файлового дескриптора
+		* Размер квоты для файлового дескриптора (в байтах)
 		*/
 		size_t quota;
 		
 		/**
-		* Мьютекс для сихронизации файлового буфера
-		*/
-		nanosoft::Mutex mutex;
-		
-		/**
 		* Указатель на первый блок данных
 		*/
-		block_t *data;
+		block_t *first;
+		
+		/**
+		* Указатель на последний блок данных
+		*/
+		block_t *last;
 	};
 	
 	/**
@@ -63,9 +69,14 @@ private:
 	nanosoft::Mutex mutex;
 	
 	/**
-	* Размер буфера в блоках
+	* Размер буфера (в блоках)
 	*/
 	size_t size;
+	
+	/**
+	* Число свободных блоков
+	*/
+	size_t free;
 	
 	/**
 	* Буфер
@@ -92,18 +103,31 @@ private:
 	
 	/**
 	* Выделить цепочку блоков достаточную для буферизации указаного размера
+	* @param size требуемый размер в байтах
+	* @return список блоков или NULL если невозможно выделить запрощенный размер
 	*/
 	block_t* allocBlocks(size_t size);
 	
 	/**
 	* Освободить цепочку блоков
+	* @param top цепочка блоков
 	*/
 	void freeBlocks(block_t *top);
+	
+	/**
+	* Добавить данные в буфер (thread-unsafe)
+	*
+	* @param fb указатель на описание файлового буфера
+	* @param data указатель на данные
+	* @param len размер данных
+	* @return TRUE данные приняты, FALSE данные не приняты - нет места
+	*/
+	bool put(int fd, fd_info_t *fb, const char *data, size_t len);
 public:
 	/**
 	* Конструктор буфера
 	* @param fdmax число поддерживаемых дескрипторов
-	* @param bufsize размер буфера
+	* @param bufsize размер буфера (в блоках)
 	*/
 	StanzaBuffer(size_t fdmax, size_t bufsize);
 	
@@ -115,27 +139,27 @@ public:
 	/**
 	* Вернуть размер буферизованных данных
 	* @param fd файловый дескриптор
-	* @return размер буферизованных данных
+	* @return размер буферизованных данных (в байтах)
 	*/
 	size_t getBufferedSize(int fd);
 	
 	/**
 	* Вернуть квоту файлового дескриптора
 	* @param fd файловый дескриптор
-	* @return размер квоты
+	* @return размер квоты (в блоках)
 	*/
 	size_t getQuota(int fd);
 	
 	/**
 	* Установить квоту буфер файлового дескриптора
 	* @param fd файловый дескриптор
-	* @param quota размер квоты
+	* @param quota размер квоты (в блоках)
 	* @return TRUE квота установлена, FALSE квота не установлена
 	*/
 	bool setQuota(int fd, size_t quota);
 	
 	/**
-	* Добавить данные в буфер
+	* Добавить данные в буфер (thread-safe)
 	*
 	* @param fd файловый дескриптор в который надо записать
 	* @param data указатель на данные

@@ -43,6 +43,8 @@ public:
 	*/
 	NetDaemon *daemon;
 	
+	class StanzaBuffer *buffer;
+	
 	/**
 	* Ссылка на асинхронный резолвер DNS
 	*/
