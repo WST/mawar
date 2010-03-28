@@ -528,7 +528,7 @@ void VirtualHost::saveOfflineMessage(Stanza stanza) {
 		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(stanza->asString()).c_str(), time(NULL));
 	} else {
 		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
-		server->routeStanza(stanza.from().hostname(), error);
+		server->routeStanza(stanza.from().full(), error);
 	}
 	r.free();
 }
