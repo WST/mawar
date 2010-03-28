@@ -135,8 +135,6 @@ void VirtualHost::serveCommonPresence(Stanza stanza)
 	JID to = stanza.to();
 	JID from = stanza.from();
 	
-	fprintf(stderr, "[VirtualHost]: serve common presence from: %s to: %s\n", from.full().c_str(), to.full().c_str());
-	
 	if ( to.resource() != "" )
 	{
 		XMPPClient *client = getClientByJid(to);
@@ -197,8 +195,6 @@ void VirtualHost::servePresenceProbes(Stanza stanza)
 	JID to = stanza.to();
 	JID from = stanza.from();
 	
-	fprintf(stderr, "[VirtualHost]: RFC 3921 (5.1.3) Presence Probes from: %s to: %s\n", from.full().c_str(), to.full().c_str());
-	
 	DB::result r = db.query(
 		"SELECT count(*) AS cnt FROM roster JOIN users ON roster.id_user = users.id_user "
 		"WHERE user_login = %s AND contact_jid = %s AND contact_subscription IN ('F', 'B')",
@@ -237,8 +233,6 @@ void VirtualHost::servePresenceSubscribe(Stanza stanza)
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2) Presence Subscribe from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
-	
 	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
 		db.quote(from).c_str()
@@ -275,8 +269,6 @@ void VirtualHost::servePresenceSubscribed(Stanza stanza)
 {
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
-	
-	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2) Presence Subscribed from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
 	
 	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
@@ -341,8 +333,6 @@ void VirtualHost::servePresenceUnsubscribe(Stanza stanza)
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.4) Presence Unsubscribe from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
-	
 	DB::result r = db.query(
 		"SELECT roster.* FROM roster"
 		" JOIN users ON roster.id_user = users.id_user"
@@ -387,8 +377,6 @@ void VirtualHost::servePresenceUnsubscribed(Stanza stanza)
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	fprintf(stderr, "[VirtualHost: %s]: RFC 3921 (8.2.1) Presence Unsubscribed from: %s to: %s\n", hostname().c_str(), from.c_str(), to.c_str());
-	
 	DB::result r = db.query(
 		"SELECT roster.* FROM roster"
 		" JOIN users ON roster.id_user = users.id_user"
@@ -432,8 +420,6 @@ void VirtualHost::servePresenceUnsubscribed(Stanza stanza)
 */
 void VirtualHost::servePresenceSubscriptions(Stanza stanza)
 {
-	fprintf(stderr, "[VirtualHost]: RFC 3921 (5.1.6) Presence Subscriptions\n");
-	
 	if ( stanza->getAttribute("type") == "subscribe" )
 	{
 		// RFC 3921 (8.2) Presence Subscribe
@@ -461,8 +447,6 @@ void VirtualHost::servePresenceSubscriptions(Stanza stanza)
 		servePresenceUnsubscribed(stanza);
 		return;
 	}
-	
-	fprintf(stderr, "[VirtualHost]: drop unknown presence subscription: %s\n", stanza->asString().c_str());
 }
 
 /**
@@ -501,7 +485,6 @@ void VirtualHost::servePresence(Stanza stanza)
 		return;
 	}
 	
-	fprintf(stderr, "[VirtualHost]: drop unknown presence: %s\n", stanza->asString().c_str());
 	return;
 }
 
@@ -621,8 +604,6 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 */
 void VirtualHost::onOnline(XMPPClient *client)
 {
-	fprintf(stderr, "[VirtualHost]: online %s\n", client->jid().full().c_str());
-	
 	mutex.lock();
 		sessions_t::iterator user = onliners.find(client->jid().username());
 		if( user != onliners.end())
@@ -646,8 +627,7 @@ void VirtualHost::onOnline(XMPPClient *client)
 */
 void VirtualHost::onOffline(XMPPClient *client)
 {
-	fprintf(stderr, "[VirtualHost]: offline %s\n", client->jid().full().c_str());
-	
+	// TODO presence broadcast (unavailable)
 	mutex.lock();
 		onliners[client->jid().username()].erase(client->jid().resource());
 		if(onliners[client->jid().username()].empty()) {

@@ -24,4 +24,44 @@
 /**
 * Размер блока буфера исходящих станз
 */
-#define STANZABUFFER_BLOCKSIZE 256
+#define STANZABUFFER_BLOCKSIZE 1024
+
+/**
+* Число воркеров по умолчанию
+*/
+#define CONFIG_WORKERS "3"
+
+/**
+* Ограничение на число c2s соединений
+*/
+#define CONFIG_C2S_SESSIONS "1000"
+
+/**
+* Размер буфера исходящих станз (в блоках)
+*/
+#define CONFIG_OUTPUT_BUFFER "100"
+
+/**
+* Порт по умолчанию для c2s
+*/
+#define CONFIG_C2S "5222"
+
+/**
+* Порт по умолчанию для s2s
+*/
+#define CONFIG_S2S "5269"
+
+/**
+* Путь к unix-сокету статистики
+*/
+#define CONFIG_STATUS ""
+
+/**
+* Порт по умолчанию для компонентов
+*/
+#define CONFIG_XEP0114 "-1"
+
+/**
+* Пользователь по умолчанию от имени которого будет работать демон
+*/
+#define CONFIG_USERNAME "nobody"

@@ -5,8 +5,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <string>
-
 /**
 * Конструктор буфера
 * @param fdmax число поддерживаемых дескрипторов
@@ -54,20 +52,13 @@ StanzaBuffer::~StanzaBuffer()
 */
 StanzaBuffer::block_t* StanzaBuffer::allocBlocks(size_t size)
 {
-	printf("StanzaBuffer::allocBlocks(%d)\n", size);
-	
 	// размер в блоках
 	size_t count = (size + STANZABUFFER_BLOCKSIZE - 1) / STANZABUFFER_BLOCKSIZE;
 	
-	if ( count == 0 )
-	{
-		printf("StanzaBuffer::allocBlocks(%d) empty\n", size);
-		return 0;
-	}
+	if ( count == 0 ) return 0;
 	
 	if ( mutex.lock() )
 	{
-		printf("StanzaBuffer::allocBlocks(%d) alloc %d blocks, free: %d\n", size, count, free);
 		block_t *block = 0;
 		if ( count <= free )
 		{
@@ -78,7 +69,6 @@ StanzaBuffer::block_t* StanzaBuffer::allocBlocks(size_t size)
 			last->next = 0;
 			free -= count;
 		}
-		printf("StanzaBuffer::allocBlocks(%d) allocated %d blocks, free: %d\n", size, count, free);
 		mutex.unlock();
 		
 		return block;
@@ -101,11 +91,9 @@ void StanzaBuffer::freeBlocks(block_t *top)
 	{
 		if ( mutex.lock() )
 		{
-			printf("StanzaBuffer::freeBlocks(%d), free = %d\n", count, free);
 			last->next = stack;
 			stack = top;
 			free += count;
-			printf("StanzaBuffer::freeBlocks(%d), deallocated free = %d\n", count, free);
 			mutex.unlock();
 			return;
 		}
@@ -161,7 +149,6 @@ bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
 	if ( fb->quota != 0 && (fb->size + len) > fb->quota )
 	{
 		// превышение квоты
-		printf("StanzaBuffer: quota exceed: %d > %d\n",  (fb->size + len), fb->quota);
 		return false;
 	}
 	
@@ -169,8 +156,6 @@ bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
 	
 	if ( fb->size > 0 )
 	{
-		printf("add to buffer(%d)\n", fd);
-		
 		// смещение к свободной части последнего блока или 0, если последний
 		// блок заполнен полностью
 		size_t offset = (fb->offset + fb->size) % STANZABUFFER_BLOCKSIZE;
@@ -180,8 +165,6 @@ bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
 		
 		// размер недостающей части, которую надо выделить из общего буфера
 		size_t need = len - rest;
-		
-		printf("size: %d, offset: %d, rest: %d, need: %d\n", (fb->offset + fb->size), offset, rest, need);
 		
 		if ( len <= rest ) rest = len;
 		else
@@ -220,8 +203,6 @@ bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
 	// записываем полные блоки
 	while ( len >= STANZABUFFER_BLOCKSIZE )
 	{
-		std::string s(data, STANZABUFFER_BLOCKSIZE);
-		printf("put block: \033[22;34m%s\033[0m\n", s.c_str());
 		memcpy(block->data, data, STANZABUFFER_BLOCKSIZE);
 		data += STANZABUFFER_BLOCKSIZE;
 		len -= STANZABUFFER_BLOCKSIZE;
@@ -233,8 +214,6 @@ bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
 	// если что-то осталось записываем частичный блок
 	if ( len > 0 )
 	{
-		std::string s(data, len);
-		printf("put last block: \033[22;34m%s\033[0m\n", s.c_str());
 		memcpy(block->data, data, len);
 		fb->size += len;
 		fb->last = block;
@@ -253,13 +232,11 @@ bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
 */
 bool StanzaBuffer::put(int fd, const char *data, size_t len)
 {
-	printf("StanzaBuffer: put(%d): %s\n", fd, data);
-	
 	// проверяем корректность файлового дескриптора
 	if ( fd < 0 || fd >= fd_max )
 	{
 		// плохой дескриптор
-		printf("StanzaBuffer[%d]: wrong descriptor\n", fd);
+		fprintf(stderr, "StanzaBuffer[%d]: wrong descriptor\n", fd);
 		return false;
 	}
 	
@@ -311,13 +288,11 @@ bool StanzaBuffer::put(int fd, const char *data, size_t len)
 */
 bool StanzaBuffer::push(int fd)
 {
-	printf("StanzaBuffer: push(%d)\n", fd);
-	
 	// проверяем корректность файлового дескриптора
 	if ( fd < 0 || fd >= fd_max )
 	{
 		// плохой дескриптор
-		printf("StanzaBuffer[%d]: wrong descriptor\n", fd);
+		fprintf(stderr, "StanzaBuffer[%d]: wrong descriptor\n", fd);
 		return false;
 	}
 	
@@ -338,9 +313,6 @@ bool StanzaBuffer::push(int fd)
 			// попробовать записать
 			ssize_t r = write(fd, fb->first->data + fb->offset, rest);
 			if ( r <= 0 ) break;
-			
-			std::string s(fb->first->data + fb->offset, r);
-			printf("writen[%d]: \033[22;34m%s\033[0m\n", fd, s.c_str());
 			
 			fb->size -= r;
 			fb->offset += r;
@@ -375,13 +347,11 @@ bool StanzaBuffer::push(int fd)
 */
 void StanzaBuffer::cleanup(int fd)
 {
-	printf("StanzaBuffer: cleanup(%d)\n", fd);
-	
 	// проверяем корректность файлового дескриптора
 	if ( fd < 0 || fd >= fd_max )
 	{
 		// плохой дескриптор
-		printf("StanzaBuffer[%d]: wrong descriptor\n", fd);
+		fprintf(stderr, "StanzaBuffer[%d]: wrong descriptor\n", fd);
 		return;
 	}
 	

@@ -48,7 +48,8 @@ uint32_t XMPPStream::getEventsMask()
 */
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
-	fprintf(stderr, "[XMPPStream: %d] onWriteXML deprecated\n", fd);
+	std::string s(data, len);
+	fprintf(stderr, "[XMPPStream: %d] onWriteXML deprecated: \033[22;34m%s\033[0m\n", fd, s.c_str());
 	if ( server->buffer->put(fd, data, len) )
 	{
 		want_write = true;

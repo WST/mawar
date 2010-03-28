@@ -2,17 +2,8 @@
 #include <configfile.h>
 #include <cstdlib>
 #include <attagparser.h>
+#include <config.h>
 
-#define CONFIG_WORKERS "3"
-#define CONFIG_C2S_SESSIONS "1000"
-#define CONFIG_OUTPUT_BUFFER "10"
-#define CONFIG_C2S "5222"
-#define CONFIG_S2S "5269"
-#define CONFIG_STATUS ""
-#define CONFIG_XEP0114 "-1"
-#define CONFIG_USERNAME "nobody"
-
-#include <iostream>
 using namespace std;
 
 ConfigFile::ConfigFile(const std::string &filename): config_filename(filename), config_tag(0) {

@@ -39,8 +39,6 @@ XMPPClient::~XMPPClient()
 */
 void XMPPClient::onTerminate()
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] onTerminate\n", getWorkerId(), fd);
-	
 	mutex.lock();
 		endElement("stream:stream");
 		flush();
@@ -53,7 +51,6 @@ void XMPPClient::onTerminate()
 */
 void XMPPClient::onStanza(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] stanza: %s\n", getWorkerId(), fd, stanza->name().c_str());
 	if (stanza->name() == "iq") onIqStanza(stanza);
 	else if (stanza->name() == "auth") onAuthStanza(stanza);
 	else if (stanza->name() == "response" ) onResponseStanza(stanza);
@@ -188,7 +185,6 @@ void XMPPClient::onMessageStanza(Stanza stanza) {
 */
 void XMPPClient::handleInitialPresence(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.1) Initial Presence\n", getWorkerId(), fd);
 	available = true;
 	handlePresenceProbes();
 	handlePresenceBroadcast(stanza);
@@ -199,8 +195,6 @@ void XMPPClient::handleInitialPresence(Stanza stanza)
 */
 void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Broadcast\n", getWorkerId(), fd);
-	
 	client_presence.priority = atoi(stanza->getChildValue("priority", "0").c_str()); // TODO
 	client_presence.status_text = stanza->getChildValue("status", "");
 	client_presence.show = stanza->getChildValue("show", "Available");
@@ -220,15 +214,12 @@ void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 */
 void XMPPClient::handlePresenceProbes()
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Probes\n", getWorkerId(), fd);
-	
 	Stanza probe = new ATXmlTag("presence");
 	probe->setAttribute("type", "probe");
 	probe->setAttribute("from", client_jid.full());
 	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('T', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		probe->setAttribute("to", r["contact_jid"]);
-		fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.2) Presence Probes: %s\n", getWorkerId(), fd, probe->asString().c_str());
 		server->routeStanza(probe.to().hostname(), probe);
 	}
 	r.free();
@@ -240,15 +231,12 @@ void XMPPClient::handlePresenceProbes()
 */
 void XMPPClient::handleDirectedPresence(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.4) Directed Presence\n", getWorkerId(), fd);
-	
 	if ( stanza->hasAttribute("type") && stanza->getAttribute("type") != "unavailable" )
 	{
 		// хм... у такой станзы type может быть только "unavailable"
 		// в RFC не сказано что делать в случае нарушения
 		// наверное можно послать ошибку, но мы не будет делать
 		// лишних движений и просто спустим эту станзу в /dev/null
-		fprintf(stderr, "#%d: [XMPPClient: %d] drop wrong presence: %s\n", getWorkerId(), fd, stanza->asString().c_str());
 		return;
 	}
 	
@@ -269,7 +257,6 @@ void XMPPClient::handleDirectedPresence(Stanza stanza)
 */
 void XMPPClient::handleUnavailablePresence()
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.5) Unavailable Presence\n", getWorkerId(), fd);
 	available = false;
 	
 	Stanza presence = new ATXmlTag("presence");
@@ -292,8 +279,6 @@ void XMPPClient::handleUnavailablePresence()
 */
 void XMPPClient::handlePresenceSubscribe(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2) Presence Subscribe\n", getWorkerId(), fd);
-	
 	std::string to = stanza.to().bare();
 	
 	Stanza iq = new ATXmlTag("iq");
@@ -329,8 +314,6 @@ void XMPPClient::handlePresenceSubscribe(Stanza stanza)
 */
 void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2) Presence Subscribed\n", getWorkerId(), fd);
-	
 	std::string to = stanza.to().bare();
 	
 	Stanza iq = new ATXmlTag("iq");
@@ -377,8 +360,6 @@ void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 */
 void XMPPClient::handlePresenceUnsubscribe(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.4) Presence Unsubscribe\n", getWorkerId(), fd);
-	
 	std::string to = stanza.to().bare();
 	
 	DB::result r = vhost->db.query(
@@ -420,8 +401,6 @@ void XMPPClient::handlePresenceUnsubscribe(Stanza stanza)
 */
 void XMPPClient::handlePresenceUnsubscribed(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (8.2.1) Presence Unsubscribed\n", getWorkerId(), fd);
-	
 	std::string to = stanza.to().bare();
 	
 	DB::result r = vhost->db.query(
@@ -465,8 +444,6 @@ void XMPPClient::handlePresenceUnsubscribed(Stanza stanza)
 */
 void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] RFC 3921 (5.1.6) Presence Subscriptions\n", getWorkerId(), fd);
-	
 	if ( stanza->getAttribute("type") == "subscribe" )
 	{
 		// RFC 3921 (8.2.4) Presence Subscribe
@@ -494,8 +471,6 @@ void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
 		handlePresenceUnsubscribed(stanza);
 		return;
 	}
-	
-	fprintf(stderr, "#%d: [XMPPClient: %d] drop unknown presence subscription: %s\n", getWorkerId(), fd, stanza->getAttribute("type").c_str());
 }
 
 void XMPPClient::onPresenceStanza(Stanza stanza) {
@@ -543,7 +518,6 @@ void XMPPClient::onPresenceStanza(Stanza stanza) {
 	// что с ним делать в RFC не нашел, можно конечно послать ошибку
 	// не будем напрягаться, просто выкинем станзу в /dev/null
 	// (c) shade
-	fprintf(stderr, "#%d: [XMPPClient: %d] drop unknown presence: %s\n", getWorkerId(), fd, stanza->asString().c_str());
 }
 
 /**
@@ -553,8 +527,6 @@ void XMPPClient::onPresenceStanza(Stanza stanza) {
 */
 void XMPPClient::handleRosterGet(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] roster get\n", getWorkerId(), fd);
-	
 	use_roster = true;
 	
 	Stanza iq = new ATXmlTag("iq");
@@ -604,8 +576,6 @@ void XMPPClient::handleRosterGet(Stanza stanza)
 */
 void XMPPClient::handleRosterItemSet(TagHelper item)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] roster set item\n", getWorkerId(), fd);
-	
 	// The server MUST update the roster information in persistent storage,
 	// and also push the change out to all of the user's available resources
 	// that have requested the roster.  This "roster push" consists of an IQ
@@ -622,8 +592,6 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 	if(r.eof())
 	{
 		// добавить контакт: RFC 3921 (7.4) Adding a Roster Item
-		fprintf(stderr, "#%d: [XMPPClient: %d] roster add item: %s\n", getWorkerId(), fd, item->getAttribute("jid").c_str());
-		
 		vhost->db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
 			user_id,
 			vhost->db.quote(item->getAttribute("jid")).c_str(), // contact_jid
@@ -646,7 +614,6 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 	else
 	{
 		// обновить контакт: RFC 3921 (7.5) Updating a Roster Item
-		fprintf(stderr, "#%d: [XMPPClient: %d] roster update item: %s\n", getWorkerId(), fd, item->getAttribute("jid").c_str());
 		
 		const char *subscription;
 		if( r["contact_subscription"] == "F" ) subscription = "from";
@@ -689,8 +656,6 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 */
 void XMPPClient::handleRosterItemRemove(TagHelper item)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] roster remove item\n", getWorkerId(), fd);
-	
 	DB::result r = vhost->db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
 		user_id,
 		vhost->db.quote(item->getAttribute("jid")).c_str()
@@ -737,8 +702,6 @@ void XMPPClient::handleRosterItemRemove(TagHelper item)
 */
 void XMPPClient::handleRosterSet(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] roster set\n", getWorkerId(), fd);
-	
 	TagHelper query = stanza["query"];
 	TagHelper item = query->firstChild("item");
 	while ( item )
@@ -772,8 +735,6 @@ void XMPPClient::handleRosterSet(Stanza stanza)
 */
 void XMPPClient::handleRosterIq(Stanza stanza)
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] jabber:iq:roster\n", getWorkerId(), fd);
-	
 	if ( stanza->getAttribute("type") == "get" )
 	{
 		handleRosterGet(stanza);
@@ -794,7 +755,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 {
 	attributes_t::const_iterator it = attributes.find("to");
 	string tohost = (it != attributes.end()) ? it->second : string();
-	fprintf(stderr, "#%d: [XMPPClient: %d] new stream to %s\n", getWorkerId(), fd, tohost.c_str());
+	printf("#%d: [XMPPClient: %d] new stream to %s\n", getWorkerId(), fd, tohost.c_str());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
@@ -852,7 +813,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 */
 void XMPPClient::onEndStream()
 {
-	fprintf(stderr, "#%d: [XMPPClient: %d] end of stream\n", getWorkerId(), fd);
+	printf("#%d: [XMPPClient: %d] end of stream\n", getWorkerId(), fd);
 	terminate();
 }
 

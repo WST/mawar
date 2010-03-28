@@ -87,13 +87,13 @@ int main()
 	server->listen(10);
 	
 	// добавляем виртуальные хосты
-	cerr << "#0: [main] loading virtual hosts..." << endl;
+	printf("[main] loading virtual hosts\n");
 	for(VirtualHostConfig vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost))
 	{
-		cerr << "#0: [main] load vhost: " << vhost.hostname() << endl;
+		printf("[main] load vhost: %s\n", vhost.hostname().c_str());
 		server->addHost(vhost.hostname(), vhost);
 	}
-	cerr << "#0: [main] virtual hosts loaded" << endl;
+	printf("[main] virtual hosts loaded\n");
 	
 	// асинхронный резолвер
 	nanosoft::ptr<AsyncDNS> dns = new AsyncDNS(&daemon);
@@ -141,8 +141,8 @@ int main()
 	sigaction(SIGINT, &sa, 0);
 	
 	// запускаем демона
-	fprintf(stderr, "#0: [main] run daemon\n");
+	fprintf(stderr, "[main] run daemon\n");
 	daemon.run();
-	fprintf(stderr, "#0: [main] daemon exited\n");
+	fprintf(stderr, "[main] daemon exited\n");
 	return 0;
 }
