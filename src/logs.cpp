@@ -4,21 +4,48 @@
 #include <string>
 
 FILE *stdlog = 0;
+FILE *access_log = 0;
+
+/**
+* Открыть лог файл
+* @param log ссылка на файловую переменную
+* @param path путь к лог файлу
+*/
+static bool open_log(FILE *&log, const char *path)
+{
+	FILE *f = fopen(path, "a");
+	if ( f )
+	{
+		setlinebuf(f);
+		if ( log ) fclose(log);
+		log = f;
+		return true;
+	}
+	return false;
+}
 
 /**
 * Открыть стандартый поток лог-файла
 */
 bool open_stdlog(const char *path)
 {
-	FILE *f = fopen(path, "a");
-	if ( f )
-	{
-		setlinebuf(f);
-		if ( stdlog ) fclose(stdlog);
-		stdlog = f;
-		return true;
-	}
-	return false;
+	return open_log(stdlog, path);
+}
+
+/**
+* Открыть access.log
+*/
+bool open_access_log(const char *path)
+{
+	return open_log(access_log, path);
+}
+
+/**
+* Открыть error.log
+*/
+bool open_error_log(const char *path)
+{
+	return open_log(stderr, path);
 }
 
 std::string logtime()

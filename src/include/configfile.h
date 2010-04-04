@@ -32,8 +32,8 @@ class ConfigFile
 		
 		// limits
 		unsigned short int workers();
-		unsigned long int c2s_sessions();
-		size_t getBufferSize();
+		unsigned long int filesLimit();
+		size_t getOutputBuffers();
 		
 		// listen
 		unsigned int c2s();

@@ -1,14 +1,22 @@
 <?xml version="1.0" ?>
 <maward>
 	<system>
+		<!-- пользователь от имени которого будет запускаться демон -->
 		<user>mawar</user>
 	</system>
 	
+	<!-- системные ограничения -->
 	<limits>
+		<!-- число воркеров -->
 		<workers>3</workers>
-		<c2s_sessions>1000</c2s_sessions>
-		<output-buffer>1000</output-buffer>
+		
+		<!-- число открытых файлов -->
+		<files>1000</files>
+		
+		<!-- число блоков в выходном буфере -->
+		<output-buffers>1000</output-buffers>
 	</limits>
+	
 	<listen>
 		<c2s>5222</c2s>
 		<xep0114>4000</xep0114>

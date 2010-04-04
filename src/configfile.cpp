@@ -42,19 +42,19 @@ unsigned short int ConfigFile::workers() {
 	return atoi(CONFIG_WORKERS);
 }
 
-unsigned long int ConfigFile::c2s_sessions() {
+unsigned long int ConfigFile::filesLimit() {
 	if(limits) {
-		return atoi(limits->getChildValue("c2s_sessions", CONFIG_C2S_SESSIONS).c_str());
+		return atoi(limits->getChildValue("files", CONFIG_LIMIT_FILES).c_str());
 	}
-	return atoi(CONFIG_C2S_SESSIONS);
+	return atoi(CONFIG_LIMIT_FILES);
 }
 
-size_t ConfigFile::getBufferSize()
+size_t ConfigFile::getOutputBuffers()
 {
 	if(limits) {
-		return atoi(limits->getChildValue("output-buffer", CONFIG_OUTPUT_BUFFER).c_str());
+		return atoi(limits->getChildValue("output-buffers", CONFIG_OUTPUT_BUFFERS).c_str());
 	}
-	return atoi(CONFIG_C2S_SESSIONS);
+	return atoi(CONFIG_OUTPUT_BUFFERS);
 }
 
 unsigned int ConfigFile::c2s() {

@@ -1,8 +1,9 @@
 
+#include <sys/socket.h>
+#include <stdio.h>
 #include <serverstatus.h>
 #include <xmppserver.h>
-#include <stdio.h>
-#include <sys/socket.h>
+#include <stanzabuffer.h>
 
 /**
 * Конструктор сервера статистики
@@ -26,8 +27,9 @@ ServerStatus::~ServerStatus()
 void ServerStatus::handleStatus(FILE *status)
 {
 	fprintf(status, "maward status\n");
-	fprintf(status, "workers: %d\n", server->daemon->getWorkerCount()+1);
-	fprintf(status, "sockets: %d\n", server->daemon->getObjectCount());
+	fprintf(status, "workers:  %d\n", server->daemon->getWorkerCount()+1);
+	fprintf(status, "sockets:  %d / %d\n", server->daemon->getObjectCount(), server->daemon->getObjectLimit());
+	fprintf(status, "outbuf:   %d / %d\n", server->buffer->getFreeSize(), server->buffer->getBufferSize());
 }
 
 /**

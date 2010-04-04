@@ -1,23 +1,42 @@
 
+// системные вызовы
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <pwd.h>
+
+// стандартная библиотека C
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// C++ STL
 #include <iostream>
+
+// наши классы
 #include <nanosoft/object.h>
 #include <nanosoft/netdaemon.h>
+#include <logs.h>
+#include <xml_tag.h>
+#include <configfile.h>
 #include <xmppserver.h>
 #include <xep0114listener.h>
 #include <s2slistener.h>
 #include <serverstatus.h>
-#include <myconsole.h>
 #include <stanzabuffer.h>
-#include <xml_tag.h>
-#include <configfile.h>
-#include <signal.h>
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <cstdlib>
 
+#define PATH_PID (PATH_VAR "/run/maward.pid")
+#define PATH_STATUS (PATH_VAR "/run/maward.status")
+
+#define PATH_ACCESS_LOG (PATH_VAR "/log/maward-access.log")
+#define PATH_ERROR_LOG (PATH_VAR "/log/maward-error.log")
+
+#define PATH_CONFIG (PATH_ETC "/mawar/main.xml")
+#define PATH_C2S_IPCONFIG (PATH_ETC "/mawar/c2s-ipconfig")
+#define PATH_S2S_IPCONIFG (PATH_ETC "/mawar/s2s-ipconfig")
 
 #include <taghelper.h>
 #include <nanosoft/asyncdns.h>
@@ -45,32 +64,108 @@ void on_signal(int sig)
 	}
 }
 
-int main()
+/**
+* Зачистка: удалиь pid, unix-сокеты и пр.
+*/
+void cleanup()
+{
+	unlink(PATH_PID);
+	unlink(PATH_STATUS);
+}
+
+int main(int argc, const char **argv)
 {
 	// Конфигурация
-	ConfigFile *config = new ConfigFile("config.xml");
-	/*
-	fprintf(stderr, "Trying to switch to user: ");
-	fprintf(stderr, config->user());
-	fprintf(stderr, "\n");
-	struct passwd *pw = getpwnam(config->user());
-	if(pw) {
-		if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "Failed to setuid!\n");
-		if(setgid(pw->pw_gid) != 0) fprintf(stderr, "Failed to setgid!\n");
+	ConfigFile *config = new ConfigFile(PATH_CONFIG);
+	
+	// открыть лог файлы до смены пользователя
+	open_access_log(PATH_ACCESS_LOG);
+	open_error_log(PATH_ERROR_LOG);
+	FILE *fpid = fopen(PATH_PID, "w");
+	
+	// установить лимиты до смены пользователя
+	if ( getuid() == 0 )
+	{
+		struct rlimit rl;
+		rl.rlim_cur = config->filesLimit();
+		rl.rlim_max = config->filesLimit();
+		if ( setrlimit(RLIMIT_NOFILE, &rl) == -1 )
+		{
+			fprintf(stderr, "setrlimit fault: %s\n", strerror(errno));
+		}
 	}
-	pid_t parpid;
-	if((parpid = fork()) < 0) {
-		printf("\nFailed to fork!");
-		exit(99);
+	else
+	{
+		struct rlimit rl;
+		if ( getrlimit(RLIMIT_NOFILE, &rl) == -1 )
+		{
+			fprintf(stderr, "getrlimit fault: %s\n", strerror(errno));
+		}
+		else
+		{
+			rl.rlim_cur = config->filesLimit();
+			if ( config->filesLimit() > rl.rlim_max )
+			{
+				fprintf(stderr, "only root can increase over hard limit (RLIMIT_NOFILE)\ntry to increase up to hard limit (%d)\n", rl.rlim_max);
+				rl.rlim_cur = rl.rlim_max;
+			}
+			if ( setrlimit(RLIMIT_NOFILE, &rl) == -1 )
+			{
+				fprintf(stderr, "setrlimit fault: %s\n", strerror(errno));
+			}
+		}
 	}
-	else if(parpid != 0) {
-		exit(0); // успешно создан дочерний процесс, основной можно завершить
+	
+	// если запущены под root, то сменить пользователя
+	if ( getuid() == 0 && config->user() != "" )
+	{
+		fprintf(stderr, "Trying to switch to user: ");
+		fprintf(stderr, config->user());
+		fprintf(stderr, "\n");
+		struct passwd *pw = getpwnam(config->user());
+		if(pw)
+		{
+			if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "Failed to setuid!\n");
+			if(setgid(pw->pw_gid) != 0) fprintf(stderr, "Failed to setgid!\n");
+		}
+		else
+		{
+			fprintf(stderr, "user %s not found\n", config->user());
+		}
 	}
-	setsid(); */
+	
+	if ( argc > 1 && strcmp(argv[1], "-d") == 0 )
+	{
+		printf("try fork\n");
+		pid_t parpid;
+		if((parpid = fork()) < 0) {
+			printf("\nFailed to fork!");
+			exit(99);
+		}
+		else if(parpid != 0) {
+			exit(0); // успешно создан дочерний процесс, основной можно завершить
+		}
+		setsid();
+	}
+	
+	// после форка записать pid
+	if ( fpid )
+	{
+		fprintf(fpid, "%d", getpid());
+		fclose(fpid);
+		fpid = 0;
+	}
 	
 	// демон управляющий воркерами вводом-выводом
-	NetDaemon daemon(config->c2s_sessions());
-	StanzaBuffer buf(config->c2s_sessions(), 1000);
+	struct rlimit rl;
+	if ( getrlimit(RLIMIT_NOFILE, &rl) == -1 )
+	{
+		fprintf(stderr, "getrlimit fault: %s\n", strerror(errno));
+		return 1;
+	}
+	printf("files limit: %d\n", rl.rlim_cur);
+	NetDaemon daemon(rl.rlim_cur);
+	StanzaBuffer buf(rl.rlim_cur, config->getOutputBuffers());
 	
 	// устанавливаем скорректированное число воркеров
 	daemon.setWorkerCount(config->workers() - 1);
@@ -144,5 +239,8 @@ int main()
 	fprintf(stderr, "[main] run daemon\n");
 	daemon.run();
 	fprintf(stderr, "[main] daemon exited\n");
+	
+	cleanup();
+	
 	return 0;
 }

@@ -11,6 +11,16 @@ extern FILE *stdlog;
 */
 bool open_stdlog(const char *path);
 
+/**
+* Открыть access.log
+*/
+bool open_access_log(const char *path);
+
+/**
+* Открыть error.log
+*/
+bool open_error_log(const char *path);
+
 std::string logtime();
 
 #endif // MAWAR_LOGS_H

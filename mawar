@@ -19,7 +19,7 @@ case "$1" in
 	start)
 		D=`pwd`
 		cd "${MAWAR_HOME}"
-		$MAWAR_BIN 2> /dev/null > /dev/null
+		$MAWAR_BIN -d 2> /dev/null > /dev/null
 		cd "${D}"
 		exit 0;
 	;;
