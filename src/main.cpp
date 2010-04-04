@@ -125,8 +125,8 @@ int main(int argc, const char **argv)
 		struct passwd *pw = getpwnam(config->user());
 		if(pw)
 		{
-			if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "Failed to setuid!\n");
 			if(setgid(pw->pw_gid) != 0) fprintf(stderr, "Failed to setgid!\n");
+			if(setuid(pw->pw_uid) != 0 ) fprintf(stderr, "Failed to setuid!\n");
 		}
 		else
 		{
