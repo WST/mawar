@@ -49,3 +49,10 @@ CREATE TABLE s2s_spool (
 	INDEX hostname (hostname), -- выборка записей по хосту
 	INDEX expires (expires) -- выборка записей по дате устаревания
 ) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;
+
+-- пул RFC 3921 (5.1.4) Directed Presence (#0000000963)
+CREATE TABLE dp_spool (
+	user_jid CHAR(120) NOT NULL, -- пользователь отправивший Directed Presence
+	contact_jid CHAR(120) NOT NULL, -- контакт которому был отправлен Directed Presence
+	PRIMARY KEY presence (user_jid, contact_jid)
+) DEFAULT CHARACTER SET UTF8 COLLATE utf8_bin;

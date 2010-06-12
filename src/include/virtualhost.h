@@ -113,6 +113,12 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		virtual void onOnline(XMPPClient *client);
 		
 		/**
+		* Отправить Presence Unavailable всем, кому был отправлен Directed Presence
+		* @param client клиент, который отправлял Directed Presence
+		*/
+		void unavailableDirectedPresence(XMPPClient *client);
+		
+		/**
 		* Событие: Пользователь ушел в offline (thread-safe)
 		* @param client поток
 		*/
