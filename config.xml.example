@@ -25,7 +25,7 @@
 	
 	<hosts>
 		<host name="localhost">
-			<registration enable="yes" />
+			<registration enabled="yes" />
 			<storage engine="mysql">
 				<server>unix:/var/lib/mysql/mysql.sock</server>
 				<username>mawar</username>

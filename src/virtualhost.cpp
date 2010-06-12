@@ -830,7 +830,8 @@ void VirtualHost::rosterPush(const std::string &username, Stanza stanza)
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 	if(!registration_allowed) {
 		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
-		server->routeStanza(stanza.from().hostname(), error);
+		error->setAttribute("from", hostname());
+		client->sendStanza(error);
 		delete error;
 		return;
 	}
