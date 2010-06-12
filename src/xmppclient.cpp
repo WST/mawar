@@ -249,7 +249,7 @@ void XMPPClient::handleDirectedPresence(Stanza stanza)
 	// связи (или корректного ухода в офлайн) - очень неприятно, когда у
 	// собеседника обрывается связь, а ты об этом не знаешь. В RFC есть
 	// слабый намёк на это, но похоже его мало кто замечает и реализует.
-	vhost->db.query("REPLACE INTO dp_spool (user_jid, client_jid) VALUES (%s, %s)",
+	vhost->db.query("REPLACE INTO dp_spool (user_jid, contact_jid) VALUES (%s, %s)",
 		vhost->db.quote(stanza.from().full()).c_str(),
 		vhost->db.quote(stanza.to().full()).c_str()
 		);

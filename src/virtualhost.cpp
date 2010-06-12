@@ -635,7 +635,7 @@ void VirtualHost::onOnline(XMPPClient *client)
 */
 void VirtualHost::unavailableDirectedPresence(XMPPClient *client)
 {
-	DB::result r = db.query("SELECT client_jid FROM dp_spool WHERE user_jid = %s",
+	DB::result r = db.query("SELECT contact_jid FROM dp_spool WHERE user_jid = %s",
 		db.quote(client->jid().full()).c_str()
 		);
 	if ( r )
@@ -646,12 +646,14 @@ void VirtualHost::unavailableDirectedPresence(XMPPClient *client)
 		while ( ! r.eof() )
 		{
 			presence->setAttribute("to", r["contact_jid"]);
+			server->routeStanza(presence);
+			r.next();
 		}
 		delete presence;
 		r.free();
 	}
 	
-	db.query("DELETE FROM client_jid WHERE user_jid = %s",
+	db.query("DELETE FROM dp_spool WHERE user_jid = %s",
 		db.quote(client->jid().full()).c_str()
 		);
 }
