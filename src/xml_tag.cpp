@@ -110,7 +110,7 @@ std::string ATXmlTag::asString() {
 					xml += (*it)->tag->asString();
 				break;
 				case TCharacterData:
-				xml += XMLWriter::escape((*it)->cdata);
+					xml += XMLWriter::escape((*it)->cdata);
 				break;
 			}
 		}

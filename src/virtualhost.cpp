@@ -604,6 +604,7 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 */
 void VirtualHost::onOnline(XMPPClient *client)
 {
+	/// TODO: replaced by new connection
 	mutex.lock();
 		sessions_t::iterator user = onliners.find(client->jid().username());
 		if( user != onliners.end())
