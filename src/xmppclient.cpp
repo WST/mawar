@@ -250,7 +250,7 @@ void XMPPClient::handleDirectedPresence(Stanza stanza)
 	// собеседника обрывается связь, а ты об этом не знаешь.
 	if ( stanza->getAttribute("type", "") == "unavailable" )
 	{
-		vhost->db.query("DELETE FROM dp_spool WHERE user_jid = %s AND contact_jid = %s)",
+		vhost->db.query("DELETE FROM dp_spool WHERE user_jid = %s AND contact_jid = %s",
 			vhost->db.quote(stanza.from().full()).c_str(),
 			vhost->db.quote(stanza.to().full()).c_str()
 			);
