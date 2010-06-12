@@ -244,15 +244,24 @@ void XMPPClient::handleDirectedPresence(Stanza stanza)
 	// и забыть о ней. Но есть один маленький момент, который
 	// обычно вроде игнорируется.
 	//
-	// TODO По хорошему мы должны быть злопамятны и если кому отправили
+	// По хорошему мы должны быть злопамятны и если кому отправили
 	// презенс, то должны отправить и презенс unavailable в случае разрыва
 	// связи (или корректного ухода в офлайн) - очень неприятно, когда у
-	// собеседника обрывается связь, а ты об этом не знаешь. В RFC есть
-	// слабый намёк на это, но похоже его мало кто замечает и реализует.
-	vhost->db.query("REPLACE INTO dp_spool (user_jid, contact_jid) VALUES (%s, %s)",
-		vhost->db.quote(stanza.from().full()).c_str(),
-		vhost->db.quote(stanza.to().full()).c_str()
-		);
+	// собеседника обрывается связь, а ты об этом не знаешь.
+	if ( stanza->getAttribute("type", "") == "unavailable" )
+	{
+		vhost->db.query("DELETE FROM dp_spool WHERE user_jid = %s AND contact_jid = %s)",
+			vhost->db.quote(stanza.from().full()).c_str(),
+			vhost->db.quote(stanza.to().full()).c_str()
+			);
+	}
+	else
+	{
+		vhost->db.query("REPLACE INTO dp_spool (user_jid, contact_jid) VALUES (%s, %s)",
+			vhost->db.quote(stanza.from().full()).c_str(),
+			vhost->db.quote(stanza.to().full()).c_str()
+			);
+	}
 	server->routeStanza(stanza.to().hostname(), stanza);
 }
 
