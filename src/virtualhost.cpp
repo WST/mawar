@@ -506,6 +506,9 @@ void VirtualHost::broadcast(Stanza stanza, const std::string &login)
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
+	// При флуд-атаках нимбуззеров сообщения часто идут быстрым потоком
+	// При этом крайне нежелательно порождать трафик с MySQL тучей запросов count
+	// Было бы классно кешировать число оффлайн-сообщений, например, в какой-то карте…
 	DB::result r = db.query("SELECT count(*) AS cnt FROM spool WHERE message_to=%s", db.quote(stanza.to().bare()).c_str());
 	if(atoi(r["cnt"].c_str()) < 100) { // TODO — брать максимальное число оффлайн-сообщений из конфига
 		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(stanza->asString()).c_str(), time(NULL));
