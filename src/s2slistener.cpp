@@ -67,13 +67,15 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 	char buf[40];
 	struct sockaddr_in target;
 	
-	printf("on_s2s_a4\n");
+	pending_t *p = static_cast<pending_t *>(data);
+	
 	if ( result && result->dnsa4_nrr >= 1 )
 	{
 		int sock = ::socket(PF_INET, SOCK_STREAM, 0);
+		
 		for(int i = 0; i < result->dnsa4_nrr; i++)
 		{
-			printf("  try addr: %s\n", dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)));
+			printf("  try addr: %s:%d\n", dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)), p->port);
 			target.sin_family = AF_INET;
 			target.sin_port = htons(5269);
 			memcpy(&target.sin_addr, &result->dnsa4_addr[i], sizeof(result->dnsa4_addr[i]));
@@ -81,7 +83,6 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 			if ( ::connect(sock, (struct sockaddr *)&target, sizeof( struct sockaddr )) == 0 )
 			{
 				fprintf(stderr, "  connected: %s\n", buf);
-				pending_t *p = static_cast<pending_t*>(data);
 				S2SOutputStream *stream = new S2SOutputStream(p->server, sock, p->to, p->from);
 				fcntl(sock, F_SETFL, O_NONBLOCK);
 				fprintf(stderr, "before addObject\n");
@@ -101,47 +102,66 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 				fprintf(stderr, "connect() fault\n");
 			}
 		}
+		
 		::close(sock);
 	}
-	printf("\n");
 }
 
 /**
 * Резолвер s2s хоста, запись SRV (_jabber._tcp)
 */
-static void on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
+void S2SListener::on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 {
-  printf("on_s2s_srv_jabber\n");
-  if ( result )
-  for(int i = 0; i < result->dnssrv_nrr; i++)
-  {
-    char buf[40];
-    printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
-      result->dnssrv_srv[i].priority,
-      result->dnssrv_srv[i].weight,
-      result->dnssrv_srv[i].port,
-      result->dnssrv_srv[i].name);
-  }
-  printf("\n");
+	pending_t *p = static_cast<pending_t *>(data);
+	
+	if ( result && result->dnssrv_nrr > 0 )
+	{
+		for(int i = 0; i < result->dnssrv_nrr; i++)
+		{
+			char buf[40];
+			printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
+			result->dnssrv_srv[i].priority,
+			result->dnssrv_srv[i].weight,
+			result->dnssrv_srv[i].port,
+			result->dnssrv_srv[i].name);
+		}
+		
+		p->port = result->dnssrv_srv[0].port;
+		p->server->adns->a4(result->dnssrv_srv[0].name, on_s2s_output_a4, p);
+		
+		return;
+	}
+	
+	p->port = 5269;
+	p->server->adns->a4(p->to.c_str(), on_s2s_output_a4, p);
 }
 
 /**
 * Резолвер s2s хоста, запись SRV (_xmpp-server._tcp)
 */
-static void on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
+void S2SListener::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
 {
-  printf("on_srv_xmpp_server\n");
-  if ( result )
-  for(int i = 0; i < result->dnssrv_nrr; i++)
-  {
-    char buf[40];
-    printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
-      result->dnssrv_srv[i].priority,
-      result->dnssrv_srv[i].weight,
-      result->dnssrv_srv[i].port,
-      result->dnssrv_srv[i].name);
-  }
-  printf("\n");
+	pending_t *p = static_cast<pending_t *>(data);
+	
+	if ( result && result->dnssrv_nrr > 0 )
+	{
+		for(int i = 0; i < result->dnssrv_nrr; i++)
+		{
+			char buf[40];
+			printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
+			result->dnssrv_srv[i].priority,
+			result->dnssrv_srv[i].weight,
+			result->dnssrv_srv[i].port,
+			result->dnssrv_srv[i].name);
+		}
+		
+		p->port = result->dnssrv_srv[0].port;
+		p->server->adns->a4(result->dnssrv_srv[0].name, on_s2s_output_a4, p);
+		
+		return;
+	}
+	
+	p->server->adns->srv(p->to.c_str(), "jabber", "tcp", on_s2s_output_jabber, p);
 }
 
 /**
@@ -166,7 +186,7 @@ static void on_s2s_output_rbl(struct dns_ctx *ctx, struct dns_rr_a4 *result, voi
 * @param stanza станза
 * @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 */
-bool S2SListener::routeStanza(const std::string &host, Stanza stanza)
+bool S2SListener::routeStanza(const char *host, Stanza stanza)
 {
 	pending_t *p;
 	
@@ -174,7 +194,7 @@ bool S2SListener::routeStanza(const std::string &host, Stanza stanza)
 		pendings_t::iterator iter = pendings.find(host);
 		if ( iter == pendings.end() )
 		{
-			cerr << "new s2s-output to: " << host << endl;
+			printf("new s2s-output to: %s\n", host);
 			
 			p = new pending_t;
 			p->server = server;
@@ -184,12 +204,12 @@ bool S2SListener::routeStanza(const std::string &host, Stanza stanza)
 			pendings[host] = p;
 			
 			// Резолвим DNS записи сервера
-			// NOTE для оптимизации отправляем все DNS (асинхронные) запросы сразу
-			server->adns->a4(host.c_str(), on_s2s_output_a4, p);
-			server->adns->srv(host.c_str(), "jabber", "tcp", on_s2s_output_jabber, p);
-			server->adns->srv(host.c_str(), "xmpp-server", "tcp", on_s2s_output_xmpp_server, p);
+			// TODO для оптимизации отправляем все DNS (асинхронные) запросы сразу
+			//server->adns->a4(host.c_str(), on_s2s_output_a4, p);
+			//server->adns->srv(host.c_str(), "jabber", "tcp", on_s2s_output_jabber, p);
+			server->adns->srv(host, "xmpp-server", "tcp", on_s2s_output_xmpp_server, p);
 			// TODO извлекать список DNSBL из конфига
-			server->adns->a4((host + ".dnsbl.jabber.ru").c_str(), on_s2s_output_rbl, p);
+			//server->adns->a4((host + ".dnsbl.jabber.ru").c_str(), on_s2s_output_rbl, p);
 		}
 		else
 		{

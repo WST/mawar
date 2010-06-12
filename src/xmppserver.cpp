@@ -144,7 +144,7 @@ bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 	}
 	else
 	{ // неизвестный домен
-		return s2s->routeStanza(host, stanza);
+		return s2s->routeStanza(host.c_str(), stanza);
 	}
 }
 

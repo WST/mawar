@@ -32,6 +32,7 @@ private:
 		
 		std::string to;
 		std::string from;
+		int port;
 		
 		/**
 		* Буфер исходящих станз
@@ -53,6 +54,16 @@ private:
 	* Резолвер s2s хоста, запись A (IPv4)
 	*/
 	static void on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data);
+	
+	/**
+	* Резолвер s2s хоста, запись SRV (_xmpp-server._tcp)
+	*/
+	static void on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data);
+	
+	/**
+	* Резолвер s2s хоста, запись SRV (_jabber._tcp)
+	*/
+	static void on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data);
 protected:
 	/**
 	* Mutex для thread-safe доступа к общим данным
@@ -96,7 +107,7 @@ public:
 	* @param stanza станза
 	* @return TRUE - станза была отправлена, FALSE - станзу отправить не удалось
 	*/
-	bool routeStanza(const std::string &host, Stanza stanza);
+	bool routeStanza(const char *host, Stanza stanza);
 	
 	/**
 	* Отправить буферизованные станзы
