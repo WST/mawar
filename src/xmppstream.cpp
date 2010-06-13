@@ -49,7 +49,7 @@ uint32_t XMPPStream::getEventsMask()
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
 	std::string s(data, len);
-	fprintf(stderr, "[XMPPStream: %d] onWriteXML deprecated: \033[22;34m%s\033[0m\n", fd, s.c_str());
+	fprintf(stdout, "[XMPPStream: %d] onWriteXML deprecated: \033[22;34m%s\033[0m\n", fd, s.c_str());
 	if ( server->buffer->put(fd, data, len) )
 	{
 		want_write = true;
@@ -110,6 +110,7 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 2: {
 		builder.endElement(name);
 		Stanza s = builder.fetchResult();
+		fprintf(stdout, "[XMPPStream: %d] onStanza(\033[22;31m%s\033[0m)\n", fd, s->asString().c_str());
 		onStanza(s);
 		delete s; // Внимание — станза удаляется здесь
 		break;
@@ -157,6 +158,7 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 bool XMPPStream::sendStanza(Stanza stanza)
 {
 	string data = stanza->asString();
+	fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
 	if ( server->buffer->put(fd, data.c_str(), data.length()) )
 	{
 		want_write = true;
