@@ -48,6 +48,8 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 	
 	// кодировка только UTF-8
 	db.query("SET NAMES UTF8");
+	
+	onliners_number = 0; // можно считать элементы карт, но ето более накладно
 }
 
 /**
@@ -160,13 +162,15 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			
 			ATXmlTag *stat = new ATXmlTag("stat");
 				stat->setAttribute("name", "users/online");
-				stat->setAttribute("value", "0"); // TODO
+				stat->setAttribute("value", mawarPrintInteger(onliners_number));
 				stat->setAttribute("units", "users");
 				query->insertChildElement(stat);
 			
 			stat = new ATXmlTag("stat");
 				stat->setAttribute("name", "users/total");
-				stat->setAttribute("value", "0"); // TODO
+				DB::result r = db.query("SELECT count(*) AS cnt FROM users");
+				stat->setAttribute("value", r["cnt"]);
+				r.free();
 				stat->setAttribute("units", "users");
 				query->insertChildElement(stat);
 			
@@ -694,6 +698,7 @@ void VirtualHost::onOnline(XMPPClient *client)
 {
 	/// TODO: replaced by new connection
 	mutex.lock();
+		onliners_number++;
 		sessions_t::iterator user = onliners.find(client->jid().username());
 		if( user != onliners.end())
 		{
@@ -718,6 +723,7 @@ void VirtualHost::onOffline(XMPPClient *client)
 {
 	// TODO presence broadcast (unavailable)
 	mutex.lock();
+		onliners_number--;
 		onliners[client->jid().username()].erase(client->jid().resource());
 		if(onliners[client->jid().username()].empty()) {
 			// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить

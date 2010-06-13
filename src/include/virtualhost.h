@@ -190,6 +190,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		std::map<std::string, unsigned long int> id_users;
 		
 		bool registration_allowed; // разрешена ли регистрация
+		unsigned long int onliners_number; // число подключённых пользователей
 };
 
 #endif // MAWAR_VIRTUALHOST_H

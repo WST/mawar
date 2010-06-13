@@ -9,6 +9,12 @@ std::string getUniqueId() {
 	return std::string(buf);
 }
 
+std::string mawarPrintInteger(unsigned long int number) {
+	char buf[40];
+	sprintf(buf, "%lu", number);
+	return std::string(buf);
+}
+
 void mawarInformation(std::string text) {
 	std::cout << "\033[22;37m" << text << "\033[0m" << std::endl;
 }

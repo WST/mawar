@@ -13,6 +13,7 @@
 std::string getUniqueId();
 
 // Скопировано из Lana, авось пригодится
+std::string mawarPrintInteger(unsigned long int number);
 void mawarInformation(std::string text);
 void mawarWarning(std::string text);
 void mawarError(std::string text, int exitcode = 0);
