@@ -31,6 +31,8 @@ XEP0114::XEP0114(XMPPServer *srv, int sock):
 */
 XEP0114::~XEP0114()
 {
+	printf("XEP0114::~XEP0114()\n");
+	XMPPDomain::server->removeDomain(this);
 }
 
 /**
