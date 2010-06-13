@@ -147,7 +147,23 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
-			// TODO
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			
+			ATXmlTag *item;
+			
+			/* цикл по компонентам (нашим и тем внешним, что заданы в конфиге)
+			new ATXmlTag("item");
+				item->setAttribute("jid", "");
+			*/
+			
+			server->routeStanza(iq);
+			delete iq;
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/stats" && stanza_type == "get") {
@@ -812,16 +828,21 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 		iq->setAttribute("type", "result");
 		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 		
-		DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = (SELECT id_user FROM users WHERE user_login = %s)", db.quote(stanza.to().username()).c_str());
-		if(r.eof()) {
-			// Вернуть пустой vcard
-			ATXmlTag *vCard = new ATXmlTag("vCard");
-			vCard->setDefaultNameSpaceAttribute("vcard-temp");
-			iq->insertChildElement(vCard);
+		if(stanza.to().bare() == hostname()) {
+			// запрос вкарда сервера
+			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?><vCard xmlns=\"vcard-temp\"><FN>Mawar Jabber/XMPP daemon</FN><NICKNAME>@}-&gt;--</NICKNAME><BDAY>2010-06-13</BDAY><ADR><HOME/><LOCALITY>Tangerang</LOCALITY><REGION>Banten</REGION><CTRY>Indonesia</CTRY></ADR><TITLE>Server</TITLE><ORG><ORGNAME>SmartCommunity</ORGNAME><ORGUNIT>Jabber/XMPP</ORGUNIT></ORG><URL>http://mawar.jsmart.web.id</URL></vCard>"));
 		} else {
-			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = (SELECT id_user FROM users WHERE user_login = %s)", db.quote(stanza.to().username()).c_str());
+			if(r.eof()) {
+				// Вернуть пустой vcard
+				ATXmlTag *vCard = new ATXmlTag("vCard");
+				vCard->setDefaultNameSpaceAttribute("vcard-temp");
+				iq->insertChildElement(vCard);
+			} else {
+				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			}
+			r.free();
 		}
-		r.free();
 		server->routeStanza(iq);
 		delete iq;
 	}
