@@ -696,7 +696,7 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 */
 void VirtualHost::onOnline(XMPPClient *client)
 {
-	/// TODO: replaced by new connection
+	/// TODO: replaced by new connection © WST
 	mutex.lock();
 		onliners_number++;
 		sessions_t::iterator user = onliners.find(client->jid().username());
@@ -723,12 +723,14 @@ void VirtualHost::onOffline(XMPPClient *client)
 {
 	// TODO presence broadcast (unavailable)
 	mutex.lock();
-		onliners_number--;
-		onliners[client->jid().username()].erase(client->jid().resource());
-		if(onliners[client->jid().username()].empty()) {
-			// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить
-			onliners.erase(client->jid().username());
-			id_users.erase(client->jid().username());
+		if(client->isActive()) {
+			onliners_number--;
+			onliners[client->jid().username()].erase(client->jid().resource());
+			if(onliners[client->jid().username()].empty()) {
+				// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить © WST
+				onliners.erase(client->jid().username());
+				id_users.erase(client->jid().username());
+			}
 		}
 	mutex.unlock();
 }

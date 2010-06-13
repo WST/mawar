@@ -139,7 +139,7 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 				bind["jid"] = jid().full();
 		sendStanza(iq);
 		delete iq;
-		vhost->onOnline(this);
+		//vhost->onOnline(this);
 		return;
 	}
 	
@@ -150,6 +150,8 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 			iq["session"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-session");
 		
 		sendStanza(iq);
+		vhost->onOnline(this);
+		state = session;
 		return;
 	}
 	
@@ -843,4 +845,8 @@ JID XMPPClient::jid() const
 
 bool XMPPClient::isAuthorized() {
 	return state == authorized;
+}
+
+bool XMPPClient::isActive() {
+	return state == session;
 }
