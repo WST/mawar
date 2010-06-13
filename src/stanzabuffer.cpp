@@ -335,9 +335,8 @@ bool StanzaBuffer::push(int fd)
 		}
 		fb->mutex.unlock();
 		freeBlocks(unused);
-		return true;
 	}
-	return true;
+	return fb->size <= 0;
 }
 
 /**
