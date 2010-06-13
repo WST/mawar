@@ -80,35 +80,36 @@ void XMPPClient::onAuthStanza(Stanza stanza)
 void XMPPClient::onSASLStep(const std::string &input)
 {
 	string output;
+	Stanza stanza;
 	switch ( vhost->step(sasl, input, output) )
 	{
 	case SASLServer::ok:
 		client_jid.setUsername(vhost->getUsername(sasl));
 		user_id = vhost->getUserId(client_jid.username());
 		vhost->GSASLServer::close(sasl);
-		startElement("success");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-		endElement("success");
-		flush();
-		resetWriter();
+		stanza = new ATXmlTag("success");
+		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 		state = authorized;
 		depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
 		resetParser();
+		resetWriter();
+		sendStanza(stanza);
+		delete stanza;
 		break;
 	case SASLServer::next:
-		startElement("challenge");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-			characterData(base64_encode(output));
-		endElement("challenge");
-		flush();
+		stanza = new ATXmlTag("challenge");
+		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+		stanza->insertCharacterData(base64_encode(output));
+		sendStanza(stanza);
+		delete stanza;
 		break;
 	case SASLServer::error:
 		vhost->GSASLServer::close(sasl);
-		startElement("failure");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-			addElement("temporary-auth-failure", "");
-		endElement("failure");
-		flush();
+		stanza = new ATXmlTag("failure");
+		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+		stanza += new ATXmlTag("temporary-auth-failure");
+		sendStanza(stanza);
+		delete stanza;
 		break;
 	}
 }
@@ -789,36 +790,37 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 			return;
 		}
 	}
+	flush();
 	
-	startElement("stream:features");
+	Stanza features = new ATXmlTag("stream:features");
 	if ( state == init )
 	{
 		client_jid.setHostname(vhost->hostname());
-		startElement("mechanisms");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-			SASLServer::mechanisms_t list = vhost->getMechanisms();
-			for(SASLServer::mechanisms_t::const_iterator pos = list.begin(); pos != list.end(); ++pos)
-			{
-				addElement("mechanism", *pos);
-			}
-		endElement("mechanisms");
-		startElement("register");
-			setAttribute("xmlns", "http://jabber.org/features/iq-register");
-		endElement("register");
+		Stanza stanza = features["mechanisms"];
+		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
+		SASLServer::mechanisms_t list = vhost->getMechanisms();
+		for(SASLServer::mechanisms_t::const_iterator pos = list.begin(); pos != list.end(); ++pos)
+		{
+			Stanza mechanism = new ATXmlTag("mechanism");
+			mechanism->insertCharacterData(*pos);
+			stanza->insertChildElement(mechanism);
+		}
+		
+		stanza = features["register"];
+		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
 	}
 	else
 	{
-		startElement("bind");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
-		endElement("bind");
+		Stanza stanza = features["bind"];
+		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
+		
 		/*
-		startElement("session");
-			setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
-		endElement("session");
+		stanza = features["session"];
+		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
 		*/
 	}
-	endElement("stream:features");
-	flush();
+	sendStanza(features);
+	delete features;
 }
 
 /**
