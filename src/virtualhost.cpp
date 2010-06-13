@@ -87,7 +87,55 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#info" && stanza_type == "get") {
-			// TODO
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				ATXmlTag *identity = new ATXmlTag("identity");
+				identity->setAttribute("category", "server");
+				identity->setAttribute("type", "im");
+				identity->setAttribute("name", "@}->--"); // TODO: макросы с именем, версией итп
+				query->insertChildElement(identity);
+			
+				ATXmlTag *feature;
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/disco#info");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/disco#items");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/stats");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "iq");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "jabber:iq:version");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "msgoffline");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "presence");
+				query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "vcard-temp");
+				query->insertChildElement(feature);
+			
+			server->routeStanza(iq);
+			delete iq;
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
