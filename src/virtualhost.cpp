@@ -133,6 +133,12 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				feature = new ATXmlTag("feature");
 				feature->setAttribute("var", "vcard-temp");
 				query->insertChildElement(feature);
+				
+				if(registration_allowed) {
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "jabber:iq:register");
+					query->insertChildElement(feature);
+				}
 			
 			server->routeStanza(iq);
 			delete iq;
