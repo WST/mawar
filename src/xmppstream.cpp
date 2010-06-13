@@ -38,8 +38,10 @@ XMPPStream::~XMPPStream()
 */
 uint32_t XMPPStream::getEventsMask()
 {
-	uint32_t mask = EPOLLIN | EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR;
+	uint32_t mask = EPOLLIN | EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR | EPOLLPRI;
 	if ( want_write && ! disable_write ) mask |= EPOLLOUT;
+	printf("should read: %d\n", mask & EPOLLIN);
+	printf("mask: %x\n", mask);
 	return mask;
 }
 
@@ -110,7 +112,7 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 2: {
 		builder.endElement(name);
 		Stanza s = builder.fetchResult();
-		fprintf(stdout, "[XMPPStream: %d] onStanza(\033[22;31m%s\033[0m)\n", fd, s->asString().c_str());
+		//fprintf(stdout, "[XMPPStream: %d] onStanza(\033[22;31m%s\033[0m)\n", fd, s->asString().c_str());
 		onStanza(s);
 		delete s; // Внимание — станза удаляется здесь
 		break;
@@ -158,7 +160,7 @@ void XMPPStream::sendTag(ATXmlTag * tag) {
 bool XMPPStream::sendStanza(Stanza stanza)
 {
 	string data = stanza->asString();
-	fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
+	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
 	if ( server->buffer->put(fd, data.c_str(), data.length()) )
 	{
 		want_write = true;

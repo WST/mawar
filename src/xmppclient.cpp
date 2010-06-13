@@ -2,6 +2,7 @@
 #include <xmppstream.h>
 #include <xmppserver.h>
 #include <virtualhost.h>
+#include <functions.h>
 #include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
@@ -774,7 +775,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
-	setAttribute("id", "123456"); // Требования к id — непредсказуемость и уникальность
+	setAttribute("id", getUniqueId());
 	setAttribute("from", "localhost");
 	setAttribute("version", "1.0");
 	setAttribute("xml:lang", "en");

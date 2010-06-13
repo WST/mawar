@@ -81,6 +81,7 @@ MAWAR_OBJECTS+=serverstatus.o
 MAWAR_OBJECTS+=geoip.o
 MAWAR_OBJECTS+=logs.o
 MAWAR_OBJECTS+=stanzabuffer.o
+MAWAR_OBJECTS+=functions.o
 
 PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 
@@ -185,6 +186,9 @@ logs.o: $(srcdir)/logs.cpp $(srcdir)/include/logs.h
 
 stanzabuffer.o: $(srcdir)/stanzabuffer.cpp $(srcdir)/include/stanzabuffer.h
 	$(CXX) -c $(srcdir)/stanzabuffer.cpp -o stanzabuffer.o
+
+functions.o: $(srcdir)/functions.cpp $(srcdir)/include/functions.h
+	$(CXX) -c $(srcdir)/functions.cpp -o functions.o
 
 # CLEAN
 

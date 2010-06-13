@@ -27,6 +27,7 @@
 #include <s2slistener.h>
 #include <serverstatus.h>
 #include <stanzabuffer.h>
+#include <functions.h>
 
 #define PATH_PID (PATH_VAR "/run/maward.pid")
 #define PATH_STATUS (PATH_VAR "/run/maward.status")
@@ -139,8 +140,7 @@ int main(int argc, const char **argv)
 		printf("try fork\n");
 		pid_t parpid;
 		if((parpid = fork()) < 0) {
-			printf("\nFailed to fork!");
-			exit(99);
+			mawarError("Failed to fork!", 99);
 		}
 		else if(parpid != 0) {
 			exit(0); // успешно создан дочерний процесс, основной можно завершить
