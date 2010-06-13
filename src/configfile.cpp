@@ -106,3 +106,19 @@ VirtualHostConfig ConfigFile::nextHost(VirtualHostConfig from)
 {
 	return config_tag->findNext("hosts/host", from);
 }
+
+/**
+* Вернуть первый виртуальный хост
+*/
+TagHelper ConfigFile::firstExternal()
+{
+	return config_tag->find("hosts/external");
+}
+
+/**
+* Вернуть следующий виртуальный хост
+*/
+TagHelper ConfigFile::nextExternal(TagHelper from)
+{
+	return config_tag->findNext("hosts/external", from);
+}

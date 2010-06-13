@@ -5,6 +5,8 @@
 #include <xmppdomain.h>
 #include <stanza.h>
 #include <presence.h>
+#include <string>
+#include <taghelper.h>
 
 /**
 * Класс внешнего компонента (XEP-0114)
@@ -23,6 +25,16 @@ protected:
 		*/
 		authorized
 	} state;
+	
+	/**
+	* ID потока
+	*/
+	std::string id;
+	
+	/**
+	* Конфиг компонента
+	*/
+	TagHelper config;
 	
 	/**
 	* Событие: начало потока

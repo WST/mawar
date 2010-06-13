@@ -5,6 +5,9 @@
 #include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
+#include <gsasl.h>
+#include <functions.h>
+#include <configfile.h>
 
 // for debug only
 #include <string>
@@ -19,7 +22,7 @@ using namespace nanosoft;
 */
 XEP0114::XEP0114(XMPPServer *srv, int sock):
 	XMPPStream(srv, sock), XMPPDomain(srv, ""),
-	state(init)
+	state(init), id(getUniqueId())
 {
 }
 
@@ -52,26 +55,37 @@ void XEP0114::onTerminate()
 */
 void XEP0114::onStanza(Stanza stanza)
 {
-	fprintf(stderr, "#%d stanza: %s\n", getWorkerId(), stanza->name().c_str());
-	if ( state == init ) {
-		if ( stanza->name() == "handshake" ) {
-			// TODO авторизация
-			state = authorized;
-			
-			XMPPStream::server->addDomain(this);
-			startElement("handshake");
-			endElement("handshake");
-			flush();
-			
-			return;
-		} else {
-			Stanza error = Stanza::streamError("not-authorized");
-			sendStanza(error);
-			delete error;
-			flush();
-			terminate();
-			return;
+	fprintf(stdout, "#%d stanza: %s\n", getWorkerId(), stanza->name().c_str());
+	if ( state == init )
+	{
+		Stanza reply;
+		
+		if ( config && stanza->name() == "handshake" )
+		{
+			char *key;
+			string value = id + config["secret"]->getCharacterData();
+			if ( gsasl_sha1(value.c_str(), value.length(), &key) == GSASL_OK )
+			{
+				char hash[80];
+				bin2hex(hash, key, 20);
+				gsasl_free(key);
+				if ( hash == stanza->getCharacterData() )
+				{
+					state = authorized;
+					reply = new ATXmlTag("handshake");
+					sendStanza(reply);
+					delete reply;
+					XMPPStream::server->addDomain(this);
+					return;
+				}
+			}
 		}
+		
+		reply = new ATXmlTag("not-authorized");
+		sendStanza(reply);
+		delete reply;
+		terminate();
+		return;
 	} else {
 		// TODO проверка from
 		XMPPStream::server->routeStanza(stanza.to().hostname(), stanza);
@@ -84,30 +98,45 @@ void XEP0114::onStanza(Stanza stanza)
 void XEP0114::onStartStream(const std::string &name, const attributes_t &attributes)
 {
 	fprintf(stderr, "#%d new stream to %s\n", getWorkerId(), attributes.find("to")->second.c_str());
-	initXML();
 	
 	attributes_t::const_iterator to = attributes.find("to");
 	XMPPDomain::name = to != attributes.end() ? to->second : string();
 	
+	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:component:accept");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
 	setAttribute("from", XMPPDomain::name);
-	setAttribute("id", "123456"); // Требования к id — непредсказуемость и уникальность
-	
+	setAttribute("id", id);
+	flush();
 	
 	XMPPDomain *domain = XMPPStream::server->getHostByName(XMPPDomain::name);
-	if ( domain ) {
+	if ( domain )
+	{
 		// конфликт
 		Stanza error = Stanza::streamError("conflict");
 		sendStanza(error);
 		delete error;
-		flush();
 		terminate();
 		return;
 	}
 	
-	flush();
+	ConfigFile *srvconf = XMPPDomain::server->config;
+	
+	for(TagHelper item = srvconf->firstExternal(); item; item = srvconf->nextExternal(item))
+	{
+		if ( item->getAttribute("name") == XMPPDomain::name )
+		{
+			config = item;
+			return;
+		}
+	}
+	
+	Stanza error = Stanza::streamError("host-unknown");
+	sendStanza(error);
+	delete error;
+	terminate();
+	return;
 }
 
 /**
@@ -132,6 +161,5 @@ void XEP0114::onEndStream()
 */
 bool XEP0114::routeStanza(Stanza stanza)
 {
-	cerr << "TODO XEP0114::routeStanza()\n";
-	sendStanza(stanza);
+	return sendStanza(stanza);
 }

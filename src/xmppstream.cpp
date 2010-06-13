@@ -40,8 +40,6 @@ uint32_t XMPPStream::getEventsMask()
 {
 	uint32_t mask = EPOLLIN | EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR | EPOLLPRI;
 	if ( want_write && ! disable_write ) mask |= EPOLLOUT;
-	printf("should read: %d\n", mask & EPOLLIN);
-	printf("mask: %x\n", mask);
 	return mask;
 }
 

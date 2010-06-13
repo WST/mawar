@@ -35,8 +35,8 @@
 			<!-- other settings -->
 		</host>
 		
-		<external name="conference.localhost">
-			<secret>secret</secret>
+		<external name="icq.neofly.ru">
+			<secret>123456</secret>
 			<!-- other settings -->
 		</external>
 		

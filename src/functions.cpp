@@ -23,3 +23,19 @@ void mawarError(std::string text, int exitcode) {
 		exit(exitcode);
 	}
 }
+
+/**
+* Преобразовать двоичные данные в шестнадцатеричный вид
+* @param dest буфер строки (должен быть достаточного размера - 2 * len + 1)
+* @param src двоичные данные
+* @param len размер двоичных данных
+*/
+void bin2hex(char *dest, const void *src, size_t len)
+{
+	const unsigned char *p = static_cast<const unsigned char*>(src);
+	int s;
+	for(size_t i = 0; i < len; i++, dest+=s, p++)
+	{
+		s = sprintf(dest, "%02x", *p);
+	}
+}

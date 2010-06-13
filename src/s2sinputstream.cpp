@@ -1,5 +1,6 @@
 
 #include <s2sinputstream.h>
+#include <s2soutputstream.h>
 #include <virtualhost.h>
 #include <nanosoft/asyncdns.h>
 #include <iostream>
@@ -179,8 +180,7 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 	XMPPDomain *host = server->getHostByName(to);
-	VirtualHost *vhost = dynamic_cast<VirtualHost *>(host);
-	if ( ! vhost )
+	if ( ! host || dynamic_cast<S2SOutputStream*>(host) )
 	{
 		Stanza stanza = Stanza::streamError("host-unknown");
 		sendStanza(stanza);

@@ -59,6 +59,15 @@ class ConfigFile
 		*/
 		VirtualHostConfig nextHost(VirtualHostConfig from);
 	
+		/**
+		* Вернуть первый виртуальный хост
+		*/
+		TagHelper firstExternal();
+		
+		/**
+		* Вернуть следующий виртуальный хост
+		*/
+		TagHelper nextExternal(TagHelper from);
 	private:
 		ATXmlTag *config_tag;
 		ATXmlTag *listen;
