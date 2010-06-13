@@ -9,6 +9,7 @@
 #include <nanosoft/gsaslserver.h>
 #include <db.h>
 #include <time.h>
+#include <functions.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -78,6 +79,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		std::string stanza_type = stanza.type();
 		
 		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
+			mawarWarning("Served incoming version request");
 			Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
 			server->routeStanza(version);
 			delete version;
@@ -92,7 +94,36 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			// TODO
 		}
 		
+		if(query_xmlns == "http://jabber.org/protocol/stats" && stanza_type == "get") {
+			mawarWarning("Served incoming stats request");
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/stats");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			
+			ATXmlTag *stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "users/online");
+				stat->setAttribute("value", "0"); // TODO
+				stat->setAttribute("units", "users");
+				query->insertChildElement(stat);
+			
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "users/total");
+				stat->setAttribute("value", "0"); // TODO
+				stat->setAttribute("units", "users");
+				query->insertChildElement(stat);
+			
+			// TODO: другая статистика
+			
+			server->routeStanza(iq);
+			delete iq;
+		}
+		
 		if(query_xmlns == "jabber:iq:private") {
+			mawarWarning("Served incoming private storage request");
 			// private storage
 			if(stanza_type == "get") {
 				Stanza iq = new ATXmlTag("iq");
