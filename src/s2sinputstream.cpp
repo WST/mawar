@@ -2,6 +2,7 @@
 #include <s2sinputstream.h>
 #include <s2soutputstream.h>
 #include <virtualhost.h>
+#include <functions.h>
 #include <nanosoft/asyncdns.h>
 #include <iostream>
 
@@ -32,7 +33,7 @@ void S2SInputStream::onStartStream(const std::string &name, const attributes_t &
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
 	setAttribute("xmlns", "jabber:server");
 	setAttribute("xmlns:db", "jabber:server:dialback");
-	setAttribute("id", id = "123456"); // Требования к id — непредсказуемость и уникальность
+	setAttribute("id", id = getUniqueId());
 	setAttribute("xml:lang", "en");
 	flush();
 }
