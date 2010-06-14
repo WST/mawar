@@ -102,75 +102,6 @@ void S2SInputStream::onDBVerifyStanza(Stanza stanza)
 }
 
 /**
-* Резолвер s2s хоста, запись A (IPv4)
-*/
-static void on_s2s_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
-{
-  printf("on_s2s_a4\n");
-  if ( result )
-  for(int i = 0; i < result->dnsa4_nrr; i++)
-  {
-    char buf[40];
-    printf("  addr: %s\n", dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)));
-  }
-  printf("\n");
-}
-
-/**
-* Резолвер s2s хоста, запись SRV (_jabber._tcp)
-*/
-static void on_s2s_srv_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
-{
-  printf("on_s2s_srv_jabber\n");
-  if ( result )
-  for(int i = 0; i < result->dnssrv_nrr; i++)
-  {
-    char buf[40];
-    printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
-      result->dnssrv_srv[i].priority,
-      result->dnssrv_srv[i].weight,
-      result->dnssrv_srv[i].port,
-      result->dnssrv_srv[i].name);
-  }
-  printf("\n");
-}
-
-/**
-* Резолвер s2s хоста, запись SRV (_xmpp-server._tcp)
-*/
-static void on_srv_xmpp_server(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data)
-{
-  printf("on_srv_xmpp_server\n");
-  if ( result )
-  for(int i = 0; i < result->dnssrv_nrr; i++)
-  {
-    char buf[40];
-    printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
-      result->dnssrv_srv[i].priority,
-      result->dnssrv_srv[i].weight,
-      result->dnssrv_srv[i].port,
-      result->dnssrv_srv[i].name);
-  }
-  printf("\n");
-}
-
-/**
-* Резолвер s2s хоста, запись RBL
-*/
-static void on_s2s_rbl(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
-{
-  printf("on_s2s_rbl\n");
-  if ( result ) {
-  for(int i = 0; i < result->dnsa4_nrr; i++)
-  {
-    char buf[40];
-    printf("  addr: %s\n", dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)));
-  }
-  }
-  printf("\n");
-}
-
-/**
 * Обработка <db:result>
 */
 void S2SInputStream::onDBResultStanza(Stanza stanza)
@@ -214,11 +145,11 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	
 	// Шаг 3. резолвим DNS записи сервера
 	// NOTE для оптимизации отправляем все DNS (асинхронные) запросы сразу
-	server->adns->a4(from.c_str(), on_s2s_a4, this);
-	server->adns->srv(from.c_str(), "jabber", "tcp", on_s2s_srv_jabber, this);
-	server->adns->srv(from.c_str(), "xmpp-server", "tcp", on_srv_xmpp_server, this);
+	//server->adns->a4(from.c_str(), on_s2s_a4, this);
+	//server->adns->srv(from.c_str(), "jabber", "tcp", on_s2s_srv_jabber, this);
+	//server->adns->srv(from.c_str(), "xmpp-server", "tcp", on_srv_xmpp_server, this);
 	// TODO извлекать список DNSBL из конфига
-	server->adns->a4((from + ".dnsbl.jabber.ru").c_str(), on_s2s_rbl, this);
+	//server->adns->a4((from + ".dnsbl.jabber.ru").c_str(), on_s2s_rbl, this);
 	
 	// Шаг X. костыль - ответить сразу "authorized"
 	state = authorized;
