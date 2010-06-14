@@ -46,6 +46,10 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 		}
 	}
 	
+	// Очищаем пул Directed Presence (RFC 3921, 5.1.4)
+	// TODO возможно, при старте нужно рассылать Presence Unsubscribe...
+	db.query("TRUNCATE dp_spool");
+	
 	// кодировка только UTF-8
 	db.query("SET NAMES UTF8");
 	
@@ -732,11 +736,42 @@ void VirtualHost::onOnline(XMPPClient *client)
 }
 
 /**
+* Отправить Presence Unavailable всем, кому был отправлен Directed Presence
+* @param client клиент, который отправлял Directed Presence
+*/
+void VirtualHost::unavailableDirectedPresence(XMPPClient *client)
+{
+	DB::result r = db.query("SELECT contact_jid FROM dp_spool WHERE user_jid = %s",
+		db.quote(client->jid().full()).c_str()
+		);
+	if ( r )
+	{
+		Stanza presence = new ATXmlTag("presence");
+		presence->setAttribute("type", "unavailable");
+		presence->setAttribute("from", client->jid().full());
+		while ( ! r.eof() )
+		{
+			presence->setAttribute("to", r["contact_jid"]);
+			server->routeStanza(presence);
+			r.next();
+		}
+		delete presence;
+		r.free();
+	}
+	
+	db.query("DELETE FROM dp_spool WHERE user_jid = %s",
+		db.quote(client->jid().full()).c_str()
+		);
+}
+
+/**
 * Событие: Пользователь ушел в offline (thread-safe)
 * @param client поток
 */
 void VirtualHost::onOffline(XMPPClient *client)
 {
+	unavailableDirectedPresence(client);
+	
 	// TODO presence broadcast (unavailable)
 	mutex.lock();
 		if(client->isActive()) {
