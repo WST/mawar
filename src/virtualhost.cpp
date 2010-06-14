@@ -250,6 +250,17 @@ void VirtualHost::serveCommonPresence(Stanza stanza)
 	JID to = stanza.to();
 	JID from = stanza.from();
 	
+	int priority = atoi(stanza->getChildValue("priority", "0").c_str());
+	if(priority >= 0) {
+		// Отправить оффлайн-сообщения, если появился ресурс с неотрицательным приоритетом
+		// Пока таких ресурсов нет, сообщения сохраняются на сервере.
+		// ©WST
+		XMPPClient *client = getClientByJid(from);
+		if(client) {
+			sendOfflineMessages(client);
+		}
+	}
+	
 	if ( to.resource() != "" )
 	{
 		XMPPClient *client = getClientByJid(to);
@@ -701,13 +712,7 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 		Stanza msg = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["message_stanza"]);
 		if ( msg )
 		{
-			// TODO вставить отметку времени
-			// <message from="admin@underjabber.net.ru/home" xml:lang="ru-RU" to="averkov@jabberid.org" id="aef3a" >
-			// <subject>test</subject>
-			// <body>Test msg</body>
-			// <nick xmlns="http://jabber.org/protocol/nick">WST</nick>
-			// <x xmlns="jabber:x:delay" stamp="20091025T14:39:32" />
-			// </message>
+			// TODO вставить отметку времени © WST
 			client->sendStanza(msg);
 			delete msg;
 		}
