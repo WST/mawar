@@ -84,7 +84,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		std::string stanza_type = stanza.type();
 
-		if(query_xmlns == "jabber:iq:register") {
+		if(query_xmlns == "jabber:iq:register" && stanza.from().hostname() != hostname()) {
 			// Запрос регистрации на s2s
 			handleRegisterIq(0, stanza);
 			return;
@@ -1025,7 +1025,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		ATXmlTag *username = stanza->find("query/username");
 		ATXmlTag *password = stanza->find("query/password");
 		ATXmlTag *remove = stanza->find("query/remove");
-		if(remove != 0) {
+		if(remove != 0 && client != 0) {
 			// Запрошено удаление учётной записи
 			db.query("DELETE FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
 			// TODO: удалять мусор из других таблиц
@@ -1044,7 +1044,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		if(username != 0 && password != 0) {
 			// Запрошена регистрация
 			
-			if(client->isAuthorized()) {
+			if(client != 0 && client->isAuthorized()) {
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
 				iq->setAttribute("to", stanza.from().full());
