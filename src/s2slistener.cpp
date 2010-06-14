@@ -75,19 +75,17 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 		
 		for(int i = 0; i < result->dnsa4_nrr; i++)
 		{
-			printf("  try addr: %s:%d\n", dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)), p->port);
+			printf("s2s-output(%s): connect to %s:%d\n", p->to.c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)), p->port);
 			target.sin_family = AF_INET;
 			target.sin_port = htons(5269);
 			memcpy(&target.sin_addr, &result->dnsa4_addr[i], sizeof(result->dnsa4_addr[i]));
 			memset(target.sin_zero, '\0', 8);
 			if ( ::connect(sock, (struct sockaddr *)&target, sizeof( struct sockaddr )) == 0 )
 			{
-				fprintf(stderr, "  connected: %s\n", buf);
+				printf("s2s-output(%s): connected to %s:%d\n", p->to.c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)), p->port);
 				S2SOutputStream *stream = new S2SOutputStream(p->server, sock, p->to, p->from);
 				fcntl(sock, F_SETFL, O_NONBLOCK);
-				fprintf(stderr, "before addObject\n");
 				p->server->daemon->addObject(stream);
-				fprintf(stderr, "after addObject\n");
 				stream->startStream();
 				Stanza dbresult = new ATXmlTag("db:result");
 				dbresult->setAttribute("to", p->to);
@@ -99,7 +97,7 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 			}
 			else
 			{
-				fprintf(stderr, "connect() fault\n");
+				fprintf(stderr, "s2s-output(%s): connect to %s:%d fault\n", p->to.c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[i], buf, sizeof(buf)), p->port);
 			}
 		}
 		
@@ -119,7 +117,8 @@ void S2SListener::on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_srv *r
 		for(int i = 0; i < result->dnssrv_nrr; i++)
 		{
 			char buf[40];
-			printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
+			printf("SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
+			p->to.c_str(),
 			result->dnssrv_srv[i].priority,
 			result->dnssrv_srv[i].weight,
 			result->dnssrv_srv[i].port,
@@ -148,7 +147,8 @@ void S2SListener::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns_rr_s
 		for(int i = 0; i < result->dnssrv_nrr; i++)
 		{
 			char buf[40];
-			printf("  SRV priority: %d, weight: %d, port: %d, name: %s\n",
+			printf("SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
+			p->to.c_str(),
 			result->dnssrv_srv[i].priority,
 			result->dnssrv_srv[i].weight,
 			result->dnssrv_srv[i].port,
@@ -194,7 +194,7 @@ bool S2SListener::routeStanza(const char *host, Stanza stanza)
 		pendings_t::iterator iter = pendings.find(host);
 		if ( iter == pendings.end() )
 		{
-			printf("new s2s-output to: %s\n", host);
+			printf("s2s-output(%s)\n", host);
 			
 			p = new pending_t;
 			p->server = server;
