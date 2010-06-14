@@ -83,6 +83,12 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		std::string stanza_type = stanza.type();
+
+		if(query_xmlns == "jabber:iq:register") {
+			// Запрос регистрации на s2s
+			handleRegisterIq(0, stanza);
+			return;
+		}
 		
 		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
 			mawarWarning("Served incoming version request");
@@ -980,7 +986,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 	if(!registration_allowed) {
 		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
 		error->setAttribute("from", hostname());
-		client->sendStanza(error);
+		if(client) {
+			client->sendStanza(error);
+		} else {
+			error->setAttribute("to", stanza.to().full());
+			server->routeStanza(error);
+		}
 		delete error;
 		return;
 	}
@@ -1001,7 +1012,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		query->insertChildElement(username);
 		query->insertChildElement(password);
 		
-		client->sendStanza(iq);
+		if(client) {
+			client->sendStanza(iq);
+		} else {
+			iq->setAttribute("to", stanza.to().full());
+			server->routeStanza(iq);
+		}
 		delete iq;
 	}
 	else { // set
@@ -1016,7 +1032,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("type", "result");
 			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			client->sendStanza(iq);
+			if(client) {
+				client->sendStanza(iq);
+			} else {
+				iq->setAttribute("to", stanza.to().full());
+				server->routeStanza(iq);
+			}
 			delete iq;
 			return;
 		}
@@ -1037,7 +1058,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				query->insertChildElement(registered);
 				query->insertChildElement(username);
 				query->insertChildElement(password);
-				client->sendStanza(iq);
+				if(client) {
+					client->sendStanza(iq);
+				} else {
+					iq->setAttribute("to", stanza.to().full());
+					server->routeStanza(iq);
+				}
 				delete iq;
 				return;
 			}
@@ -1051,7 +1077,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("type", "result");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				client->sendStanza(iq);
+				if(client) {
+					client->sendStanza(iq);
+				} else {
+					iq->setAttribute("to", stanza.to().full());
+					server->routeStanza(iq);
+				}
 				delete iq;
 			} else {
 				// Пользователь с таким именем уже существует
@@ -1067,7 +1098,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				error->insertAttribute("type", "cancel");
 				ATXmlTag *conflict = new ATXmlTag("conflict");
 				conflict->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
-				client->sendStanza(iq);
+				if(client) {
+					client->sendStanza(iq);
+				} else {
+					iq->setAttribute("to", stanza.to().full());
+					server->routeStanza(iq);
+				}
 				delete iq;
 			}
 		}
