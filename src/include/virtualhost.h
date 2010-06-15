@@ -191,6 +191,10 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		
 		bool registration_allowed; // разрешена ли регистрация
 		unsigned long int onliners_number; // число подключённых пользователей
+		unsigned long int vcard_queries; // число запросов vcard
+		unsigned long int stats_queries; // число запросов статистики
+		unsigned long int xmpp_ping_queries; // число обслуженных XMPP-пингов
+		unsigned long int version_requests; // число запросов верси сервера
 };
 
 #endif // MAWAR_VIRTUALHOST_H

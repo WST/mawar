@@ -54,6 +54,10 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 	db.query("SET NAMES UTF8");
 	
 	onliners_number = 0; // можно считать элементы карт, но ето более накладно
+	vcard_queries = 0;
+	stats_queries = 0;
+	xmpp_ping_queries = 0;
+	version_requests = 0;
 }
 
 /**
@@ -68,6 +72,7 @@ VirtualHost::~VirtualHost() {
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
 	if(stanza->hasChild("ping")) {
+		xmpp_ping_queries++;
 		// ping (XEP-0199)
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("from", name);
@@ -91,6 +96,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
+			version_requests++;
 			mawarWarning("Served incoming version request");
 			Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
 			server->routeStanza(version);
@@ -177,6 +183,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/stats" && stanza_type == "get") {
+			stats_queries++;
 			mawarWarning("Served incoming stats request");
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("from", name);
@@ -198,6 +205,36 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				stat->setAttribute("value", r["cnt"]);
 				r.free();
 				stat->setAttribute("units", "users");
+				query->insertChildElement(stat);
+				
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "queries/vcard");
+				stat->setAttribute("value", mawarPrintInteger(vcard_queries));
+				stat->setAttribute("units", "queries");
+				query->insertChildElement(stat);
+			
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "queries/stats");
+				stat->setAttribute("value", mawarPrintInteger(stats_queries));
+				stat->setAttribute("units", "queries");
+				query->insertChildElement(stat);
+				
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "queries/xmpp-pings");
+				stat->setAttribute("value", mawarPrintInteger(xmpp_ping_queries));
+				stat->setAttribute("units", "queries");
+				query->insertChildElement(stat);
+			
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "queries/version");
+				stat->setAttribute("value", mawarPrintInteger(version_requests));
+				stat->setAttribute("units", "queries");
+				query->insertChildElement(stat);
+				
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "flags/registration_allowed");
+				stat->setAttribute("value", registration_allowed ? "true" : "false");
+				stat->setAttribute("units", "boolean");
 				query->insertChildElement(stat);
 			
 			// TODO: другая статистика
@@ -834,6 +871,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			// Получение собственной vcard
 			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
 			// or an IQ-result containing an empty <vCard/> element.
+			vcard_queries++;
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -868,6 +906,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 		// Запрос чужого vcard (или своего способом псей)
 		// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
 		// or an IQ-result containing an empty <vCard/> element.
+		vcard_queries++;
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("from", stanza.to().bare());
