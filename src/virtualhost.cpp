@@ -240,9 +240,15 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->insertChildElement(stat);
 				
 			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "flags/registration_allowed");
-				stat->setAttribute("value", registration_allowed ? "true" : "false");
-				stat->setAttribute("units", "boolean");
+				stat->setAttribute("name", "misc/registration_allowed");
+				stat->setAttribute("value", registration_allowed ? "yes," : "no,");
+				stat->setAttribute("units", registration_allowed ? "allowed" : "not allowed");
+				query->insertChildElement(stat);
+			
+			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "misc/uptime");
+				stat->setAttribute("value", mawarPrintInteger(time(0) - start_time));
+				stat->setAttribute("units", "seconds");
 				query->insertChildElement(stat);
 			
 			// TODO: другая статистика
