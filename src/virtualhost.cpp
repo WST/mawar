@@ -431,7 +431,7 @@ void VirtualHost::servePresenceSubscribe(Stanza stanza)
 	}
 	else
 	{ // сохранить запрос в БД
-		db.query("INSERT INTO roster (id_user, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'N', 'P')", id_users[to], db.quote(from).c_str());
+		db.query("INSERT INTO roster (id_user, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'N', 'P')", getUserId(to), db.quote(from).c_str());
 	}
 	r.free();
 	
@@ -686,6 +686,7 @@ void VirtualHost::saveOfflineMessage(Stanza stanza) {
 	// При флуд-атаках нимбуззеров сообщения часто идут быстрым потоком
 	// При этом крайне нежелательно порождать трафик с MySQL тучей запросов count
 	// Было бы классно кешировать число оффлайн-сообщений, например, в какой-то карте…
+	// © WST
 	DB::result r = db.query("SELECT count(*) AS cnt FROM spool WHERE message_to=%s", db.quote(stanza.to().bare()).c_str());
 	if(atoi(r["cnt"].c_str()) < 100) { // TODO — брать максимальное число оффлайн-сообщений из конфига
 		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(stanza->asString()).c_str(), time(NULL));
@@ -778,21 +779,22 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 */
 void VirtualHost::onOnline(XMPPClient *client)
 {
-	/// TODO: replaced by new connection © WST
+	// NOTE вызывается только при успешной инициализации session (после bind)
 	mutex.lock();
-		onliners_number++;
-		sessions_t::iterator user = onliners.find(client->jid().username());
-		if( user != onliners.end())
-		{
+	onliners_number++;
+	sessions_t::iterator user = onliners.find(client->jid().username());
+	if(user != onliners.end()) {
+		reslist_t::iterator resource = user->second.find(client->jid().resource());
+		if(resource != user->second.end()) {
+			// TODO: replaced by new connection (прямо в этом месте)
+		} else {
 			user->second[client->jid().resource()] = client;
 		}
-		else
-		{
-			onliners[client->jid().username()][client->jid().resource()] = client;
-			DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
-			id_users[client->jid().username()] = atoi(r["id_user"].c_str());
-			r.free();
-		}
+	} else {
+		onliners[client->jid().username()][client->jid().resource()] = client;
+		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
+		r.free();
+	}
 	mutex.unlock();
 	sendOfflineMessages(client);
 }
@@ -842,7 +844,6 @@ void VirtualHost::onOffline(XMPPClient *client)
 			if(onliners[client->jid().username()].empty()) {
 				// Если карта ресурсов пуста, то соответствующий элемент вышестоящей карты нужно удалить © WST
 				onliners.erase(client->jid().username());
-				id_users.erase(client->jid().username());
 			}
 		}
 	mutex.unlock();
@@ -867,13 +868,11 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 * @param login логин пользователя
 * @return ID пользователя
 */
-int VirtualHost::getUserId(const std::string &login)
-{
+int VirtualHost::getUserId(const std::string &login) {
 	DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(login).c_str());
 	int user_id = r.eof() ? 0 : atoi(r["id_user"].c_str());
 	r.free();
 	return user_id;
-	// есть другой костыль — карта id_users… Она хотя бы быстрее %)
 }
 
 void VirtualHost::handleVcardRequest(Stanza stanza) {
@@ -891,7 +890,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			iq->setAttribute("type", "result");
 			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			
-			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", id_users[stanza.from().username()]);
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", getUserId(stanza.from().username()));
 			if(r.eof()) {
 				// Вернуть пустой vcard
 				ATXmlTag *vCard = new ATXmlTag("vCard");
@@ -905,7 +904,7 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			delete iq;
 		} else if(stanza.type() == "set") {
 			// Установка собственной vcard
-			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", id_users[stanza.from().username()], db.quote(stanza["vCard"]->asString()).c_str());
+			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(stanza["vCard"]->asString()).c_str());
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");

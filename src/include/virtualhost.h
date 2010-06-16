@@ -187,7 +187,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		sessions_t onliners; // Онлайнеры
-		std::map<std::string, unsigned long int> id_users;
 		
 		bool registration_allowed; // разрешена ли регистрация
 		unsigned long int onliners_number; // число подключённых пользователей
