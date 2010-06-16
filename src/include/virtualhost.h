@@ -195,6 +195,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		unsigned long int stats_queries; // число запросов статистики
 		unsigned long int xmpp_ping_queries; // число обслуженных XMPP-пингов
 		unsigned long int version_requests; // число запросов верси сервера
+		unsigned long int start_time; // момент запуска виртуального узл
 };
 
 #endif // MAWAR_VIRTUALHOST_H
