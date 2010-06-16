@@ -133,19 +133,11 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->insertChildElement(feature);
 				
 				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "iq");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
 				feature->setAttribute("var", "jabber:iq:version");
 				query->insertChildElement(feature);
 				
 				feature = new ATXmlTag("feature");
 				feature->setAttribute("var", "msgoffline");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "presence");
 				query->insertChildElement(feature);
 				
 				feature = new ATXmlTag("feature");
