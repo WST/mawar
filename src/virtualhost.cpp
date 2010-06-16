@@ -154,6 +154,21 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			delete iq;
 		}
 		
+		if(query_xmlns == "jabber:iq:last" && stanza_type == "get") {
+			// last activity к серверу должно выводить его uptime,
+			// а к JID-ам юзеров -- время их последней активности (обрабатывается сервером)
+			// (C) WST
+			Stanza iq;
+			if(stanza.to().full() == hostname()) {
+				unsigned long int now = time(0);
+				iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(now) + "\"/></iq>");
+			} else {
+				// TODO
+			}
+			server->routeStanza(iq);
+			delete iq;
+		}
+		
 		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("from", name);
