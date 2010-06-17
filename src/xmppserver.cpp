@@ -158,3 +158,4 @@ bool XMPPServer::routeStanza(Stanza stanza)
 {
 	return routeStanza(stanza.to().hostname(), stanza);
 }
+
