@@ -10,7 +10,8 @@ AC_CONFIG_HEADER([nanosoft/src/include/nanosoft/config.h])
 
 AC_CANONICAL_HOST
 
-NETWORK_LIBS="GeoIP"
+#NETWORK_LIBS="GeoIP"
+NETWORK_LIBS=""
 
 case "$host_os" in
 linux)
@@ -54,7 +55,7 @@ AC_ARG_WITH(nanosoft, AS_HELP_STRING([--with-nanosoft=PREFIX], [prefix to nanoso
 	])
 #AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
 #AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
-AC_CHECK_LIB(GeoIP, main, [], [AC_ERROR(GeoIP library is required)])
+#AC_CHECK_LIB(GeoIP, main, [], [AC_ERROR(GeoIP library is required)])
 
 SASL=none
 SASL_LIBS=""

@@ -1981,7 +1981,8 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
-NETWORK_LIBS="GeoIP"
+#NETWORK_LIBS="GeoIP"
+NETWORK_LIBS=""
 
 case "$host_os" in
 linux)
@@ -4153,47 +4154,7 @@ fi
 
 #AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
 #AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lGeoIP" >&5
-$as_echo_n "checking for main in -lGeoIP... " >&6; }
-if test "${ac_cv_lib_GeoIP_main+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lGeoIP  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_GeoIP_main=yes
-else
-  ac_cv_lib_GeoIP_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_GeoIP_main" >&5
-$as_echo "$ac_cv_lib_GeoIP_main" >&6; }
-if test "x$ac_cv_lib_GeoIP_main" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBGEOIP 1
-_ACEOF
-
-  LIBS="-lGeoIP $LIBS"
-
-else
-  as_fn_error "GeoIP library is required" "$LINENO" 5
-fi
-
+#AC_CHECK_LIB(GeoIP, main, [], [AC_ERROR(GeoIP library is required)])
 
 SASL=none
 SASL_LIBS=""

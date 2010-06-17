@@ -17,3 +17,4 @@ bool GeoIPValidator::checkGeoIP(const char *ip_addr) {
 		return false;
 	}
 }
+
