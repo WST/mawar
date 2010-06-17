@@ -1037,7 +1037,8 @@ void VirtualHost::rosterPush(const std::string &username, Stanza stanza)
 
 /**
 * Регистрация пользователей
-* Вызывается из XMPPClient::onIqStanza()
+* Вызывается из XMPPClient::onIqStanza() и VirtualHost::handleVHostIq()
+* во втором случае client = 0
 */
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 	if(!registration_allowed) {
@@ -1056,7 +1057,6 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		// Запрос регистрационной формы
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("from", name);
-		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("type", "result");
 		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 		TagHelper query = iq["query"];
@@ -1104,7 +1104,6 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 			if(client != 0 && client->isAuthorized()) {
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
 				iq->setAttribute("type", "result");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 				TagHelper query = iq["query"];
