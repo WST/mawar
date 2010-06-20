@@ -272,13 +272,16 @@ void XMPPClient::handleDirectedPresence(Stanza stanza)
 /**
 * RFC 3921 (5.1.5) Unavailable Presence
 */
-void XMPPClient::handleUnavailablePresence()
+void XMPPClient::handleUnavailablePresence(Stanza stanza)
 {
 	available = false;
 	
 	Stanza presence = new ATXmlTag("presence");
 	presence->setAttribute("type", "unavailable");
 	presence->setAttribute("from", client_jid.full());
+	if(stanza->hasChild("status")) {
+		presence->insertChildElement(stanza->getChild("status"));
+	}
 	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		presence->setAttribute("to", r["contact_jid"]);
@@ -511,7 +514,7 @@ void XMPPClient::onPresenceStanza(Stanza stanza) {
 		else if ( stanza->getAttribute("type") == "unavailable" )
 		{
 			// RFC 3921 (5.1.5) Unavailable Presence
-			handleUnavailablePresence();
+			handleUnavailablePresence(stanza);
 			return;
 		}
 	}

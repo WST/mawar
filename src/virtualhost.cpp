@@ -781,19 +781,26 @@ void VirtualHost::onOnline(XMPPClient *client)
 {
 	// NOTE вызывается только при успешной инициализации session (после bind)
 	mutex.lock();
-	onliners_number++;
 	sessions_t::iterator user = onliners.find(client->jid().username());
 	if(user != onliners.end()) {
 		reslist_t::iterator resource = user->second.find(client->jid().resource());
 		if(resource != user->second.end()) {
-			// TODO: replaced by new connection (прямо в этом месте)
+			//replaced by new connection
+			Stanza offline = parse_xml_string("<?xml version=\"1.0\"\n<presence type=\"unavailable\"><status>Replaced by new connection</status></presence>");
+			onliners[client->jid().username()][client->jid().resource()]->handleUnavailablePresence(offline);
+			delete offline;
+			delete onliners[client->jid().username()][client->jid().resource()]; // если удалять элемент карты, в деструкторе XMPPClient вызовется повторное удаление!
+			user->second[client->jid().resource()] = client;
+			// Число онлайнов не изменилось, onliners_number менять не надо
 		} else {
 			user->second[client->jid().resource()] = client;
+			onliners_number++;
 		}
 	} else {
 		onliners[client->jid().username()][client->jid().resource()] = client;
 		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
 		r.free();
+		onliners_number++;
 	}
 	mutex.unlock();
 	sendOfflineMessages(client);

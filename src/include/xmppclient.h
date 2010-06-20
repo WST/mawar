@@ -179,7 +179,7 @@ public:
 	/**
 	* RFC 3921 (5.1.5) Unavailable Presence
 	*/
-	void handleUnavailablePresence();
+	void handleUnavailablePresence(Stanza stanza);
 	
 	/**
 	* RFC 3921 (8.2) Presence Subscribe
