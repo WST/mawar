@@ -279,9 +279,14 @@ void XMPPClient::handleUnavailablePresence(Stanza stanza)
 	Stanza presence = new ATXmlTag("presence");
 	presence->setAttribute("type", "unavailable");
 	presence->setAttribute("from", client_jid.full());
-	if(stanza->hasChild("status")) {
-		presence->insertChildElement(stanza->getChild("status"));
+	
+	if(ATXmlTag *stanza_status = stanza->getChild("status")) {
+		ATXmlTag *status = new ATXmlTag("status");
+			status->insertCharacterData(stanza_status->getCharacterData());
+		
+		presence->insertChildElement(status);
 	}
+	
 	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		presence->setAttribute("to", r["contact_jid"]);

@@ -166,3 +166,4 @@ bool XMPPStream::sendStanza(Stanza stanza)
 	}
 	else onError("[XMPPStream: %d] sendStanza() fault");
 }
+
