@@ -43,7 +43,8 @@ void XMPPClient::onTerminate()
 	mutex.lock();
 		endElement("stream:stream");
 		flush();
-		shutdown(WRITE);
+		server->daemon->removeObject(this);
+		close();
 	mutex.unlock();
 }
 
