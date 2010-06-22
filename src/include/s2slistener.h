@@ -30,6 +30,7 @@ private:
 		*/
 		class XMPPServer *server;
 		
+		S2SListener *s2s;
 		std::string to;
 		std::string from;
 		int port;
@@ -113,6 +114,11 @@ public:
 	* Отправить буферизованные станзы
 	*/
 	void flush(class S2SOutputStream *stream);
+	
+	/**
+	* Удалить несостоявшийся s2s коннект
+	*/
+	void drop(const std::string &host);
 };
 
 #endif // MAWAR_S2SLISTENER_H

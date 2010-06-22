@@ -103,6 +103,7 @@ void S2SListener::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result
 		
 		::close(sock);
 	}
+	p->s2s->drop(p->to);
 }
 
 /**
@@ -198,6 +199,7 @@ bool S2SListener::routeStanza(const char *host, Stanza stanza)
 			
 			p = new pending_t;
 			p->server = server;
+			p->s2s = this;
 			p->to = stanza.to().hostname();
 			p->from = stanza.from().hostname();
 			p->buffer.push_back(stanza->asString());
@@ -247,4 +249,22 @@ void S2SListener::flush(S2SOutputStream *stream)
 		delete p;
 	}
 	printf("flush: %s leave\n", stream->remoteHost().c_str());
+}
+
+/**
+* Удалить несостоявшийся s2s коннект
+*/
+void S2SListener::drop(const std::string &host)
+{
+	printf("[s2s: %s] drop\n", host.c_str());
+	pending_t *p;
+	mutex.lock();
+		pendings_t::iterator iter = pendings.find(host);
+		if ( iter != pendings.end() )
+		{
+			p = iter->second;
+			pendings.erase(iter);
+		} else p = 0;
+	mutex.unlock();
+	if ( p ) delete p;
 }
