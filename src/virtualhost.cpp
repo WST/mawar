@@ -106,58 +106,86 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#info" && stanza_type == "get") {
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			TagHelper query = iq["query"];
-			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				ATXmlTag *identity = new ATXmlTag("identity");
-				identity->setAttribute("category", "server");
-				identity->setAttribute("type", "im");
-				identity->setAttribute("name", "@}->--"); // TODO: макросы с именем, версией итп
-				query->insertChildElement(identity);
+			std::string node = stanza["query"]->getAttribute("node", "");
+			if(node == "config") {
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+				query->setAttribute("node", "config");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+					ATXmlTag *identity = new ATXmlTag("identity");
+					identity->setAttribute("category", "automation");
+					identity->setAttribute("type", "command-node");
+					identity->setAttribute("name", "Configure Service");
+					query->insertChildElement(identity);
 				
-				ATXmlTag *feature;
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "http://jabber.org/protocol/disco#info");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "http://jabber.org/protocol/disco#items");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "http://jabber.org/protocol/stats");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "jabber:iq:version");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "msgoffline");
-				query->insertChildElement(feature);
-				
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "vcard-temp");
-				query->insertChildElement(feature);
-				
-				// XEP-0050 ad-hoc commands
-				feature = new ATXmlTag("feature");
-				feature->setAttribute("var", "http://jabber.org/protocol/commands");
-				query->insertChildElement(feature);
-				
-				if(registration_allowed) {
+					ATXmlTag *feature;
 					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "jabber:iq:register");
+						feature->setAttribute("var", "http://jabber.org/protocol/commands");
+						query->insertChildElement(feature);
+					
+					feature = new ATXmlTag("feature");
+						feature->setAttribute("var", "jabber:x:data");
+						query->insertChildElement(feature);
+					
+				server->routeStanza(iq);
+			} else {
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+					ATXmlTag *identity = new ATXmlTag("identity");
+					identity->setAttribute("category", "server");
+					identity->setAttribute("type", "im");
+					identity->setAttribute("name", "@}->--"); // TODO: макросы с именем, версией итп
+					query->insertChildElement(identity);
+				
+					ATXmlTag *feature;
+				
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "http://jabber.org/protocol/disco#info");
 					query->insertChildElement(feature);
-				}
+				
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "http://jabber.org/protocol/disco#items");
+					query->insertChildElement(feature);
+				
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "http://jabber.org/protocol/stats");
+					query->insertChildElement(feature);
+				
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "jabber:iq:version");
+					query->insertChildElement(feature);
+				
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "msgoffline");
+					query->insertChildElement(feature);
+				
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "vcard-temp");
+					query->insertChildElement(feature);
+				
+					// XEP-0050 ad-hoc commands
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "http://jabber.org/protocol/commands");
+					query->insertChildElement(feature);
+				
+					if(registration_allowed) {
+						feature = new ATXmlTag("feature");
+						feature->setAttribute("var", "jabber:iq:register");
+						query->insertChildElement(feature);
+					}
 			
-			server->routeStanza(iq);
-			delete iq;
+				server->routeStanza(iq);
+				delete iq;
+			}
 		}
 		
 		if(query_xmlns == "jabber:iq:last" && stanza_type == "get") {
@@ -193,6 +221,30 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "stop");
 					item->setAttribute("name", "Stop Mawar daemon");
+					query->insertChildElement(item);
+					
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "stop-vhost");
+					item->setAttribute("name", "Stop a virtual host");
+					query->insertChildElement(item);
+					
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "start-vhost");
+					item->setAttribute("name", "Start a virtual host");
+					query->insertChildElement(item);
+					
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "create-vhost");
+					item->setAttribute("name", "Create a new virtual host");
+					query->insertChildElement(item);
+					
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "drop-vhost");
+					item->setAttribute("name", "Delete virtual host");
 					query->insertChildElement(item);
 			
 				server->routeStanza(iq);
@@ -325,19 +377,82 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		// Здесь можно как возвращать форму ввода некоторых данных, так и просто ответить, что команда
 		// успешно выполнена, что мы пока и делаем © WST
 		std::string node = stanza["command"]->getAttribute("node", "");
-		if(node == "stop") {
+		std::string action = stanza["command"]->getAttribute("action", "");
+		if(action == "cancel") {
+			// Отмена любой формы
 			Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("from", name);
 				iq->setAttribute("to", stanza.from().full());
 				iq->setAttribute("type", "result");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 				TagHelper command = iq["command"];
-					command->setAttribute("node", "stop");
-					command->setAttribute("status", "completed");
+					if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
+					command->setAttribute("node", stanza["command"]->getAttribute("node", ""));
+					command->setAttribute("status", "cancelled");
 				server->routeStanza(iq);
-				mawarWarning("Stopping daemon by request from administrator");
-				exit(0); // Не знаю, как сделать корректный останов
-		} else {
+			return;
+		}
+		if(node == "stop") {
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			TagHelper command = iq["command"];
+				if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
+				command->setAttribute("node", "stop");
+				command->setAttribute("status", "completed");
+			server->routeStanza(iq);
+			mawarWarning("Stopping daemon by request from administrator");
+			exit(0); // Не знаю, как сделать корректный останов
+		} else if(node == "create-vhost") {
+			// TODO: вернуть форму добавления виртуального узла
+		} else if(node == "drop-vhost") {
+			// TODO: выдать форму удаления виртуального узла
+		}  else if(node == "stop-vhost" || node == "start-vhost") {
+			Stanza iq = new ATXmlTag("iq");
+				if(stanza["command"]->hasChild("x")) {
+					// Форма субмитится, а не запрашивается
+					// Обработчик формы тут
+					Stanza iq = new ATXmlTag("iq");
+					iq->setAttribute("from", name);
+					iq->setAttribute("to", stanza.from().full());
+					iq->setAttribute("type", "result");
+					if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+					TagHelper command = iq["command"];
+						if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
+						command->setAttribute("node", "stop");
+						command->setAttribute("status", "completed");
+					server->routeStanza(iq);
+					return;
+				}
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper command = iq["command"];
+					if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
+					command->setAttribute("node", "stop-vhost");
+					command->setAttribute("status", "executing");
+					command->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
+						
+					TagHelper x = command["x"];
+						x->setDefaultNameSpaceAttribute("jabber:x:data");
+						x->setAttribute("type", "form");
+						x["title"]->insertCharacterData("Stopping a virtual host");
+						x["instructions"]->insertCharacterData("Specify the name of virtual host to stop");
+						
+					ATXmlTag *field = new ATXmlTag("field");
+						field->setAttribute("var", "vhost-name");
+						field->setAttribute("type", "text-single");
+						field->setAttribute("label", "Hostname");
+						field->insertChildElement(new ATXmlTag("required"));
+						field->insertChildElement(new ATXmlTag("value"));
+						x->insertChildElement(field);
+					
+				server->routeStanza(iq);
+		}
+		else {
 			// 
 		}
 	}
