@@ -394,7 +394,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		if(node == "stop") {
 			server->routeStanza(Command::commandDoneStanza(name, stanza));
 			mawarWarning("Stopping daemon by request from administrator");
-			exit(0); // Не знаю, как сделать корректный останов
+			exit(0); // TODO: сделать корректный останов
 		}
 		
 		else if(node == "create-vhost") {
