@@ -395,47 +395,40 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
 			// TODO: вернуть форму удаления виртуального узла
 		}  else if(node == "stop-vhost" || node == "start-vhost") {
+			Command *cmd = new Command(stanza);
+			if(Form *form = cmd->form()) {
+				// Форма субмитится, а не запрашивается
+				// Обработчик формы тут
+				server->routeStanza(Command::commandDoneStanza(name, stanza));
+				return;
+			}
+			// TODO: нижеследующий код в топку, точнее, реализовать построение форм в классе Form
 			Stanza iq = new ATXmlTag("iq");
-				if(stanza["command"]->hasChild("x")) {
-					// Форма субмитится, а не запрашивается
-					// Обработчик формы тут
-					Stanza iq = new ATXmlTag("iq");
-					iq->setAttribute("from", name);
-					iq->setAttribute("to", stanza.from().full());
-					iq->setAttribute("type", "result");
-					if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-					TagHelper command = iq["command"];
-						if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
-						command->setAttribute("node", "stop");
-						command->setAttribute("status", "completed");
-					server->routeStanza(iq);
-					return;
-				}
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper command = iq["command"];
-					if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
-					command->setAttribute("node", "stop-vhost");
-					command->setAttribute("status", "executing");
-					command->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
-						
-					TagHelper x = command["x"];
-						x->setDefaultNameSpaceAttribute("jabber:x:data");
-						x->setAttribute("type", "form");
-						x["title"]->insertCharacterData("Stopping a virtual host");
-						x["instructions"]->insertCharacterData("Specify the name of virtual host to stop");
-						
-					ATXmlTag *field = new ATXmlTag("field");
-						field->setAttribute("var", "vhost-name");
-						field->setAttribute("type", "text-single");
-						field->setAttribute("label", "Hostname");
-						field->insertChildElement(new ATXmlTag("required"));
-						field->insertChildElement(new ATXmlTag("value"));
-						x->insertChildElement(field);
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			TagHelper command = iq["command"];
+				if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
+				command->setAttribute("node", "stop-vhost");
+				command->setAttribute("status", "executing");
+				command->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
 					
-				server->routeStanza(iq);
+				TagHelper x = command["x"];
+					x->setDefaultNameSpaceAttribute("jabber:x:data");
+					x->setAttribute("type", "form");
+					x["title"]->insertCharacterData("Stopping a virtual host");
+					x["instructions"]->insertCharacterData("Specify the name of virtual host to stop");
+					
+				ATXmlTag *field = new ATXmlTag("field");
+					field->setAttribute("var", "vhost-name");
+					field->setAttribute("type", "text-single");
+					field->setAttribute("label", "Hostname");
+					field->insertChildElement(new ATXmlTag("required"));
+					field->insertChildElement(new ATXmlTag("value"));
+					x->insertChildElement(field);
+				
+			server->routeStanza(iq);
 		}
 		else {
 			// 

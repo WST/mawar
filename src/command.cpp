@@ -2,12 +2,12 @@
 #include <command.h>
 
 Command::Command(Stanza iq) {
-	form = new Form(iq);
+	_form = iq["command"]->hasChild("x") ? new Form(iq) : 0;
 	iqtag = iq;
 }
 
 Command::~Command() {
-	delete form;
+	delete _form;
 }
 
 std::string Command::action() {
@@ -16,6 +16,10 @@ std::string Command::action() {
 
 std::string Command::node() {
 	return iqtag["command"]->getAttribute("node", "");
+}
+
+Form *Command::form() {
+	return _form;
 }
 
 Stanza Command::commandDoneStanza(std::string from, Stanza stanza) {

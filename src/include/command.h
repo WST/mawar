@@ -16,9 +16,10 @@ class Command
 		static Stanza commandDoneStanza(std::string from, Stanza from_stanza);
 		std::string node();
 		std::string action();
+		Form *form();
 		
 	private:
-		Form *form;
+		Form *_form;
 		TagHelper iqtag;
 };
 
