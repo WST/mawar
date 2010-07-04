@@ -145,6 +145,11 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				feature->setAttribute("var", "vcard-temp");
 				query->insertChildElement(feature);
 				
+				// XEP-0050 ad-hoc commands
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/commands");
+				query->insertChildElement(feature);
+				
 				if(registration_allowed) {
 					feature = new ATXmlTag("feature");
 					feature->setAttribute("var", "jabber:iq:register");
@@ -171,23 +176,47 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			TagHelper query = iq["query"];
-			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			std::string node = stanza["query"]->getAttribute("node", "");
+			if(node == "http://jabber.org/protocol/commands") {
+				// Нода команд ad-hoc
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+				query->setAttribute("node", "http://jabber.org/protocol/commands");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			
-			ATXmlTag *item;
+				ATXmlTag *item;
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "stop");
+					item->setAttribute("name", "Stop Mawar daemon");
+					query->insertChildElement(item);
 			
-			/* цикл по компонентам (нашим и тем внешним, что заданы в конфиге)
-			new ATXmlTag("item");
-				item->setAttribute("jid", "");
-			*/
+				server->routeStanza(iq);
+				delete iq;
+			} else {
+				// Нода не указана или неизвестна
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				TagHelper query = iq["query"];
+				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			
-			server->routeStanza(iq);
-			delete iq;
+				ATXmlTag *item;
+			
+				/* цикл по компонентам (нашим и тем внешним, что заданы в конфиге)
+				new ATXmlTag("item");
+					item->setAttribute("jid", "");
+				*/
+			
+				server->routeStanza(iq);
+				delete iq;
+			}
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/stats" && stanza_type == "get") {
@@ -289,6 +318,24 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->setDefaultNameSpaceAttribute("jabber:iq:private");
 				getClientByJid(stanza.from())->sendStanza(iq);
 			}
+		}
+	} else if(stanza->hasChild("command")) {
+		// Запрос на выполнение команды. xmlns не проверяю
+		std::string node = stanza["command"]->getAttribute("node", "");
+		if(node == "stop") {
+			Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", name);
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				TagHelper command = iq["command"];
+					command->setAttribute("node", "stop");
+					command->setAttribute("status", "completed");
+				server->routeStanza(iq);
+				mawarWarning("Stopping daemon by request from administrator");
+				exit(0); // Не знаю, как сделать корректный останов
+		} else {
+			// 
 		}
 	}
 }
