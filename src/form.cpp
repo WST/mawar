@@ -8,17 +8,14 @@ Form::Form(Stanza stanza): type() {
 		tag = new ATXmlTag("x");
 		tag->setDefaultNameSpaceAttribute("jabber:x:data");
 		tag->setAttribute("type", "submit"); // Считаем, что создаём форму на основе субмита от юзера
-		should_delete = true;
 		return;
 	}
 	type = tag->getAttribute("type", "");
-	should_delete = false;
 }
 
 Form::Form(ATXmlTag *from): type() {
 	tag = from;
 	type = from->getAttribute("type", "");
-	should_delete = false;
 }
 
 Form::Form(std::string x_type): type() {
@@ -26,17 +23,44 @@ Form::Form(std::string x_type): type() {
 	tag->setDefaultNameSpaceAttribute("jabber:x:data");
 	tag->setAttribute("type", x_type);
 	type = x_type;
-	should_delete = true;
 }
 
 Form::~Form() {
-	if(should_delete) {
-		delete tag;
-	}
+	// Удалять ли tag, и если да, то при каких условиях?
+	// TODO: разобраться после реализации ad-hoc
 }
 
 ATXmlTag *Form::asTag() {
 	return tag;
+}
+
+void Form::setTitle(std::string form_title) {
+	ATXmlTag *title = new ATXmlTag("title");
+	title->insertCharacterData(form_title);
+	tag->insertChildElement(title);
+}
+
+void Form::setInstructions(std::string form_instructions) {
+	ATXmlTag *instructions = new ATXmlTag("instructions");
+	instructions->insertCharacterData(form_instructions);
+	tag->insertChildElement(instructions);
+}
+
+void Form::insertLineEdit(std::string var, std::string label, std::string value, bool required) {
+	ATXmlTag *field = new ATXmlTag("field");
+	field->setAttribute("type", "text-single");
+	field->setAttribute("var", var);
+	field->setAttribute("label", label);
+	
+	ATXmlTag *value_tag = new ATXmlTag("value");
+	value_tag->insertCharacterData(value);
+	field->insertChildElement(value_tag);
+	
+	if(required) {
+		field->insertChildElement(new ATXmlTag("required"));
+	}
+	
+	tag->insertChildElement(field);
 }
 
 std::string Form::getFieldValue(std::string field_name, std::string default_value) {
@@ -44,5 +68,5 @@ std::string Form::getFieldValue(std::string field_name, std::string default_valu
 	return std::string("");
 }
 
-// TODO: конструирование формы, как в веб-фреймворках
+// TODO: другие типы виджетов
 

@@ -407,8 +407,13 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				server->routeStanza(Command::commandDoneStanza(name, stanza));
 				return;
 			}
-			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
-			// TODO: вернуть форму удаления виртуального узла
+			Command *reply = new Command();
+			reply->setNode(node);
+			reply->setStatus("executing");
+			reply->createForm("form");
+			reply->form()->setTitle("Delete a virtual host");
+			reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
+			server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
 		} 
 		
 		else if(node == "stop-vhost" || node == "start-vhost") {
@@ -422,7 +427,8 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			reply->setNode(node);
 			reply->setStatus("executing");
 			reply->createForm("form");
-			// TODO: вставить поле
+			reply->form()->setTitle("Start/stop a virtual host");
+			reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
 			server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
 		}
 		else {
