@@ -4,6 +4,7 @@
 
 #include <xml_tag.h>
 #include <stanza.h>
+#include <string>
 
 class Form: public ATXmlTag
 {
@@ -12,8 +13,8 @@ class Form: public ATXmlTag
 		Form(ATXmlTag *tag); // конструктор из тега x
 		Form(); // конструктор из ничего
 		~Form();
+		static Stanza formCancelledStanza(std::string hostname, Stanza from_stanza);
 };
-
 
 #endif
 

@@ -381,16 +381,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		std::string action = stanza["command"]->getAttribute("action", "");
 		if(action == "cancel") {
 			// Отмена любой формы
-			Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper command = iq["command"];
-					if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
-					command->setAttribute("node", stanza["command"]->getAttribute("node", ""));
-					command->setAttribute("status", "cancelled");
-				server->routeStanza(iq);
+			server->routeStanza(Form::formCancelledStanza(name, stanza));
 			return;
 		}
 		if(node == "stop") {
