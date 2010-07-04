@@ -30,3 +30,8 @@ Stanza Form::formCancelledStanza(std::string hostname, Stanza stanza) {
 	return iq;
 }
 
+std::string Form::getFieldValue(std::string field_name, std::string default_value) {
+	// TODO
+	return std::string("");
+}
+

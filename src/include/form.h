@@ -14,6 +14,7 @@ class Form: public ATXmlTag
 		Form(); // конструктор из ничего
 		~Form();
 		static Stanza formCancelledStanza(std::string hostname, Stanza from_stanza);
+		std::string getFieldValue(std::string field_name, std::string default_value);
 };
 
 #endif
