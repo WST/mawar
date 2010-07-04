@@ -398,3 +398,4 @@ void ATXmlTag::clear()
 	}
 	childnodes.clear();
 }
+

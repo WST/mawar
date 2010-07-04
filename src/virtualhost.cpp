@@ -10,7 +10,7 @@
 #include <db.h>
 #include <time.h>
 #include <functions.h>
-#include <form.h>
+#include <command.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -381,7 +381,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		std::string action = stanza["command"]->getAttribute("action", "");
 		if(action == "cancel") {
 			// Отмена любой формы
-			server->routeStanza(Form::formCancelledStanza(name, stanza));
+			server->routeStanza(Command::commandCancelledStanza(name, stanza));
 			return;
 		}
 		if(node == "stop") {
@@ -1329,3 +1329,4 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		}
 	}
 }
+

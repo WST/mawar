@@ -122,3 +122,4 @@ TagHelper ConfigFile::nextExternal(TagHelper from)
 {
 	return config_tag->findNext("hosts/external", from);
 }
+

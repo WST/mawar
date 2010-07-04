@@ -83,6 +83,7 @@ MAWAR_OBJECTS+=logs.o
 MAWAR_OBJECTS+=stanzabuffer.o
 MAWAR_OBJECTS+=functions.o
 MAWAR_OBJECTS+=form.o
+MAWAR_OBJECTS+=command.o
 
 PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 
@@ -193,6 +194,9 @@ functions.o: $(srcdir)/functions.cpp $(srcdir)/include/functions.h
 
 form.o: $(srcdir)/form.cpp $(srcdir)/include/form.h
 	$(CXX) -c $(srcdir)/form.cpp -o form.o
+	
+command.o: $(srcdir)/command.cpp $(srcdir)/include/command.h
+	$(CXX) -c $(srcdir)/command.cpp -o command.o
 
 # CLEAN
 
