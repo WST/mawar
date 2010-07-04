@@ -480,7 +480,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		else {
-			// 
+			server->routeStanza(Command::commandDoneStanza(name, stanza));
 		}
 		delete cmd;
 	}
