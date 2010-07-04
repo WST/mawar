@@ -424,10 +424,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		else if(node == "stop-vhost" || node == "start-vhost") {
 			if(form) {
-				// Обработчик формы тут
 				// Кстати, если что-то в присланных данных неверно, можно сделать проверку типа такой:
 				bool valid = true; // установить флаг верности
 				if(valid) {
+					// Обработчик формы тут
 					server->routeStanza(Command::commandDoneStanza(name, stanza));
 					return;
 				}
