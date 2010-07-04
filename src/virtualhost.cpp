@@ -320,7 +320,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			}
 		}
 	} else if(stanza->hasChild("command")) {
+		// The requester MAY include the "action='execute'", although this is implied.
 		// Запрос на выполнение команды. xmlns не проверяю
+		// Здесь можно как возвращать форму ввода некоторых данных, так и просто ответить, что команда
+		// успешно выполнена, что мы пока и делаем © WST
 		std::string node = stanza["command"]->getAttribute("node", "");
 		if(node == "stop") {
 			Stanza iq = new ATXmlTag("iq");
