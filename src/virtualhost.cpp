@@ -430,6 +430,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			reply->form()->setTitle("Start/stop a virtual host");
 			reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
 			server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
+			delete reply;
 		}
 		else {
 			// 
