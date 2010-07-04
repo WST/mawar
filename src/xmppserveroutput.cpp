@@ -2,6 +2,7 @@
 #include <xmppserveroutput.h>
 #include <xmppserver.h>
 #include <xmppdomain.h>
+#include <virtualhost.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -63,16 +64,7 @@ void XMPPServerOutput::onConnected()
 			sendStanza(dbresult);
 			delete dbresult;
 		}
-		
 	mutex.unlock();
-	/**
-	Stanza dbresult = new ATXmlTag("db:result");
-	dbresult->setAttribute("to", p->to);
-	dbresult->setAttribute("from", p->from);
-	dbresult += "key";
-	stream->sendStanza(dbresult);
-	delete dbresult;
-	*/
 }
 
 /**
@@ -137,9 +129,7 @@ void XMPPServerOutput::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *r
 	
 	p->XMPPDomain::server->removeDomain(p);
 	p->XMPPDomain::server->daemon->removeObject(p);
-	printf("test1\n");
 	p->release();
-	printf("test2\n");
 }
 
 /**
@@ -236,21 +226,68 @@ void XMPPServerOutput::onStanza(Stanza stanza)
 }
 
 /**
-* Обработка <db:verify>
+* RFC 3920 (8.3.9) - анализируем результат проверки ключа
 */
 void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 {
-	Stanza verify = new ATXmlTag("db:verify");
-	verify->setAttribute("from", stanza.to().hostname());
-	verify->setAttribute("to", hostname());
-	verify->setAttribute("type", "valid");
-	verify->setAttribute("id", stanza->getAttribute("id"));
-	sendStanza(verify);
-	delete verify;
+	// Шаг 1. проверка: "id" должен совпадать тем, что мы давали (id s2s-input'а)
+	// TODO
+	if ( 0 )
+	{
+		Stanza stanza = Stanza::streamError("invalid-id");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 2. проверка: "to" должен быть нашим виртуальным хостом
+	std::string to = stanza->getAttribute("to");
+	XMPPDomain *host = XMPPDomain::server->getHostByName(to);
+	if ( ! dynamic_cast<VirtualHost*>(host) )
+	{
+		Stanza stanza = Stanza::streamError("host-unknown");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 3. проверка: "from" должен совпадать с тем, что нам дали
+	// TODO
+	std::string from = stanza->getAttribute("from");
+	if ( dynamic_cast<VirtualHost*>(XMPPDomain::server->getHostByName(from)) )
+	{
+		Stanza stanza = Stanza::streamError("invalid-from");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 4. проверка ключа
+	if ( stanza->getAttribute("type", "") == "valid" )
+	{
+		Stanza result = new ATXmlTag("db:result");
+		result->setAttribute("to", from);
+		result->setAttribute("from", to);
+		result->setAttribute("type", "valid");
+		sendStanza(result);
+		delete result;
+	}
+	else
+	{
+		Stanza result = new ATXmlTag("db:result");
+		result->setAttribute("to", from);
+		result->setAttribute("from", to);
+		result->setAttribute("type", "invalid");
+		sendStanza(result);
+		delete result;
+	}
 }
 
 /**
-* Обработка <db:result>
+* RFC 3920 (8.3.10)
 */
 void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 {

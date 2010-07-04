@@ -1,6 +1,5 @@
 
 #include <s2sinputstream.h>
-#include <s2soutputstream.h>
 #include <xmppserveroutput.h>
 #include <virtualhost.h>
 #include <functions.h>
@@ -34,7 +33,7 @@ void S2SInputStream::onStartStream(const std::string &name, const attributes_t &
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
 	setAttribute("xmlns", "jabber:server");
 	setAttribute("xmlns:db", "jabber:server:dialback");
-	setAttribute("id", id = "123456");
+	setAttribute("id", id = getUniqueId());
 	setAttribute("xml:lang", "en");
 	flush();
 }
@@ -89,31 +88,65 @@ void S2SInputStream::onStanza(Stanza stanza)
 }
 
 /**
-* Обработка <db:verify>
+* RFC 3920 (8.3.8)
 */
 void S2SInputStream::onDBVerifyStanza(Stanza stanza)
 {
-	Stanza verify = new ATXmlTag("db:verify");
-	verify->setAttribute("from", stanza->getAttribute("to"));
-	verify->setAttribute("to", stanza->getAttribute("from"));
-	verify->setAttribute("type", "valid");
-	verify->setAttribute("id", stanza->getAttribute("id"));
-	sendStanza(verify);
-	delete verify;
+	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
+	string to = stanza->getAttribute("to");
+	XMPPDomain *host = server->getHostByName(to);
+	if ( ! dynamic_cast<VirtualHost*>(host) )
+	{
+		Stanza stanza = Stanza::streamError("host-unknown");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 2. проверка: "from"
+	// TODO
+	string from = stanza->getAttribute("from");
+	if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
+	{
+		Stanza stanza = Stanza::streamError("invalid-from");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 3. проверка ключа
+	// TODO
+	if ( stanza->getCharacterData() == "key" )
+	{
+		Stanza result = new ATXmlTag("db:verify");
+		result->setAttribute("to", from);
+		result->setAttribute("from", to);
+		result->setAttribute("type", "valid");
+		sendStanza(result);
+		delete result;
+	}
+	else
+	{
+		Stanza result = new ATXmlTag("db:verify");
+		result->setAttribute("to", from);
+		result->setAttribute("from", to);
+		result->setAttribute("type", "invalid");
+		sendStanza(result);
+		delete result;
+	}
 }
 
 /**
-* Обработка <db:result>
+* RFC 3920 (8.3.4)
 */
 void S2SInputStream::onDBResultStanza(Stanza stanza)
 {
-	string to = stanza->getAttribute("to");
-	string from = stanza->getAttribute("from");
-	cerr << "[s2s-input] db:result to: " << to << ", from: " << from << endl;
-	
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
+	string to = stanza->getAttribute("to");
 	XMPPDomain *host = server->getHostByName(to);
-	if ( ! host || dynamic_cast<S2SOutputStream*>(host) )
+	if ( ! dynamic_cast<VirtualHost*>(host) )
 	{
 		Stanza stanza = Stanza::streamError("host-unknown");
 		sendStanza(stanza);
@@ -132,35 +165,40 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	//
 	// NOTE: В любом случае, логично блокировать попытки представиться
 	// нашим хостом - мы сами к себе никогда не коннектимся.
-	// Так что, если будете открывать повторные коннекты, то забудьте
+	// Так что, если будете открывать повторные коннекты, то не забудьте
 	// блокировать попытки коннекта к самим себе.
-	/* XMPPServerOutput *so = dynamic_cast<XMPPServerOutput*>(server->getHostByName(from));
-	if ( so && so-> )
+	// (c) shade
+	string from = stanza->getAttribute("from");
+	host = server->getHostByName(from);
+	if ( dynamic_cast<VirtualHost*>(host) )
 	{
 		Stanza stanza = Stanza::streamError("not-authorized");
 		sendStanza(stanza);
 		delete stanza;
 		terminate();
 		return;
-	} */
+	}
 	remote_host = from;
 	
-	// Шаг 3. резолвим DNS записи сервера
-	// NOTE для оптимизации отправляем все DNS (асинхронные) запросы сразу
-	//server->adns->a4(from.c_str(), on_s2s_a4, this);
-	//server->adns->srv(from.c_str(), "jabber", "tcp", on_s2s_srv_jabber, this);
-	//server->adns->srv(from.c_str(), "xmpp-server", "tcp", on_srv_xmpp_server, this);
-	// TODO извлекать список DNSBL из конфига
-	//server->adns->a4((from + ".dnsbl.jabber.ru").c_str(), on_s2s_rbl, this);
+	// Шаг 3. шлем запрос на проверку ключа
+	Stanza verify = new ATXmlTag("db:verify");
+	verify->setAttribute("from", to);
+	verify->setAttribute("to", from);
+	verify->setAttribute("id", id);
+	verify += stanza->getCharacterData();
+	server->routeStanza(verify);
+	delete verify;
 	
 	// Шаг X. костыль - ответить сразу "authorized"
 	state = authorized;
+	/*
 	Stanza result = new ATXmlTag("db:result");
 	result->setAttribute("to", from);
 	result->setAttribute("from", to);
 	result->setAttribute("type", "valid");
 	sendStanza(result);
 	delete result;
+	*/
 }
 
 /**
