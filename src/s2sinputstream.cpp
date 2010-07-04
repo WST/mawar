@@ -27,7 +27,7 @@ S2SInputStream::~S2SInputStream()
 */
 void S2SInputStream::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	printf("s2s-input: new stream\n", remote_host.c_str());
+	printf("s2s-input: new stream, sock: %d\n", fd);
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
@@ -191,14 +191,12 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	
 	// Шаг X. костыль - ответить сразу "authorized"
 	state = authorized;
-	/*
 	Stanza result = new ATXmlTag("db:result");
 	result->setAttribute("to", from);
 	result->setAttribute("from", to);
 	result->setAttribute("type", "valid");
 	sendStanza(result);
 	delete result;
-	*/
 }
 
 /**

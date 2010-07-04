@@ -265,25 +265,8 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 		return;
 	}
 	
-	// Шаг 4. проверка ключа
-	if ( stanza->getAttribute("type", "") == "valid" )
-	{
-		Stanza result = new ATXmlTag("db:result");
-		result->setAttribute("to", from);
-		result->setAttribute("from", to);
-		result->setAttribute("type", "valid");
-		sendStanza(result);
-		delete result;
-	}
-	else
-	{
-		Stanza result = new ATXmlTag("db:result");
-		result->setAttribute("to", from);
-		result->setAttribute("from", to);
-		result->setAttribute("type", "invalid");
-		sendStanza(result);
-		delete result;
-	}
+	// Шаг 4. вернуть результат в s2s-input
+	// TODO
 }
 
 /**
