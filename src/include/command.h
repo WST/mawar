@@ -16,6 +16,8 @@ class Command
 		static Stanza commandDoneStanza(std::string from, Stanza from_stanza);
 		std::string node();
 		std::string action();
+		std::string sessionid();
+		std::string status();
 		Form *form();
 		
 	private:

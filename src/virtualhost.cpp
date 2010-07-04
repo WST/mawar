@@ -377,10 +377,11 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		// Запрос на выполнение команды. xmlns не проверяю
 		// Здесь можно как возвращать форму ввода некоторых данных, так и просто ответить, что команда
 		// успешно выполнена, что мы пока и делаем © WST
-		std::string node = stanza["command"]->getAttribute("node", "");
-		std::string action = stanza["command"]->getAttribute("action", "");
-		if(action == "cancel") {
-			// Отмена любой формы
+		Command *cmd = new Command(stanza);
+		std::string node = cmd->node();
+		
+		if(cmd->action() == "cancel") {
+			// Отмена любой команды
 			server->routeStanza(Command::commandCancelledStanza(name, stanza));
 			return;
 		}
@@ -388,13 +389,16 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			server->routeStanza(Command::commandDoneStanza(name, stanza));
 			mawarWarning("Stopping daemon by request from administrator");
 			exit(0); // Не знаю, как сделать корректный останов
-		} else if(node == "create-vhost") {
+		}
+		else if(node == "create-vhost") {
 			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
 			// TODO: вернуть форму добавления виртуального узла
-		} else if(node == "drop-vhost") {
+		}
+		else if(node == "drop-vhost") {
 			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
 			// TODO: вернуть форму удаления виртуального узла
-		}  else if(node == "stop-vhost" || node == "start-vhost") {
+		} 
+		else if(node == "stop-vhost" || node == "start-vhost") {
 			Command *cmd = new Command(stanza);
 			if(Form *form = cmd->form()) {
 				// Форма субмитится, а не запрашивается
@@ -433,6 +437,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		else {
 			// 
 		}
+		delete cmd;
 	}
 }
 

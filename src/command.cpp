@@ -18,6 +18,14 @@ std::string Command::node() {
 	return iqtag["command"]->getAttribute("node", "");
 }
 
+std::string Command::sessionid() {
+	return iqtag["command"]->getAttribute("sessionid", "");
+}
+
+std::string Command::status() {
+	return iqtag["command"]->getAttribute("status", "");
+}
+
 Form *Command::form() {
 	return _form;
 }
