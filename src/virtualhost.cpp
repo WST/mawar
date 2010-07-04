@@ -403,7 +403,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		else if(node == "drop-vhost") {
 			if(form) {
-				// Обработчик формы тут
+				mawarWarning("Delete virtual host: " + cmd->form()->getFieldValue("vhost-name", ""));
 				server->routeStanza(Command::commandDoneStanza(name, stanza));
 				return;
 			}

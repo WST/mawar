@@ -141,6 +141,19 @@ ATXmlTag *ATXmlTag::getChild(std::string tag_name) {
 	return 0;
 }
 
+ATXmlTag *ATXmlTag::getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value) {
+	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
+		if((*it)->name() == tag_name) {
+			if((*it)->hasAttribute(attribute) && (*it)->getAttribute(attribute) == attribute_value) {
+				return *it;
+			} else {
+				return 0;
+			}
+		}
+	}
+	return 0;
+}
+
 nodes_list_t ATXmlTag::getChildNodes() {
 	return childnodes;
 }

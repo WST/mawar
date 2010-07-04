@@ -36,6 +36,7 @@ class ATXmlTag
 		std::string asString();
 		bool hasChild(std::string tag_name);
 		ATXmlTag *getChild(std::string tag_name);
+		ATXmlTag *getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value);
 		nodes_list_t getChildNodes();
 		attributes_t getAttributes();
 		
