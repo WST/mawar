@@ -10,7 +10,8 @@
 class Command
 {
 	public:
-		Command(Stanza iq);
+		Command(ATXmlTag *command);
+		Command();
 		~Command();
 		static Stanza commandCancelledStanza(std::string from, Stanza from_stanza);
 		static Stanza commandDoneStanza(std::string from, Stanza from_stanza);
@@ -18,11 +19,17 @@ class Command
 		std::string action();
 		std::string sessionid();
 		std::string status();
+		void setNode(std::string node);
+		void setAction(std::string action);
+		void setSessionId(std::string sessionid);
+		void setStatus(std::string status);
+		void createForm(std::string x_type);
+		Stanza asIqStanza(std::string from, std::string to, std::string type, std::string id);
 		Form *form();
 		
 	private:
 		Form *_form;
-		TagHelper iqtag;
+		TagHelper cmdtag;
 };
 
 #endif

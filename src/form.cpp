@@ -35,6 +35,10 @@ Form::~Form() {
 	}
 }
 
+ATXmlTag *Form::asTag() {
+	return tag;
+}
+
 std::string Form::getFieldValue(std::string field_name, std::string default_value) {
 	// TODO
 	return std::string("");

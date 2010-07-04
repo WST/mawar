@@ -14,6 +14,7 @@ class Form
 		Form(std::string type); // конструктор из ничего
 		~Form();
 		std::string getFieldValue(std::string field_name, std::string default_value);
+		ATXmlTag *asTag();
 		
 	private:
 		std::string type;
