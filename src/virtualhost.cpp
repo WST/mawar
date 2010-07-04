@@ -403,8 +403,18 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				server->routeStanza(Command::commandDoneStanza(name, stanza));
 				return;
 			}
-			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
-			// TODO: вернуть форму добавления виртуального узла
+			Command *reply = new Command();
+			reply->setNode(node);
+			reply->setStatus("executing");
+			reply->createForm("form");
+			reply->form()->setTitle("Create a virtual host");
+			reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
+			reply->form()->insertLineEdit("db-hostname", "MySQL server", "", true);
+			reply->form()->insertLineEdit("db-name", "MySQL db", "", true);
+			reply->form()->insertLineEdit("db-user", "MySQL user", "", true);
+			reply->form()->insertLineEdit("db-passwd", "MySQL password", "", true);
+			server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
+			delete reply;
 		}
 		
 		else if(node == "drop-vhost") {
