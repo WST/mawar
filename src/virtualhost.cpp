@@ -10,6 +10,7 @@
 #include <db.h>
 #include <time.h>
 #include <functions.h>
+#include <form.h>
 
 using namespace std;
 using namespace nanosoft;

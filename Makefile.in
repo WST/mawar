@@ -82,6 +82,7 @@ MAWAR_OBJECTS+=serverstatus.o
 MAWAR_OBJECTS+=logs.o
 MAWAR_OBJECTS+=stanzabuffer.o
 MAWAR_OBJECTS+=functions.o
+MAWAR_OBJECTS+=form.o
 
 PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 
@@ -189,6 +190,9 @@ stanzabuffer.o: $(srcdir)/stanzabuffer.cpp $(srcdir)/include/stanzabuffer.h
 
 functions.o: $(srcdir)/functions.cpp $(srcdir)/include/functions.h
 	$(CXX) -c $(srcdir)/functions.cpp -o functions.o
+
+form.o: $(srcdir)/form.cpp $(srcdir)/include/form.h
+	$(CXX) -c $(srcdir)/form.cpp -o form.o
 
 # CLEAN
 
