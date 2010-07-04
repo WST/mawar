@@ -385,22 +385,15 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			return;
 		}
 		if(node == "stop") {
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			TagHelper command = iq["command"];
-				if(stanza["command"]->hasAttribute("sessionid")) command->setAttribute("sessionid", stanza["command"]->getAttribute("sessionid"));
-				command->setAttribute("node", "stop");
-				command->setAttribute("status", "completed");
-			server->routeStanza(iq);
+			server->routeStanza(Command::commandDoneStanza(name, stanza));
 			mawarWarning("Stopping daemon by request from administrator");
 			exit(0); // Не знаю, как сделать корректный останов
 		} else if(node == "create-vhost") {
+			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
 			// TODO: вернуть форму добавления виртуального узла
 		} else if(node == "drop-vhost") {
-			// TODO: выдать форму удаления виртуального узла
+			server->routeStanza(Command::commandDoneStanza(name, stanza)); // Заглушка
+			// TODO: вернуть форму удаления виртуального узла
 		}  else if(node == "stop-vhost" || node == "start-vhost") {
 			Stanza iq = new ATXmlTag("iq");
 				if(stanza["command"]->hasChild("x")) {
