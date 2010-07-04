@@ -247,6 +247,12 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 					item->setAttribute("node", "drop-vhost");
 					item->setAttribute("name", "Delete virtual host");
 					query->insertChildElement(item);
+					
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "route-stanza");
+					item->setAttribute("name", "Push stanza to the router");
+					query->insertChildElement(item);
 			
 				server->routeStanza(iq);
 				delete iq;
@@ -419,8 +425,14 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		else if(node == "stop-vhost" || node == "start-vhost") {
 			if(form) {
 				// Обработчик формы тут
-				server->routeStanza(Command::commandDoneStanza(name, stanza));
-				return;
+				// Кстати, если что-то в присланных данных неверно, можно сделать проверку типа такой:
+				bool valid = true; // установить флаг верности
+				if(valid) {
+					server->routeStanza(Command::commandDoneStanza(name, stanza));
+					return;
+				}
+				// Это приведёт к показу формы заново… Как в веб :)
+				// © WST
 			}
 			
 			Command *reply = new Command();
@@ -432,6 +444,31 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 			server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
 			delete reply;
 		}
+		
+		else if(node == "route-stanza") {
+			if(form) {
+				// parse_xml_string должно возвращать 0 при ошибках парсинга, что возвращается я ХЗ © WST
+				ATXmlTag *custom_tag = parse_xml_string("<?xml version=\"1.0\" ?>\n" + cmd->form()->getFieldValue("rawxml", ""));
+				if(custom_tag) {
+					Stanza custom_stanza = custom_tag;
+					mawarWarning("Routing admin’s custom stanza");
+					server->routeStanza(custom_stanza);
+					delete custom_stanza;
+				} else {
+					mawarWarning("Failed to parse admin’s custom stanza");
+				}
+				server->routeStanza(Command::commandDoneStanza(name, stanza));
+				return;
+			}
+			Command *reply = new Command();
+			reply->setNode(node);
+			reply->setStatus("executing");
+			reply->createForm("form");
+			reply->form()->setTitle("Push stanza to the router");
+			reply->form()->insertTextEdit("rawxml", "Stanza", "", true);
+			server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
+		}
+		
 		else {
 			// 
 		}

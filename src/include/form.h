@@ -17,6 +17,7 @@ class Form
 		void setInstructions(std::string form_instructions);
 		std::string getFieldValue(std::string field_name, std::string default_value);
 		void insertLineEdit(std::string var, std::string label, std::string value, bool required = false);
+		void insertTextEdit(std::string var, std::string label, std::string value, bool required = false);
 		ATXmlTag *asTag();
 		
 	private:

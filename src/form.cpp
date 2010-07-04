@@ -63,6 +63,23 @@ void Form::insertLineEdit(std::string var, std::string label, std::string value,
 	tag->insertChildElement(field);
 }
 
+void Form::insertTextEdit(std::string var, std::string label, std::string value, bool required) {
+	ATXmlTag *field = new ATXmlTag("field");
+	field->setAttribute("type", "text-multi");
+	field->setAttribute("var", var);
+	field->setAttribute("label", label);
+	
+	ATXmlTag *value_tag = new ATXmlTag("value");
+	value_tag->insertCharacterData(value);
+	field->insertChildElement(value_tag);
+	
+	if(required) {
+		field->insertChildElement(new ATXmlTag("required"));
+	}
+	
+	tag->insertChildElement(field);
+}
+
 std::string Form::getFieldValue(std::string field_name, std::string default_value) {
 	// TODO
 	ATXmlTag *field = tag->getChildByAttribute("field", "var", field_name);
