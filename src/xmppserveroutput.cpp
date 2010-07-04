@@ -49,6 +49,22 @@ void XMPPServerOutput::onConnected()
 	setAttribute("xml:lang", "en");
 	flush();
 	
+	mutex.lock();
+		state = CONNECTED;
+		
+		for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+		{
+			vhost_t *vhost = iter->second;
+			
+			Stanza dbresult = new ATXmlTag("db:result");
+			dbresult->setAttribute("to", hostname());
+			dbresult->setAttribute("from", iter->first);
+			dbresult += "key";
+			sendStanza(dbresult);
+			delete dbresult;
+		}
+		
+	mutex.unlock();
 	/**
 	Stanza dbresult = new ATXmlTag("db:result");
 	dbresult->setAttribute("to", p->to);
@@ -70,7 +86,6 @@ void XMPPServerOutput::onWrite()
 	if ( state == CONNECTING )
 	{
 		want_write = false;
-		state = CONNECTED;
 		onConnected();
 		return;
 	}
@@ -319,13 +334,15 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 			vhost->authorized = false;
 			vhosts[vhostname] = vhost;
 			
-			Stanza dbresult = new ATXmlTag("db:result");
-			dbresult->setAttribute("to", hostname());
-			dbresult->setAttribute("from", vhostname);
-			dbresult += "key";
-			sendStanza(dbresult);
-			delete dbresult;
-
+			if ( state == CONNECTED )
+			{
+				Stanza dbresult = new ATXmlTag("db:result");
+				dbresult->setAttribute("to", hostname());
+				dbresult->setAttribute("from", vhostname);
+				dbresult += "key";
+				sendStanza(dbresult);
+				delete dbresult;
+			}
 		}
 	mutex.unlock();
 	
