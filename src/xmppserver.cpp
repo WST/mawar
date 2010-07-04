@@ -2,6 +2,7 @@
 #include <xmppserver.h>
 #include <xmppclient.h>
 #include <xmppdomain.h>
+#include <xmppserveroutput.h>
 #include <virtualhost.h>
 #include <s2slistener.h>
 #include <configfile.h>
@@ -106,7 +107,7 @@ void XMPPServer::addDomain(XMPPDomain *domain)
 void XMPPServer::removeDomain(XMPPDomain *domain)
 {
 	mutex.lock();
-		domains.erase(domain->hostname());
+		printf("removeDomain(%s) = %d\n", domain->hostname().c_str(), domains.erase(domain->hostname()));
 	mutex.unlock();
 }
 
@@ -137,15 +138,17 @@ void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
 */
 bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 {
-	XMPPDomain *domain = getHostByName(host);
-	if ( domain )
-	{ // известный домен
-		return domain->routeStanza(stanza);
-	}
-	else
-	{ // неизвестный домен
-		return s2s->routeStanza(host.c_str(), stanza);
-	}
+	mutex.lock();
+		domains_t::const_iterator iter = domains.find(host);
+		XMPPDomain *domain = iter != domains.end() ? iter->second : 0;
+		if ( ! domain )
+		{
+			domain = new XMPPServerOutput(this, host.c_str());
+			domains[domain->hostname()] = domain;
+		}
+	mutex.unlock();
+	
+	return domain->routeStanza(stanza);
 }
 
 /**

@@ -77,6 +77,7 @@ MAWAR_OBJECTS+=xep0114.o
 MAWAR_OBJECTS+=s2slistener.o
 MAWAR_OBJECTS+=s2sinputstream.o
 MAWAR_OBJECTS+=s2soutputstream.o
+MAWAR_OBJECTS+=xmppserveroutput.o
 MAWAR_OBJECTS+=serverstatus.o
 #MAWAR_OBJECTS+=geoip.o
 MAWAR_OBJECTS+=logs.o
@@ -170,7 +171,10 @@ s2sinputstream.o: $(srcdir)/s2sinputstream.cpp $(srcdir)/include/s2slistener.h $
 
 s2soutputstream.o: $(srcdir)/s2soutputstream.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/s2soutputstream.h $(srcdir)/include/xmppserver.h
 	$(CXX) -c $(srcdir)/s2soutputstream.cpp -o s2soutputstream.o
-	
+
+xmppserveroutput.o: $(srcdir)/xmppserveroutput.cpp $(srcdir)/include/xmppserveroutput.h $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppserveroutput.cpp -o xmppserveroutput.o
+
 #geoip.o: $(srcdir)/geoip.cpp $(srcdir)/include/geoip.h
 #	$(CXX) -c $(srcdir)/geoip.cpp -o geoip.o
 
