@@ -105,7 +105,7 @@ public:
 	*
 	* thread-safe
 	*/
-	void addHost(const std::string &name, VirtualHostConfig config);
+	void addHost(const std::string &name, ATXmlTag *config);
 	
 	/**
 	* Роутер исходящих станз (thread-safe)

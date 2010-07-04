@@ -116,7 +116,7 @@ void XMPPServer::removeDomain(XMPPDomain *domain)
 *
 * thread-safe
 */
-void XMPPServer::addHost(const std::string &name, VirtualHostConfig config)
+void XMPPServer::addHost(const std::string &name, ATXmlTag *config)
 {
 	addDomain(new VirtualHost(this, name, config));
 }

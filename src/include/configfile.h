@@ -6,24 +6,6 @@
 #include <taghelper.h>
 #include <string>
 
-/**
-* Конфигурация виртуального хоста
-*/
-class VirtualHostConfig: public TagHelper
-{
-friend class ConfigFile;
-public:
-	VirtualHostConfig(ATXmlTag *host_config): TagHelper(host_config) {
-	}
-	
-	/**
-	* Вернуть имя хоста
-	*/
-	std::string hostname() {
-		return this->tag->getAttribute("name");
-	}
-};
-
 class ConfigFile
 {
 	public:
@@ -52,12 +34,12 @@ class ConfigFile
 		/**
 		* Вернуть первый виртуальный хост
 		*/
-		VirtualHostConfig firstHost();
+		ATXmlTag *firstHost();
 		
 		/**
 		* Вернуть следующий виртуальный хост
 		*/
-		VirtualHostConfig nextHost(VirtualHostConfig from);
+		ATXmlTag *nextHost(ATXmlTag *from);
 	
 		/**
 		* Вернуть первый виртуальный хост

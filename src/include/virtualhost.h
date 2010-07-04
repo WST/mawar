@@ -34,7 +34,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* @param aName имя хоста
 		* @param config конфигурация хоста
 		*/
-		VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config);
+		VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *config);
 		~VirtualHost();
 		
 		virtual void handleMessage(Stanza stanza); // Обработать message
@@ -180,6 +180,9 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* Регистрация пользователей
 		*/
 		void handleRegisterIq(XMPPClient *client, Stanza stanza);
+		
+		bool isAdmin(std::string barejid);
+	
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
 		void handleVcardRequest(Stanza stanza); // Обработать запрос vCard
@@ -195,6 +198,8 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		unsigned long int xmpp_ping_queries; // число обслуженных XMPP-пингов
 		unsigned long int version_requests; // число запросов верси сервера
 		unsigned long int start_time; // момент запуска виртуального узл
+		
+		ATXmlTag *config;
 };
 
 #endif // MAWAR_VIRTUALHOST_H

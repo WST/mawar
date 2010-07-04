@@ -94,7 +94,7 @@ int ConfigFile::xep0114()
 /**
 * Вернуть первый виртуальный хост
 */
-VirtualHostConfig ConfigFile::firstHost()
+ATXmlTag *ConfigFile::firstHost()
 {
 	return config_tag->find("hosts/host");
 }
@@ -102,7 +102,7 @@ VirtualHostConfig ConfigFile::firstHost()
 /**
 * Вернуть следующий виртуальный хост
 */
-VirtualHostConfig ConfigFile::nextHost(VirtualHostConfig from)
+ATXmlTag *ConfigFile::nextHost(ATXmlTag *from)
 {
 	return config_tag->findNext("hosts/host", from);
 }

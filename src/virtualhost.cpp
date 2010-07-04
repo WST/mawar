@@ -21,21 +21,18 @@ using namespace nanosoft;
 * @param aName имя хоста
 * @param config конфигурация хоста
 */
-VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostConfig config):
-	XMPPDomain(srv, aName)
-{
-	TagHelper registration = config["registration"];
+VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cfg): XMPPDomain(srv, aName) {
+	TagHelper registration = cfg->getChild("registration");
 	registration_allowed = registration->getAttribute("enabled", "no") == "yes";
 	
-	TagHelper storage = config["storage"];
-	if ( storage->getAttribute("engine", "mysql") != "mysql" )
-	{
+	TagHelper storage = cfg->getChild("storage");
+	if(storage->getAttribute("engine", "mysql") != "mysql") {
 		fprintf(stderr, "[VirtualHost] unknown storage engine: %s\n", storage->getAttribute("engine").c_str());
 	}
 	
 	// Подключаемся к БД
 	string server = storage["server"];
-	if( server.substr(0, 5) == "unix:" ) {
+	if(server.substr(0, 5) == "unix:" ) {
 		if ( ! db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) )
 		{
 			fprintf(stderr, "[VirtualHost] cannot connect to database\n");
@@ -60,6 +57,8 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, VirtualHostC
 	xmpp_ping_queries = 0;
 	version_requests = 0;
 	start_time = time(0);
+	
+	config = cfg;
 }
 
 /**
@@ -218,41 +217,43 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			
 				ATXmlTag *item;
-				item = new ATXmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "stop");
-					item->setAttribute("name", "Stop Mawar daemon");
-					query->insertChildElement(item);
+				if(isAdmin(stanza.from().bare())) {
+					item = new ATXmlTag("item");
+						item->setAttribute("jid", name);
+						item->setAttribute("node", "stop");
+						item->setAttribute("name", "Stop Mawar daemon");
+						query->insertChildElement(item);
 					
-				item = new ATXmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "stop-vhost");
-					item->setAttribute("name", "Stop a virtual host");
-					query->insertChildElement(item);
+					item = new ATXmlTag("item");
+						item->setAttribute("jid", name);
+						item->setAttribute("node", "stop-vhost");
+						item->setAttribute("name", "Stop a virtual host");
+						query->insertChildElement(item);
 					
-				item = new ATXmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "start-vhost");
-					item->setAttribute("name", "Start a virtual host");
-					query->insertChildElement(item);
+					item = new ATXmlTag("item");
+						item->setAttribute("jid", name);
+						item->setAttribute("node", "start-vhost");
+						item->setAttribute("name", "Start a virtual host");
+						query->insertChildElement(item);
 					
-				item = new ATXmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "create-vhost");
-					item->setAttribute("name", "Create a new virtual host");
-					query->insertChildElement(item);
+					item = new ATXmlTag("item");
+						item->setAttribute("jid", name);
+						item->setAttribute("node", "create-vhost");
+						item->setAttribute("name", "Create a new virtual host");
+						query->insertChildElement(item);
 					
-				item = new ATXmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "drop-vhost");
-					item->setAttribute("name", "Delete virtual host");
-					query->insertChildElement(item);
+					item = new ATXmlTag("item");
+						item->setAttribute("jid", name);
+						item->setAttribute("node", "drop-vhost");
+						item->setAttribute("name", "Delete virtual host");
+						query->insertChildElement(item);
 					
-				item = new ATXmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "route-stanza");
-					item->setAttribute("name", "Push stanza to the router");
-					query->insertChildElement(item);
+					item = new ATXmlTag("item");
+						item->setAttribute("jid", name);
+						item->setAttribute("node", "route-stanza");
+						item->setAttribute("name", "Push stanza to the router");
+						query->insertChildElement(item);
+				}
 			
 				server->routeStanza(iq);
 				delete iq;
@@ -380,6 +381,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 	} else if(stanza->hasChild("command")) {
 		// Ad-hoc реализация
+		
+		if(!isAdmin(stanza.from().bare())) {
+			return;
+		}
 		
 		Command *cmd = new Command(stanza->getChild("command"));
 		std::string node = cmd->node();
@@ -1364,5 +1369,12 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 			}
 		}
 	}
+}
+
+bool VirtualHost::isAdmin(std::string barejid) {
+	if(!config->hasChild("admins")) {
+		return false;
+	}
+	return (bool) config->getChild("admins")->getChildByAttribute("admin", "jid", barejid);
 }
 

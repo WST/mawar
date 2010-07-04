@@ -183,10 +183,9 @@ int main(int argc, const char **argv)
 	
 	// добавляем виртуальные хосты
 	printf("[main] loading virtual hosts\n");
-	for(VirtualHostConfig vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost))
-	{
-		printf("[main] load vhost: %s\n", vhost.hostname().c_str());
-		server->addHost(vhost.hostname(), vhost);
+	for(ATXmlTag *vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost)) {
+		printf("[main] load vhost: %s\n", vhost->getAttribute("name").c_str());
+		server->addHost(vhost->getAttribute("name"), vhost);
 	}
 	printf("[main] virtual hosts loaded\n");
 	
