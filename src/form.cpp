@@ -2,6 +2,10 @@
 #include <form.h>
 #include <taghelper.h>
 
+/*
+Конструктор формы на основе iq-станзы, содержащей форму.
+В основном для интерпретации полученных форм.
+*/
 Form::Form(Stanza stanza): type() {
 	tag = stanza->find("command/x");
 	if(tag == 0) {
@@ -13,11 +17,19 @@ Form::Form(Stanza stanza): type() {
 	type = tag->getAttribute("type", "");
 }
 
+/*
+Конструктор формы на основе тега x.
+В основном для интерпретации полученных форм.
+*/
 Form::Form(ATXmlTag *from): type() {
 	tag = from;
 	type = from->getAttribute("type", "");
 }
 
+/*
+Конструктор формы без основы
+Служит для создания новых форм внутри сервера
+*/
 Form::Form(std::string x_type): type() {
 	tag = new ATXmlTag("x");
 	tag->setDefaultNameSpaceAttribute("jabber:x:data");
@@ -30,22 +42,34 @@ Form::~Form() {
 	// TODO: разобраться после реализации ad-hoc
 }
 
+/*
+Получить представление формы в виде тега
+*/
 ATXmlTag *Form::asTag() {
 	return tag;
 }
 
+/*
+Установить заголовок формы
+*/
 void Form::setTitle(std::string form_title) {
 	ATXmlTag *title = new ATXmlTag("title");
 	title->insertCharacterData(form_title);
 	tag->insertChildElement(title);
 }
 
+/*
+Установить текстовые инструкции к форме для пользователя
+*/
 void Form::setInstructions(std::string form_instructions) {
 	ATXmlTag *instructions = new ATXmlTag("instructions");
 	instructions->insertCharacterData(form_instructions);
 	tag->insertChildElement(instructions);
 }
 
+/*
+Вставить однострочное текстовое поле
+*/
 void Form::insertLineEdit(std::string var, std::string label, std::string value, bool required) {
 	ATXmlTag *field = new ATXmlTag("field");
 	field->setAttribute("type", "text-single");
@@ -63,6 +87,9 @@ void Form::insertLineEdit(std::string var, std::string label, std::string value,
 	tag->insertChildElement(field);
 }
 
+/*
+Вставить многострочное текстовое поле
+*/
 void Form::insertTextEdit(std::string var, std::string label, std::string value, bool required) {
 	ATXmlTag *field = new ATXmlTag("field");
 	field->setAttribute("type", "text-multi");
@@ -80,6 +107,9 @@ void Form::insertTextEdit(std::string var, std::string label, std::string value,
 	tag->insertChildElement(field);
 }
 
+/*
+Получить значение поля по его имени
+*/
 std::string Form::getFieldValue(std::string field_name, std::string default_value) {
 	ATXmlTag *field = tag->getChildByAttribute("field", "var", field_name);
 	if(!field) {

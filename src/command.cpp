@@ -1,11 +1,17 @@
 
 #include <command.h>
 
+/*
+Конструктор команды на основе тега command
+*/
 Command::Command(ATXmlTag *command) {
 	_form = command->hasChild("x") ? new Form(command->getChild("x")) : 0;
 	cmdtag = command;
 }
 
+/*
+Конструктор команды из ничего (для порождения ответов на команды)
+*/
 Command::Command() {
 	cmdtag = new ATXmlTag("command");
 	cmdtag->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
