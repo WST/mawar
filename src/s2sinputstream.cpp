@@ -1,6 +1,7 @@
 
 #include <s2sinputstream.h>
 #include <s2soutputstream.h>
+#include <xmppserveroutput.h>
 #include <virtualhost.h>
 #include <functions.h>
 #include <nanosoft/asyncdns.h>
@@ -27,13 +28,13 @@ S2SInputStream::~S2SInputStream()
 */
 void S2SInputStream::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	fprintf(stderr, "#%d new s2s stream\n", getWorkerId());
+	printf("s2s-input: new stream\n", remote_host.c_str());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
 	setAttribute("xmlns", "jabber:server");
 	setAttribute("xmlns:db", "jabber:server:dialback");
-	setAttribute("id", id = getUniqueId());
+	setAttribute("id", id = "123456");
 	setAttribute("xml:lang", "en");
 	flush();
 }
@@ -43,7 +44,7 @@ void S2SInputStream::onStartStream(const std::string &name, const attributes_t &
 */
 void S2SInputStream::onEndStream()
 {
-	fprintf(stderr, "#%d: [S2SInputStream: %d] end of stream\n", getWorkerId(), fd);
+	fprintf(stderr, "s2s-input(%s): end of stream\n", remote_host.c_str());
 	terminate();
 }
 
@@ -52,7 +53,7 @@ void S2SInputStream::onEndStream()
 */
 void S2SInputStream::onStanza(Stanza stanza)
 {
-	fprintf(stderr, "#%d s2s-input stanza: %s\n", getWorkerId(), stanza->name().c_str());
+	printf("s2s-input(%s from %s) stanza: %s\n", stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->name().c_str());
 	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
 	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
 	else if ( state != authorized )
@@ -133,14 +134,15 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	// нашим хостом - мы сами к себе никогда не коннектимся.
 	// Так что, если будете открывать повторные коннекты, то забудьте
 	// блокировать попытки коннекта к самим себе.
-	if ( server->getHostByName(from) )
+	/* XMPPServerOutput *so = dynamic_cast<XMPPServerOutput*>(server->getHostByName(from));
+	if ( so && so-> )
 	{
 		Stanza stanza = Stanza::streamError("not-authorized");
 		sendStanza(stanza);
 		delete stanza;
 		terminate();
 		return;
-	}
+	} */
 	remote_host = from;
 	
 	// Шаг 3. резолвим DNS записи сервера
@@ -169,7 +171,7 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 */
 void S2SInputStream::onTerminate()
 {
-	fprintf(stderr, "#%d: [S2SInputStream: %d] onTerminate\n", getWorkerId(), fd);
+	printf("s2s-input(%s): onTerminate\n", remote_host.c_str());
 	
 	// if ( state == authorized ) server->onOffline(this);
 	
