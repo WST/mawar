@@ -56,6 +56,7 @@ void XMPPClient::onStanza(Stanza stanza)
 	if (stanza->name() == "iq") onIqStanza(stanza);
 	else if (stanza->name() == "auth") onAuthStanza(stanza);
 	else if (stanza->name() == "response" ) onResponseStanza(stanza);
+	else if (stanza->name() == "message" ) onMessageStanza(stanza);
 	else if (stanza->name() == "presence") onPresenceStanza(stanza);
 	else ; // ...
 }
