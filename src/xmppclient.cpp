@@ -56,13 +56,6 @@ void XMPPClient::onStanza(Stanza stanza)
 	if (stanza->name() == "iq") onIqStanza(stanza);
 	else if (stanza->name() == "auth") onAuthStanza(stanza);
 	else if (stanza->name() == "response" ) onResponseStanza(stanza);
-	else if (stanza->name() == "message")
-	{
-		string body = stanza["message/body"];
-		if ( body == "/disable" ) disable_write = true;
-		else if ( body == "/enable" ) disable_write = false;
-		else onMessageStanza(stanza);
-	}
 	else if (stanza->name() == "presence") onPresenceStanza(stanza);
 	else ; // ...
 }
