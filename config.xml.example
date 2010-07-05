@@ -35,6 +35,9 @@
 			<admins>
 				<admin jid="admin@localhost" />
 			</admins>
+			<disco>
+				<item jid="support@conference.jsmart.web.id" />
+			</disco>
 			<!-- other settings -->
 		</host>
 		

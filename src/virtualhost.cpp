@@ -190,7 +190,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		
 		if(query_xmlns == "jabber:iq:last" && stanza_type == "get") {
 			// last activity к серверу должно выводить его uptime,
-			// а к JID-ам юзеров — время их последней активности (обрабатывается сервером)
+			// а к JID-ам юзеров — время их последней активности
 			// © WST
 			Stanza iq;
 			if(stanza.to().full() == hostname()) {
@@ -266,14 +266,14 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				TagHelper query = iq["query"];
 				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			
-				ATXmlTag *item;
-			
-				/* цикл по компонентам (нашим и тем внешним, что заданы в конфиге)
-				new ATXmlTag("item");
-					item->setAttribute("jid", "");
-				*/
-			
+				
+				for(ATXmlTag *item = config->find("disco/item"); item; item = config->findNext("disco/item", item)) {
+					query->insertChildElement(item);
+				}
+				// TODO: здесь также неплохо бы добавить приконнекченные компоненты…
+				// Хотя, конечно, можно обойтись и ручным указанием списка элементов обзора
+				// © WST
+				
 				server->routeStanza(iq);
 				delete iq;
 			}
