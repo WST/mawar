@@ -217,6 +217,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			
 				ATXmlTag *item;
+				// здесь можно засунуть команды, доступные простым юзерам
 				if(isAdmin(stanza.from().bare())) {
 					item = new ATXmlTag("item");
 						item->setAttribute("jid", name);
@@ -267,7 +268,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 				
-				for(ATXmlTag *item = config->find("disco/item"); item; item = config->findNext("disco/item", item)) {
+				ATXmlTag *item;
+				for(ATXmlTag *i = config->find("disco/item"); i; i = config->findNext("disco/item", i)) {
+					item = new ATXmlTag("item");
+					item->setAttribute("jid", i->getAttribute("jid", name));
 					query->insertChildElement(item);
 				}
 				// TODO: здесь также неплохо бы добавить приконнекченные компоненты…
