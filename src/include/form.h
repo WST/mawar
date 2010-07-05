@@ -5,6 +5,7 @@
 #include <xml_tag.h>
 #include <stanza.h>
 #include <string>
+#include <list>
 
 class Form
 {
@@ -18,6 +19,7 @@ class Form
 		std::string getFieldValue(std::string field_name, std::string default_value);
 		void insertLineEdit(std::string var, std::string label, std::string value, bool required = false);
 		void insertTextEdit(std::string var, std::string label, std::string value, bool required = false);
+		void insertList(std::string var, std::string label, std::list<std::string> values, std::string default_value, bool required = false, bool allow_multiple = false);
 		ATXmlTag *asTag();
 		
 	private:

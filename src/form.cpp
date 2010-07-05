@@ -108,6 +108,37 @@ void Form::insertTextEdit(std::string var, std::string label, std::string value,
 }
 
 /*
+Вставить выпадающий список
+*/
+void Form::insertList(std::string var, std::string label, std::list<std::string> values, std::string default_value, bool required, bool allow_multiple) {
+	ATXmlTag *field = new ATXmlTag("field");
+	field->setAttribute("type", allow_multiple ? "list-multi" : "list-single");
+	field->setAttribute("var", var);
+	field->setAttribute("label", label);
+	
+	ATXmlTag *option;
+	ATXmlTag *value = new ATXmlTag("value");
+	value->insertCharacterData(default_value);
+	field->insertChildElement(value);
+	
+	std::list<std::string>::iterator it;
+	for(it = values.begin(); it != values.end(); it++) {
+		option = new ATXmlTag("option");
+		option->setAttribute("label", *it);
+		value = new ATXmlTag("value");
+		value->insertCharacterData(*it);
+		option->insertChildElement(value);
+		field->insertChildElement(option);
+	}
+	
+	if(required) {
+		field->insertChildElement(new ATXmlTag("required"));
+	}
+	
+	tag->insertChildElement(field);
+}
+
+/*
 Получить значение поля по его имени
 */
 std::string Form::getFieldValue(std::string field_name, std::string default_value) {
