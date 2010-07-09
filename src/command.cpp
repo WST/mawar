@@ -19,7 +19,7 @@ Command::Command() {
 
 Command::~Command() {
 	// TODO: если удаляем станзу, у которой фигурирует Command, то тут может быть двойное удаление
-	//delete _form;
+	delete _form;
 }
 
 std::string Command::action() {

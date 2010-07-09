@@ -384,17 +384,23 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		Command *cmd = new Command(stanza->getChild("command"));
-		std::string node = cmd->node();
-		Form *form = cmd->form();
 		
 		if(cmd->action() == "cancel") {
 			// Отмена любой команды
-			server->routeStanza(Command::commandCancelledStanza(name, stanza));
+			Stanza reply = Command::commandCancelledStanza(name, stanza);
+			server->routeStanza(reply);
+			delete reply;
+			delete cmd;
 			return;
 		}
 		
+		std::string node = cmd->node();
+		Form *form = cmd->form(); // удаляется в деструкторе Command
+		
 		if(node == "stop") {
-			server->routeStanza(Command::commandDoneStanza(name, stanza));
+			Stanza reply = Command::commandDoneStanza(name, stanza);
+			server->routeStanza(reply);
+			delete reply;
 			mawarWarning("Stopping daemon by request from administrator");
 			exit(0); // TODO: сделать корректный останов
 		}
@@ -402,7 +408,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		else if(node == "create-vhost") {
 			if(form) {
 				// Обработчик формы тут
-				server->routeStanza(Command::commandDoneStanza(name, stanza));
+				Stanza reply = Command::commandDoneStanza(name, stanza);
+				server->routeStanza(reply);
+				delete reply;
+				delete cmd;
 				return;
 			}
 			Command *reply = new Command();
@@ -422,7 +431,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		else if(node == "drop-vhost") {
 			if(form) {
 				mawarWarning("Delete virtual host: " + cmd->form()->getFieldValue("vhost-name", ""));
-				server->routeStanza(Command::commandDoneStanza(name, stanza));
+				Stanza reply = Command::commandDoneStanza(name, stanza);
+				server->routeStanza(reply);
+				delete reply;
+				delete cmd;
 				return;
 			}
 			Command *reply = new Command();
@@ -440,7 +452,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				bool valid = true; // установить флаг верности
 				if(valid) {
 					// Обработчик формы тут
-					server->routeStanza(Command::commandDoneStanza(name, stanza));
+					Stanza reply = Command::commandDoneStanza(name, stanza);
+					server->routeStanza(reply);
+					delete reply;
+					delete cmd;
 					return;
 				}
 				// Это приведёт к показу формы заново… Как в веб :)
@@ -469,7 +484,10 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				} else {
 					mawarWarning("Failed to parse admin’s custom stanza");
 				}
-				server->routeStanza(Command::commandDoneStanza(name, stanza));
+				Stanza reply = Command::commandDoneStanza(name, stanza);
+				server->routeStanza(reply);
+				delete reply;
+				delete cmd;
 				return;
 			}
 			Command *reply = new Command();
@@ -482,7 +500,9 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		else {
-			server->routeStanza(Command::commandDoneStanza(name, stanza));
+			Stanza reply = Command::commandDoneStanza(name, stanza);
+			server->routeStanza(reply);
+			delete reply;
 		}
 		delete cmd;
 	}
