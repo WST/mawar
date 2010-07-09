@@ -22,6 +22,7 @@ XMPPClient::XMPPClient(XMPPServer *srv, int sock):
 	XMPPStream(srv, sock), vhost(0),
 	state(init), available(false), use_roster(false)
 {
+	lock();
 }
 
 /**
@@ -56,8 +57,9 @@ void XMPPClient::onTerminate()
 		endElement("stream:stream");
 		flush();
 		server->daemon->removeObject(this);
-		close();
 	mutex.unlock();
+	
+	release();
 }
 
 /**

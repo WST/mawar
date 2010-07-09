@@ -13,6 +13,7 @@ using namespace std;
 */
 S2SInputStream::S2SInputStream(XMPPServer *srv, int sock): XMPPStream(srv, sock)
 {
+	lock();
 }
 
 /**
@@ -227,6 +228,7 @@ void S2SInputStream::onTerminate()
 		endElement("stream:stream");
 		flush();
 		server->daemon->addObject(this);
-		close();
 	mutex.unlock();
+	
+	release();
 }

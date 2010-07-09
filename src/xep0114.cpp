@@ -24,6 +24,7 @@ XEP0114::XEP0114(XMPPServer *srv, int sock):
 	XMPPStream(srv, sock), XMPPDomain(srv, ""),
 	state(init), id(getUniqueId())
 {
+	lock();
 }
 
 /**
@@ -48,8 +49,10 @@ void XEP0114::onTerminate()
 	mutex.lock();
 		endElement("stream:stream");
 		flush();
-		shutdown(WRITE);
+		XMPPDomain::server->daemon->removeObject(this);
 	mutex.unlock();
+	
+	release();
 }
 
 /**

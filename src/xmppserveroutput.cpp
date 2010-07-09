@@ -305,7 +305,7 @@ void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 */
 void XMPPServerOutput::onPeerDown()
 {
-	printf("s2s-output(%s) onPeerDow\n", hostname().c_str());
+	printf("s2s-output(%s) onPeerDown\n", hostname().c_str());
 	terminate();
 }
 
