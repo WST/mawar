@@ -200,6 +200,18 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 }
 
 /**
+* Пир (peer) закрыл поток.
+*
+* Мы уже ничего не можем отправить в ответ,
+* можем только корректно закрыть соединение с нашей стороны.
+*/
+void S2SInputStream::onPeerDown()
+{
+	printf("[S2SInputStream: %d] onPeerDown\n", fd);
+	terminate();
+}
+
+/**
 * Сигнал завершения работы
 *
 * Сервер решил закрыть соединение, здесь ещё есть время
