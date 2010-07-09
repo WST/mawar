@@ -15,11 +15,9 @@ XMPPServerOutput::XMPPServerOutput(XMPPServer *srv, const char *host):
 	XMPPDomain(srv, host), XMPPStream(srv, 0)
 {
 	lock();
+	
 	// Резолвим DNS записи сервера
 	state = RESOLVING;
-	// TODO для оптимизации отправляем все DNS (асинхронные) запросы сразу
-	//server->adns->a4(host.c_str(), on_s2s_output_a4, p);
-	//server->adns->srv(host.c_str(), "jabber", "tcp", on_s2s_output_jabber, p);
 	XMPPDomain::server->adns->srv(host, "xmpp-server", "tcp", on_s2s_output_xmpp_server, this);
 }
 
@@ -28,7 +26,7 @@ XMPPServerOutput::XMPPServerOutput(XMPPServer *srv, const char *host):
 */
 XMPPServerOutput::~XMPPServerOutput()
 {
-	fprintf(stderr, "s2s-output(%s) delete\n", hostname().c_str());
+	printf("s2s-output(%s) delete\n", hostname().c_str());
 }
 
 /**
@@ -203,7 +201,7 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 */
 void XMPPServerOutput::onEndStream()
 {
-	fprintf(stderr, "s2s-output(%s) end of stream\n", hostname().c_str());
+	printf("s2s-output(%s) end of stream\n", hostname().c_str());
 	terminate();
 }
 
@@ -307,7 +305,7 @@ void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 */
 void XMPPServerOutput::onTerminate()
 {
-	fprintf(stderr, "s2s-output(%s) onTerminate\n", hostname().c_str());
+	printf("s2s-output(%s) onTerminate\n", hostname().c_str());
 	
 	mutex.lock();
 		endElement("stream:stream");
@@ -374,5 +372,6 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 	{
 		vhost->buffer.push_back(stanza->asString());
 	}
+	
 	release();
 }

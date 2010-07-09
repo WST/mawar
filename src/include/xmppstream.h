@@ -101,8 +101,6 @@ public:
 	*/
 	virtual void onStanza(Stanza stanza) = 0;
 	
-	void sendTag(ATXmlTag * tag);
-	
 	/**
 	* Отправить станзу в поток (thread-safe)
 	* @param stanza станза

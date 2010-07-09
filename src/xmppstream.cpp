@@ -126,28 +126,9 @@ void XMPPStream::onEndElement(const std::string &name)
 */
 void XMPPStream::onParseError(const char *message)
 {
-	fprintf(stderr, "#%d: [XMPPStream: %d] parse error: %s\n", getWorkerId(), fd, message);
+	printf("[XMPPStream: %d] parse error: %s\n", fd, message);
 	// TODO something...
 	server->daemon->removeObject(this);
-}
-
-void XMPPStream::sendTag(ATXmlTag * tag) {
-	startElement(tag->name());
-	attributes_t attributes = tag->getAttributes();
-	for(attributes_t::iterator it = attributes.begin(); it != attributes.end(); it++) {
-		setAttribute(it->first, it->second);
-	}
-	nodes_list_t nodes = tag->getChildNodes();
-	for(nodes_list_t::iterator it = nodes.begin(); it != nodes.end(); it++) {
-		if((*it)->type == TTag) {
-			sendTag((*it)->tag);
-		} else {
-			characterData((*it)->cdata);
-		}
-	}
-	endElement(tag->name());
-	// send(tag->asString()); — так будет куда проще…
-	// TODO: shade, что-то меня не очень такая реализация радует
 }
 
 /**
