@@ -324,8 +324,9 @@ void XMPPServerOutput::onTerminate()
 		flush();
 		XMPPDomain::server->removeDomain(this);
 		XMPPDomain::server->daemon->removeObject(this);
-		close();
 	mutex.unlock();
+	
+	release();
 }
 
 /**
