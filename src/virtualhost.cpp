@@ -189,16 +189,9 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		if(query_xmlns == "jabber:iq:last" && stanza_type == "get") {
-			// last activity к серверу должно выводить его uptime,
-			// а к JID-ам юзеров — время их последней активности
-			// © WST
 			Stanza iq;
-			if(stanza.to().full() == hostname()) {
-				unsigned long int uptime = time(0) - start_time;
-				iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(uptime) + "\"/></iq>");
-			} else {
-				// TODO
-			}
+			unsigned long int uptime = time(0) - start_time;
+			iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(uptime) + "\"/></iq>");
 			server->routeStanza(iq);
 			delete iq;
 		}
