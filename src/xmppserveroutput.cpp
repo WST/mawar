@@ -298,6 +298,18 @@ void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 }
 
 /**
+* Пир (peer) закрыл поток.
+*
+* Мы уже ничего не можем отправить в ответ,
+* можем только корректно закрыть соединение с нашей стороны.
+*/
+void XMPPServerOutput::onPeerDown()
+{
+	printf("s2s-output(%s) onPeerDow\n", hostname().c_str());
+	terminate();
+}
+
+/**
 * Сигнал завершения работы
 *
 * Сервер решил закрыть соединение, здесь ещё есть время
