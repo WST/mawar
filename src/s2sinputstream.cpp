@@ -227,7 +227,7 @@ void S2SInputStream::onTerminate()
 	mutex.lock();
 		endElement("stream:stream");
 		flush();
-		server->daemon->addObject(this);
+		server->daemon->removeObject(this);
 	mutex.unlock();
 	
 	release();
