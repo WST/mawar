@@ -182,6 +182,8 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleRegisterIq(XMPPClient *client, Stanza stanza);
 		
 		bool isAdmin(std::string barejid);
+		
+		bool userExists(std::string username);
 	
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу

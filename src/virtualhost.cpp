@@ -884,11 +884,22 @@ void VirtualHost::broadcast(Stanza stanza, const std::string &login)
 	mutex.unlock();
 }
 
+bool VirtualHost::userExists(std::string username) {
+	bool retval;
+	DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login=%s", db.quote(username).c_str());
+	retval = atoi(r["cnt"].c_str()) == 1;
+	r.free();
+	return retval;
+}
+
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
 	// При флуд-атаках нимбуззеров сообщения часто идут быстрым потоком
 	// При этом крайне нежелательно порождать трафик с MySQL тучей запросов count
 	// Было бы классно кешировать число оффлайн-сообщений, например, в какой-то карте…
 	// © WST
+	if(!userExists(stanza.to().username())) {
+		return;
+	}
 	DB::result r = db.query("SELECT count(*) AS cnt FROM spool WHERE message_to=%s", db.quote(stanza.to().bare()).c_str());
 	if(atoi(r["cnt"].c_str()) < 100) { // TODO — брать максимальное число оффлайн-сообщений из конфига
 		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(stanza->asString()).c_str(), time(NULL));
@@ -929,14 +940,18 @@ void VirtualHost::handleMessage(Stanza stanza) {
 			}
 		}
 		if(sendto_list.empty()) {
-			saveOfflineMessage(stanza);
+			if(stanza.type() == "normal" || stanza.type() == "chat") {
+				saveOfflineMessage(stanza);
+			}
 			return;
 		}
 		for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++) {
 			(*kt)->sendStanza(stanza); // TODO — учесть bool
 		}
 	} else {
-		saveOfflineMessage(stanza);
+		if(stanza.type() == "normal" || stanza.type() == "chat") {
+			saveOfflineMessage(stanza);
+		}
 	}
 }
 
@@ -1338,6 +1353,17 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 			
 			if(!exists) {
 				// Новый пользователь
+				if(username->getCharacterData().empty() || password->getCharacterData().empty()) {
+					Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+					if(client) {
+						client->sendStanza(error);
+					} else {
+						error->setAttribute("to", stanza.to().full());
+						server->routeStanza(error);
+					}
+					delete error;
+					return;
+				}
 				db.query("INSERT INTO users (user_login, user_password) VALUES (%s, %s)", db.quote(username->getCharacterData()).c_str(), db.quote(password->getCharacterData()).c_str());
 				Stanza iq = new ATXmlTag("iq");
 				iq->setAttribute("type", "result");
@@ -1351,25 +1377,15 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				delete iq;
 			} else {
 				// Пользователь с таким именем уже существует
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("type", "error");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("jabber:iq:register");
-				query->insertChildElement(username);
-				query->insertChildElement(password);
-				TagHelper error = iq["error"];
-				error->insertAttribute("code", "409");
-				error->insertAttribute("type", "cancel");
-				ATXmlTag *conflict = new ATXmlTag("conflict");
-				conflict->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+				Stanza error = Stanza::iqError(stanza, "conflict", "cancel");
 				if(client) {
-					client->sendStanza(iq);
+					client->sendStanza(error);
 				} else {
-					iq->setAttribute("to", stanza.to().full());
-					server->routeStanza(iq);
+					error->setAttribute("to", stanza.to().full());
+					server->routeStanza(error);
 				}
-				delete iq;
+				delete error;
+				return;
 			}
 		}
 	}
