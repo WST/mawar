@@ -130,16 +130,9 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	}
 	
 	// Шаг 3. проверка ключа
-	vhostkey_t key(from, to);
-	
-	mutex.lock();
-		vhosts_t::const_iterator iter = vhosts.find(key);
-		vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
-	mutex.unlock();
-	
-	if ( vhost && stanza->getCharacterData() == sha1(stanza->getAttribute("id") + "key") )
+	std::string hash = sha1(stanza->getAttribute("id") + "key");
+	if ( stanza->getCharacterData() == hash )
 	{
-		vhost->authorized = true;
 		Stanza result = new ATXmlTag("db:verify");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
