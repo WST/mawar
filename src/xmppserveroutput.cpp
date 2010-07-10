@@ -40,42 +40,6 @@ XMPPServerOutput::~XMPPServerOutput()
 }
 
 /**
-* Событие готовности к передачи данных
-*
-* Вызывается сразу как только было установлено соединение
-* и сокет готов к передаче данных
-*/
-void XMPPServerOutput::onConnected()
-{
-	printf("s2s-output(%s): connected\n", hostname().c_str());
-	
-	// поздоровайся с дядей
-	initXML();
-	startElement("stream:stream");
-	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
-	setAttribute("xmlns", "jabber:server");
-	setAttribute("xmlns:db", "jabber:server:dialback");
-	setAttribute("xml:lang", "en");
-	flush();
-	
-	mutex.lock();
-		state = CONNECTED;
-		
-		for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
-		{
-			vhost_t *vhost = iter->second;
-			
-			Stanza dbresult = new ATXmlTag("db:result");
-			dbresult->setAttribute("to", hostname());
-			dbresult->setAttribute("from", iter->first);
-			dbresult += sha1(recieved_id + "key");
-			sendStanza(dbresult);
-			delete dbresult;
-		}
-	mutex.unlock();
-}
-
-/**
 * Событие готовности к записи
 *
 * Вызывается, когда в поток готов принять
@@ -83,12 +47,25 @@ void XMPPServerOutput::onConnected()
 */
 void XMPPServerOutput::onWrite()
 {
+	//mutex.lock();
 	if ( state == CONNECTING )
 	{
 		want_write = false;
-		onConnected();
+		state = CONNECTED;
+		//mutex.unlock();
+		printf("s2s-output(%s): connected\n", hostname().c_str());
+		
+		// поздоровайся с дядей
+		initXML();
+		startElement("stream:stream");
+		setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
+		setAttribute("xmlns", "jabber:server");
+		setAttribute("xmlns:db", "jabber:server:dialback");
+		setAttribute("xml:lang", "en");
+		flush();
 		return;
 	}
+	//mutex.unlock();
 	XMPPStream::onWrite();
 }
 
@@ -206,6 +183,18 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 {
 	attributes_t::const_iterator it = attributes.find("id");
 	std::string recieved_id = (it != attributes.end()) ? it->second : std::string();
+	
+	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+	{
+		vhost_t *vhost = iter->second;
+		
+		Stanza dbresult = new ATXmlTag("db:result");
+		dbresult->setAttribute("to", hostname());
+		dbresult->setAttribute("from", iter->first);
+		dbresult += sha1(recieved_id + "key");
+		sendStanza(dbresult);
+		delete dbresult;
+	}
 }
 
 /**

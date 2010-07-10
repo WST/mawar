@@ -1,6 +1,7 @@
 
 #include <xmppserverinput.h>
 #include <xmppserveroutput.h>
+#include <s2slistener.h>
 #include <virtualhost.h>
 #include <functions.h>
 #include <stdio.h>
@@ -135,8 +136,8 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 		vhosts_t::const_iterator iter = vhosts.find(key);
 		vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
 	mutex.unlock();
-		
-	if ( vhost && stanza->getCharacterData() == sha1(id + "key") )
+	
+	if ( vhost && stanza->getCharacterData() == sha1(stanza->getAttribute("id") + "key") )
 	{
 		vhost->authorized = true;
 		Stanza result = new ATXmlTag("db:verify");
@@ -219,7 +220,7 @@ void XMPPServerInput::onDBResultStanza(Stanza stanza)
 	verify->setAttribute("from", to);
 	verify->setAttribute("to", from);
 	verify->setAttribute("id", id);
-	verify += sha1(id + "key");
+	verify += stanza->getCharacterData();
 	server->routeStanza(verify);
 	delete verify;
 }
@@ -246,11 +247,10 @@ void XMPPServerInput::onTerminate()
 {
 	printf("s2s-input(%s): onTerminate\n", remote_host.c_str());
 	
-	// if ( state == authorized ) server->onOffline(this);
-	
 	mutex.lock();
 		endElement("stream:stream");
 		flush();
+		server->s2s->removeInput(this);
 		server->daemon->removeObject(this);
 	mutex.unlock();
 	
