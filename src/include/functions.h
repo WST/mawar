@@ -26,4 +26,9 @@ void mawarError(std::string text, int exitcode = 0);
 */
 void bin2hex(char *dest, const void *src, size_t len);
 
-#endif
+/**
+* Вычислить sha1-хеш
+*/
+std::string sha1(const std::string &data);
+
+#endif // MAWAR_FUNCTIONS_H

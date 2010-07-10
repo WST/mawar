@@ -67,22 +67,15 @@ void XEP0114::onStanza(Stanza stanza)
 		
 		if ( config && stanza->name() == "handshake" )
 		{
-			char *key;
-			string value = id + config["secret"]->getCharacterData();
-			if ( gsasl_sha1(value.c_str(), value.length(), &key) == GSASL_OK )
+			string hash = sha1( id + config["secret"]->getCharacterData() );
+			if ( hash == stanza->getCharacterData() )
 			{
-				char hash[80];
-				bin2hex(hash, key, 20);
-				gsasl_free(key);
-				if ( hash == stanza->getCharacterData() )
-				{
-					state = authorized;
-					reply = new ATXmlTag("handshake");
-					sendStanza(reply);
-					delete reply;
-					XMPPStream::server->addDomain(this);
-					return;
-				}
+				state = authorized;
+				reply = new ATXmlTag("handshake");
+				sendStanza(reply);
+				delete reply;
+				XMPPStream::server->addDomain(this);
+				return;
 			}
 		}
 		

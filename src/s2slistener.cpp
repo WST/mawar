@@ -1,6 +1,6 @@
 
 #include <s2slistener.h>
-#include <s2sinputstream.h>
+#include <xmppserverinput.h>
 #include <xmppserver.h>
 #include <iostream>
 
@@ -33,9 +33,39 @@ void S2SListener::onAccept()
 	int sock = accept();
 	if ( sock )
 	{
-		XMPPStream *client = new S2SInputStream(server, sock);
+		XMPPServerInput *client = new XMPPServerInput(server, sock);
+		mutex.lock();
+			inputs[client->getId()] = client;
+		mutex.unlock();
 		server->daemon->addObject(client);
 	}
+}
+
+/**
+* Найти s2s-input по ID
+*
+* thread-safe
+*/
+XMPPServerInput * S2SListener::getInput(const std::string &id)
+{
+	mutex.lock();
+		inputs_t::const_iterator iter = inputs.find(id);
+		XMPPServerInput *input = iter != inputs.end() ? iter->second : 0;
+	mutex.unlock();
+	
+	return input;
+}
+
+/**
+* Удалить s2s-input
+*
+* thread-safe
+*/
+void S2SListener::removeInput(XMPPServerInput *input)
+{
+	mutex.lock();
+		inputs.erase(input->getId());
+	mutex.unlock();
 }
 
 /**

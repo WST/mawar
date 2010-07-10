@@ -75,7 +75,7 @@ MAWAR_OBJECTS+=virtualhost.o
 MAWAR_OBJECTS+=xep0114listener.o
 MAWAR_OBJECTS+=xep0114.o
 MAWAR_OBJECTS+=s2slistener.o
-MAWAR_OBJECTS+=s2sinputstream.o
+MAWAR_OBJECTS+=xmppserverinput.o
 MAWAR_OBJECTS+=xmppserveroutput.o
 MAWAR_OBJECTS+=serverstatus.o
 #MAWAR_OBJECTS+=geoip.o
@@ -162,14 +162,14 @@ xep0114listener.o: $(srcdir)/xep0114listener.cpp $(srcdir)/include/xep0114listen
 xep0114.o: $(srcdir)/xep0114.cpp $(srcdir)/include/xep0114.h $(srcdir)/include/xmppstream.h $(srcdir)/include/xmppdomain.h
 	$(CXX) -c $(srcdir)/xep0114.cpp -o xep0114.o
 
-s2slistener.o: $(srcdir)/s2slistener.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/s2sinputstream.h $(srcdir)/include/xmppserver.h
+s2slistener.o: $(srcdir)/s2slistener.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/xmppserverinput.h $(srcdir)/include/xmppserver.h
 	$(CXX) -c $(srcdir)/s2slistener.cpp -o s2slistener.o
-
-s2sinputstream.o: $(srcdir)/s2sinputstream.cpp $(srcdir)/include/s2slistener.h $(srcdir)/include/s2sinputstream.h $(srcdir)/include/xmppserver.h
-	$(CXX) -c $(srcdir)/s2sinputstream.cpp -o s2sinputstream.o
 
 xmppserveroutput.o: $(srcdir)/xmppserveroutput.cpp $(srcdir)/include/xmppserveroutput.h $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
 	$(CXX) -c $(srcdir)/xmppserveroutput.cpp -o xmppserveroutput.o
+
+xmppserverinput.o: $(srcdir)/xmppserverinput.cpp $(srcdir)/include/xmppserverinput.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppserverinput.cpp -o xmppserverinput.o
 
 #geoip.o: $(srcdir)/geoip.cpp $(srcdir)/include/geoip.h
 #	$(CXX) -c $(srcdir)/geoip.cpp -o geoip.o

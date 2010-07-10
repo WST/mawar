@@ -5,6 +5,10 @@
 #include <nanosoft/mutex.h>
 #include <nanosoft/asyncdns.h>
 #include <stanza.h>
+#include <string>
+#include <map>
+
+class XMPPServerInput;
 
 /**
 * Класс сокета слушающего S2S
@@ -14,6 +18,28 @@
 class S2SListener: public AsyncServer
 {
 protected:
+	/**
+	* Mutex для thread-safe доступа к общим данным
+	*/
+	nanosoft::Mutex mutex;
+	
+	/**
+	* Список входящиз s2s соединений (s2s-input)
+	*/
+	typedef std::map<std::string, XMPPServerInput *> inputs_t;
+	
+	/**
+	* Список авторизуемых виртуальных хостов
+	*/
+	inputs_t inputs;
+	
+	/**
+	* Обработчик события: подключение s2s
+	*
+	* thread-safe
+	*/
+	virtual void onAccept();
+	
 	/**
 	* Сигнал завершения работы
 	*
@@ -39,11 +65,18 @@ public:
 	~S2SListener();
 	
 	/**
-	* Обработчик события: подключение s2s
+	* Найти s2s-input по ID
 	*
 	* thread-safe
 	*/
-	void onAccept();
+	XMPPServerInput *getInput(const std::string &id);
+	
+	/**
+	* Удалить s2s-input
+	*
+	* thread-safe
+	*/
+	void removeInput(XMPPServerInput *input);
 };
 
 #endif // MAWAR_S2SLISTENER_H

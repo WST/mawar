@@ -1,12 +1,16 @@
 
 #include <xmppserveroutput.h>
+#include <xmppserverinput.h>
+#include <s2slistener.h>
 #include <xmppserver.h>
 #include <xmppdomain.h>
 #include <virtualhost.h>
+#include <functions.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <attagparser.h>
+#include <string>
 
 /**
 * Конструктор s2s-домена
@@ -27,6 +31,12 @@ XMPPServerOutput::XMPPServerOutput(XMPPServer *srv, const char *host):
 XMPPServerOutput::~XMPPServerOutput()
 {
 	printf("s2s-output(%s) delete\n", hostname().c_str());
+	
+	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+	{
+		delete iter->second;
+	}
+	vhosts.clear();
 }
 
 /**
@@ -58,7 +68,7 @@ void XMPPServerOutput::onConnected()
 			Stanza dbresult = new ATXmlTag("db:result");
 			dbresult->setAttribute("to", hostname());
 			dbresult->setAttribute("from", iter->first);
-			dbresult += "key";
+			dbresult += sha1(recieved_id + "key");
 			sendStanza(dbresult);
 			delete dbresult;
 		}
@@ -194,6 +204,8 @@ void XMPPServerOutput::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns
 */
 void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t &attributes)
 {
+	attributes_t::const_iterator it = attributes.find("id");
+	std::string recieved_id = (it != attributes.end()) ? it->second : std::string();
 }
 
 /**
@@ -230,7 +242,9 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 {
 	// Шаг 1. проверка: "id" должен совпадать тем, что мы давали (id s2s-input'а)
 	// TODO
-	if ( 0 )
+	std::string id = stanza->getAttribute("id");
+	XMPPServerInput *input = XMPPDomain::server->s2s->getInput(id);
+	if ( ! input )
 	{
 		Stanza stanza = Stanza::streamError("invalid-id");
 		sendStanza(stanza);
@@ -264,7 +278,12 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 	}
 	
 	// Шаг 4. вернуть результат в s2s-input
-	// TODO
+	Stanza result = new ATXmlTag("db:result");
+	result->setAttribute("to", from);
+	result->setAttribute("from", to);
+	result->setAttribute("type", "valid");
+	input->sendStanza(result);
+	delete result;
 }
 
 /**
@@ -370,7 +389,7 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 				Stanza dbresult = new ATXmlTag("db:result");
 				dbresult->setAttribute("to", hostname());
 				dbresult->setAttribute("from", vhostname);
-				dbresult += "key";
+				dbresult += sha1(recieved_id + "key");
 				sendStanza(dbresult);
 				delete dbresult;
 			}

@@ -1,25 +1,33 @@
-#ifndef MAWAR_S2SINPUTSTREAM_H
-#define MAWAR_S2SINPUTSTREAM_H
+#ifndef MAWAR_SERVERINPUT_H
+#define MAWAR_SERVERINPUT_H
 
 #include <xmppstream.h>
+#include <utility>
+#include <map>
+#include <nanosoft/mutex.h>
 
 /**
 * Класс потока ввода (s2s input)
 *
 * Поток ввода авторизуется только для приёма станз
 * от удалённого хоста, для отправки станз удалённому хосту
-* используется другой тип потока - S2SOutputStream (s2s output).
+* используется другой тип потока - XMPPServerOutput (s2s output).
 *
-* S2SOutputStream - клиентский сокет, исходящие станзы
-* S2SInputStream - серверный сокет, входящие станзы
+* Данный класс управляет подключением к внешнему домену
+* и списком авторизованных виртуальных хостов.
+* Для каждого авторизованного виртуального хоста
+* заводиться свой псевдо-поток.
+*
+* XMPPServerOutput - клиентский сокет, исходящие станзы
+* XMPPServerInput - серверный сокет, входящие станзы
 */
-class S2SInputStream: public XMPPStream
+class XMPPServerInput: public XMPPStream
 {
 protected:
 	/**
-	* Виртуальный хост
+	* Mutex для thread-safe доступа к общим данным
 	*/
-	class VirtualHost *vhost;
+	nanosoft::Mutex mutex;
 	
 	/**
 	* Удаленный хост от которого мы принимаем станзы
@@ -32,24 +40,30 @@ protected:
 	std::string id;
 	
 	/**
-	* Состояние потока
+	* Описание виртуального хоста
 	*/
-	enum {
+	struct vhost_t
+	{
 		/**
-		* Ициализация (ожидаем <stream:stream>)
+		* Виртуальный хост автризован для передачи данных
 		*/
-		init,
-		
-		/**
-		* Проверка (обрабатываем только <db:result>, <db:verify>)
-		*/
-		verify,
-		
-		/**
-		* Авторизован (можно пересылать станзы)
-		*/
-		authorized
-	} state;
+		bool authorized;
+	};
+	
+	/**
+	* Ключь s2s-input коннекта (from, to)
+	*/
+	typedef std::pair<std::string, std::string> vhostkey_t;
+	
+	/**
+	* Список авторизуемых виртуальных хостов
+	*/
+	typedef std::map<vhostkey_t, vhost_t *> vhosts_t;
+	
+	/**
+	* Список авторизуемых виртуальных хостов
+	*/
+	vhosts_t vhosts;
 	
 	/**
 	* Событие: начало потока
@@ -81,17 +95,22 @@ public:
 	/**
 	* Конструктор потока
 	*/
-	S2SInputStream(XMPPServer *srv, int sock);
+	XMPPServerInput(XMPPServer *srv, int sock);
 	
 	/**
 	* Деструктор потока
 	*/
-	~S2SInputStream();
+	~XMPPServerInput();
 	
 	/**
 	* Удаленный хост от которого мы принимаем станзы
 	*/
 	std::string remoteHost() const { return remote_host; }
+	
+	/**
+	* Вернуть ID s2s-input потока
+	*/
+	std::string getId() const { return id; }
 	
 	/**
 	* Обработчик станзы
@@ -109,4 +128,4 @@ public:
 	void onDBResultStanza(Stanza stanza);
 };
 
-#endif // MAWAR_S2SINPUTSTREAM_H
+#endif // MAWAR_SERVERINPUT_H

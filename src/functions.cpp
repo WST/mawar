@@ -1,5 +1,6 @@
 
 #include <functions.h>
+#include <gsasl.h>
 
 unsigned long int id_counter;
 
@@ -44,4 +45,20 @@ void bin2hex(char *dest, const void *src, size_t len)
 	{
 		s = sprintf(dest, "%02x", *p);
 	}
+}
+
+/**
+* Вычислить sha1-хеш
+*/
+std::string sha1(const std::string &data)
+{
+	char *key;
+	if ( gsasl_sha1(data.c_str(), data.length(), &key) == GSASL_OK )
+	{
+		char hash[80];
+		bin2hex(hash, key, 20);
+		gsasl_free(key);
+		return hash;
+	}
+	return "";
 }

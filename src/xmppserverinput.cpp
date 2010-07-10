@@ -1,17 +1,16 @@
 
-#include <s2sinputstream.h>
+#include <xmppserverinput.h>
 #include <xmppserveroutput.h>
 #include <virtualhost.h>
 #include <functions.h>
-#include <nanosoft/asyncdns.h>
-#include <iostream>
+#include <stdio.h>
 
 using namespace std;
 
 /**
 * Конструктор потока
 */
-S2SInputStream::S2SInputStream(XMPPServer *srv, int sock): XMPPStream(srv, sock)
+XMPPServerInput::XMPPServerInput(XMPPServer *srv, int sock): XMPPStream(srv, sock)
 {
 	lock();
 }
@@ -19,16 +18,16 @@ S2SInputStream::S2SInputStream(XMPPServer *srv, int sock): XMPPStream(srv, sock)
 /**
 * Деструктор потока
 */
-S2SInputStream::~S2SInputStream()
+XMPPServerInput::~XMPPServerInput()
 {
 }
 
 /**
 * Событие: начало потока
 */
-void S2SInputStream::onStartStream(const std::string &name, const attributes_t &attributes)
+void XMPPServerInput::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	printf("s2s-input: new stream, sock: %d\n", fd);
+	printf("s2s-input(%d): new stream\n", fd);
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
@@ -42,7 +41,7 @@ void S2SInputStream::onStartStream(const std::string &name, const attributes_t &
 /**
 * Событие: конец потока
 */
-void S2SInputStream::onEndStream()
+void XMPPServerInput::onEndStream()
 {
 	fprintf(stderr, "s2s-input(%s): end of stream\n", remote_host.c_str());
 	terminate();
@@ -51,47 +50,59 @@ void S2SInputStream::onEndStream()
 /**
 * Обработчик станзы
 */
-void S2SInputStream::onStanza(Stanza stanza)
+void XMPPServerInput::onStanza(Stanza stanza)
 {
-	printf("s2s-input(%s from %s) stanza: %s\n", stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->name().c_str());
+	printf("s2s-input(%s from %s): stanza: %s\n", stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->name().c_str());
 	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
 	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
-	else if ( state != authorized )
-	{
-		fprintf(stderr, "#%d unexpected s2s-input stanza: %s\n", getWorkerId(), stanza->name().c_str());
-		Stanza error = Stanza::streamError("not-authoized");
-		sendStanza(error);
-		delete error;
-		terminate();
-	}
-	else if ( stanza.from().hostname() != remote_host )
-	{
-		fprintf(stderr, "#%d [s2s-input: %s] invalid from: %s\n", getWorkerId(), remote_host.c_str(), stanza->getAttribute("from").c_str());
-		Stanza error = Stanza::streamError("improper-addressing");
-		sendStanza(error);
-		delete error;
-		terminate();
-	}
 	else
 	{
-		// доставить станзу по назначению
-		XMPPDomain *vhost = server->getHostByName(stanza.to().hostname());
-		if ( ! vhost )
+		// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
+		string to = stanza->getAttribute("to");
+		XMPPDomain *host = server->getHostByName(to);
+		if ( ! dynamic_cast<VirtualHost*>(host) )
 		{
-			fprintf(stderr, "#%d [s2s-input: %s] invalid to: %s\n", getWorkerId(), remote_host.c_str(), stanza->getAttribute("to").c_str());
-			Stanza error = Stanza::streamError("improper-addressing");
+			Stanza stanza = Stanza::streamError("improper-addressing");
+			sendStanza(stanza);
+			delete stanza;
+			terminate();
+			return;
+		}
+		
+		// Шаг 2. проверка: "from"
+		// TODO
+		string from = stanza->getAttribute("from");
+		if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
+		{
+			Stanza stanza = Stanza::streamError("improper-addressing");
+			sendStanza(stanza);
+			delete stanza;
+			terminate();
+			return;
+		}
+		
+		vhostkey_t key(from, to);
+		
+		mutex.lock();
+			vhosts_t::const_iterator iter = vhosts.find(key);
+			vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
+		mutex.unlock();
+		
+		if ( vhost && vhost->authorized ) server->routeStanza(stanza);
+		else
+		{
+			Stanza error = Stanza::streamError("not-authoized");
 			sendStanza(error);
 			delete error;
 			terminate();
 		}
-		vhost->routeStanza(stanza);
 	}
 }
 
 /**
 * RFC 3920 (8.3.8)
 */
-void S2SInputStream::onDBVerifyStanza(Stanza stanza)
+void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 {
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 	string to = stanza->getAttribute("to");
@@ -118,9 +129,16 @@ void S2SInputStream::onDBVerifyStanza(Stanza stanza)
 	}
 	
 	// Шаг 3. проверка ключа
-	// TODO
-	if ( stanza->getCharacterData() == "key" )
+	vhostkey_t key(from, to);
+	
+	mutex.lock();
+		vhosts_t::const_iterator iter = vhosts.find(key);
+		vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
+	mutex.unlock();
+		
+	if ( vhost && stanza->getCharacterData() == sha1(id + "key") )
 	{
+		vhost->authorized = true;
 		Stanza result = new ATXmlTag("db:verify");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
@@ -142,7 +160,7 @@ void S2SInputStream::onDBVerifyStanza(Stanza stanza)
 /**
 * RFC 3920 (8.3.4)
 */
-void S2SInputStream::onDBResultStanza(Stanza stanza)
+void XMPPServerInput::onDBResultStanza(Stanza stanza)
 {
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 	string to = stanza->getAttribute("to");
@@ -182,22 +200,28 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 	remote_host = from;
 	
 	// Шаг 3. шлем запрос на проверку ключа
+	vhostkey_t key(from, to);
+	
+	mutex.lock();
+		vhosts_t::const_iterator iter = vhosts.find(key);
+		vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
+		
+		if ( ! vhost )
+		{
+			vhost = new vhost_t;
+			vhost->authorized = false;
+			vhosts[key] = vhost;
+		}
+		
+	mutex.unlock();
+	
 	Stanza verify = new ATXmlTag("db:verify");
 	verify->setAttribute("from", to);
 	verify->setAttribute("to", from);
 	verify->setAttribute("id", id);
-	verify += stanza->getCharacterData();
+	verify += sha1(id + "key");
 	server->routeStanza(verify);
 	delete verify;
-	
-	// Шаг X. костыль - ответить сразу "authorized"
-	state = authorized;
-	Stanza result = new ATXmlTag("db:result");
-	result->setAttribute("to", from);
-	result->setAttribute("from", to);
-	result->setAttribute("type", "valid");
-	sendStanza(result);
-	delete result;
 }
 
 /**
@@ -206,9 +230,9 @@ void S2SInputStream::onDBResultStanza(Stanza stanza)
 * Мы уже ничего не можем отправить в ответ,
 * можем только корректно закрыть соединение с нашей стороны.
 */
-void S2SInputStream::onPeerDown()
+void XMPPServerInput::onPeerDown()
 {
-	printf("[S2SInputStream: %d] onPeerDown\n", fd);
+	printf("s2s-input(%d): onPeerDown\n", fd);
 	terminate();
 }
 
@@ -218,7 +242,7 @@ void S2SInputStream::onPeerDown()
 * Сервер решил закрыть соединение, здесь ещё есть время
 * корректно попрощаться с пиром (peer).
 */
-void S2SInputStream::onTerminate()
+void XMPPServerInput::onTerminate()
 {
 	printf("s2s-input(%s): onTerminate\n", remote_host.c_str());
 	
