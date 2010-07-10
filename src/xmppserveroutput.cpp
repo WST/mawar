@@ -266,13 +266,27 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 		return;
 	}
 	
-	// Шаг 4. вернуть результат в s2s-input
-	Stanza result = new ATXmlTag("db:result");
-	result->setAttribute("to", from);
-	result->setAttribute("from", to);
-	result->setAttribute("type", "valid");
-	input->sendStanza(result);
-	delete result;
+	if ( stanza->getAttribute("type") == "valid" || stanza->getAttribute("type") == "invalid" )
+	{
+		XMPPServerInput *input = XMPPDomain::server->s2s->getInput(stanza->getAttribute("id"));
+		if ( input == 0 )
+		{
+			Stanza stanza = Stanza::streamError("invalid-id");
+			sendStanza(stanza);
+			delete stanza;
+			terminate();
+			return;
+		}
+		input->authorize(from, to, stanza->getAttribute("type") == "valid");
+		
+		// Шаг 4. вернуть результат в s2s-input
+		Stanza result = new ATXmlTag("db:result");
+		result->setAttribute("to", from);
+		result->setAttribute("from", to);
+		result->setAttribute("type", stanza->getAttribute("type"));
+		input->sendStanza(result);
+		delete result;
+	}
 }
 
 /**

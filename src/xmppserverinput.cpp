@@ -219,6 +219,19 @@ void XMPPServerInput::onDBResultStanza(Stanza stanza)
 }
 
 /**
+* Авторизовать поток
+*/
+void XMPPServerInput::authorize(const std::string &from, const std::string &to, bool authorized)
+{
+	vhostkey_t key(from, to);
+	mutex.lock();
+		vhosts_t::const_iterator iter = vhosts.find(key);
+		vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
+		if ( vhost ) vhost->authorized = authorized;
+	mutex.unlock();
+}
+
+/**
 * Пир (peer) закрыл поток.
 *
 * Мы уже ничего не можем отправить в ответ,

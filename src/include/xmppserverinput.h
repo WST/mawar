@@ -126,6 +126,11 @@ public:
 	* Обработка <db:result>
 	*/
 	void onDBResultStanza(Stanza stanza);
+	
+	/**
+	* Авторизовать поток
+	*/
+	void authorize(const std::string &from, const std::string &to, bool authorized);
 };
 
 #endif // MAWAR_SERVERINPUT_H
