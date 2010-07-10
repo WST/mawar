@@ -60,9 +60,9 @@ void XMPPServerInput::onStanza(Stanza stanza)
 	else
 	{
 		// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
-		string to = stanza->getAttribute("to");
+		string to = stanza.to().hostname();
 		XMPPDomain *host = server->getHostByName(to);
-		if ( dynamic_cast<VirtualHost*>(host) )
+		if ( ! dynamic_cast<VirtualHost*>(host) )
 		{
 			Stanza stanza = Stanza::streamError("improper-addressing");
 			sendStanza(stanza);
@@ -73,8 +73,8 @@ void XMPPServerInput::onStanza(Stanza stanza)
 		
 		// Шаг 2. проверка: "from"
 		// TODO
-		string from = stanza->getAttribute("from");
-		if ( ! dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
+		string from = stanza.from().hostname();
+		if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
 		{
 			Stanza stanza = Stanza::streamError("improper-addressing");
 			sendStanza(stanza);
