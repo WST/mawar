@@ -30,11 +30,6 @@ protected:
 	nanosoft::Mutex mutex;
 	
 	/**
-	* Удаленный хост от которого мы принимаем станзы
-	*/
-	std::string remote_host;
-	
-	/**
 	* ID сеанса
 	*/
 	std::string id;
@@ -101,11 +96,6 @@ public:
 	* Деструктор потока
 	*/
 	~XMPPServerInput();
-	
-	/**
-	* Удаленный хост от которого мы принимаем станзы
-	*/
-	std::string remoteHost() const { return remote_host; }
 	
 	/**
 	* Вернуть ID s2s-input потока

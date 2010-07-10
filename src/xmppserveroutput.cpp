@@ -268,18 +268,8 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 	
 	if ( stanza->getAttribute("type") == "valid" || stanza->getAttribute("type") == "invalid" )
 	{
-		XMPPServerInput *input = XMPPDomain::server->s2s->getInput(stanza->getAttribute("id"));
-		if ( input == 0 )
-		{
-			Stanza stanza = Stanza::streamError("invalid-id");
-			sendStanza(stanza);
-			delete stanza;
-			terminate();
-			return;
-		}
-		input->authorize(from, to, stanza->getAttribute("type") == "valid");
-		
 		// Шаг 4. вернуть результат в s2s-input
+		input->authorize(from, to, stanza->getAttribute("type") == "valid");
 		Stanza result = new ATXmlTag("db:result");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
@@ -399,7 +389,7 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 		}
 	mutex.unlock();
 	
-	if ( vhost->authorized )
+	if ( vhost->authorized || stanza->name() == "verify" || stanza->name() == "result" )
 	{
 		sendStanza(stanza);
 	}

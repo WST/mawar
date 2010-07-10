@@ -44,7 +44,7 @@ void XMPPServerInput::onStartStream(const std::string &name, const attributes_t 
 */
 void XMPPServerInput::onEndStream()
 {
-	fprintf(stderr, "s2s-input(%s): end of stream\n", remote_host.c_str());
+	fprintf(stderr, "s2s-input(%d): end of stream\n", fd);
 	terminate();
 }
 
@@ -130,12 +130,12 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	}
 	
 	// Шаг 3. проверка ключа
-	std::string hash = sha1(stanza->getAttribute("id") + "key");
-	if ( stanza->getCharacterData() == hash )
+	if ( stanza->getCharacterData() == sha1(stanza->getAttribute("id") + "key") )
 	{
 		Stanza result = new ATXmlTag("db:verify");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
+		result->setAttribute("id", stanza->getAttribute("id"));
 		result->setAttribute("type", "valid");
 		sendStanza(result);
 		delete result;
@@ -145,6 +145,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 		Stanza result = new ATXmlTag("db:verify");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
+		result->setAttribute("id", stanza->getAttribute("id"));
 		result->setAttribute("type", "invalid");
 		sendStanza(result);
 		delete result;
@@ -191,22 +192,20 @@ void XMPPServerInput::onDBResultStanza(Stanza stanza)
 		terminate();
 		return;
 	}
-	remote_host = from;
 	
 	// Шаг 3. шлем запрос на проверку ключа
 	vhostkey_t key(from, to);
 	
+	vhost_t *vhost;
 	mutex.lock();
 		vhosts_t::const_iterator iter = vhosts.find(key);
-		vhost_t *vhost = iter != vhosts.end() ? iter->second : 0;
-		
-		if ( ! vhost )
+		if ( iter != vhosts.end() ) vhost = iter->second;
+		else
 		{
 			vhost = new vhost_t;
 			vhost->authorized = false;
 			vhosts[key] = vhost;
 		}
-		
 	mutex.unlock();
 	
 	Stanza verify = new ATXmlTag("db:verify");
@@ -251,7 +250,7 @@ void XMPPServerInput::onPeerDown()
 */
 void XMPPServerInput::onTerminate()
 {
-	printf("s2s-input(%s): onTerminate\n", remote_host.c_str());
+	printf("s2s-input(%d): onTerminate\n", fd);
 	
 	mutex.lock();
 		endElement("stream:stream");
