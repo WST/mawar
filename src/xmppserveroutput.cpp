@@ -243,7 +243,7 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 	}
 	
 	// Шаг 2. проверка: "to" должен быть нашим виртуальным хостом
-	std::string to = stanza->getAttribute("to");
+	std::string to = stanza.to().hostname();
 	XMPPDomain *host = XMPPDomain::server->getHostByName(to);
 	if ( ! dynamic_cast<VirtualHost*>(host) )
 	{
@@ -256,7 +256,7 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 	
 	// Шаг 3. проверка: "from" должен совпадать с тем, что нам дали
 	// TODO
-	std::string from = stanza->getAttribute("from");
+	std::string from = stanza.from().hostname();
 	if ( dynamic_cast<VirtualHost*>(XMPPDomain::server->getHostByName(from)) )
 	{
 		Stanza stanza = Stanza::streamError("invalid-from");

@@ -107,7 +107,7 @@ void XMPPServerInput::onStanza(Stanza stanza)
 void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 {
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
-	string to = stanza->getAttribute("to");
+	string to = stanza.to().hostname();
 	XMPPDomain *host = server->getHostByName(to);
 	if ( ! dynamic_cast<VirtualHost*>(host) )
 	{
@@ -120,7 +120,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	
 	// Шаг 2. проверка: "from"
 	// TODO
-	string from = stanza->getAttribute("from");
+	string from = stanza.from().hostname();
 	if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
 	{
 		Stanza stanza = Stanza::streamError("invalid-from");
@@ -159,7 +159,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 void XMPPServerInput::onDBResultStanza(Stanza stanza)
 {
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
-	string to = stanza->getAttribute("to");
+	string to = stanza.to().hostname();
 	XMPPDomain *host = server->getHostByName(to);
 	if ( ! dynamic_cast<VirtualHost*>(host) )
 	{
@@ -183,7 +183,7 @@ void XMPPServerInput::onDBResultStanza(Stanza stanza)
 	// Так что, если будете открывать повторные коннекты, то не забудьте
 	// блокировать попытки коннекта к самим себе.
 	// (c) shade
-	string from = stanza->getAttribute("from");
+	string from = stanza.from().hostname();
 	host = server->getHostByName(from);
 	if ( dynamic_cast<VirtualHost*>(host) )
 	{
