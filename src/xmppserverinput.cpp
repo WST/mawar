@@ -14,6 +14,7 @@ using namespace std;
 XMPPServerInput::XMPPServerInput(XMPPServer *srv, int sock): XMPPStream(srv, sock)
 {
 	lock();
+	id = getUniqueId();
 }
 
 /**
@@ -34,7 +35,7 @@ void XMPPServerInput::onStartStream(const std::string &name, const attributes_t 
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
 	setAttribute("xmlns", "jabber:server");
 	setAttribute("xmlns:db", "jabber:server:dialback");
-	setAttribute("id", id = getUniqueId());
+	setAttribute("id", id);
 	setAttribute("xml:lang", "en");
 	flush();
 }
@@ -61,7 +62,7 @@ void XMPPServerInput::onStanza(Stanza stanza)
 		// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 		string to = stanza->getAttribute("to");
 		XMPPDomain *host = server->getHostByName(to);
-		if ( ! dynamic_cast<VirtualHost*>(host) )
+		if ( dynamic_cast<VirtualHost*>(host) )
 		{
 			Stanza stanza = Stanza::streamError("improper-addressing");
 			sendStanza(stanza);
@@ -73,7 +74,7 @@ void XMPPServerInput::onStanza(Stanza stanza)
 		// Шаг 2. проверка: "from"
 		// TODO
 		string from = stanza->getAttribute("from");
-		if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
+		if ( ! dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
 		{
 			Stanza stanza = Stanza::streamError("improper-addressing");
 			sendStanza(stanza);
