@@ -21,6 +21,18 @@ void Stanza::setFrom(JID &jid) {
 	tag->setAttribute("from", jid.full());
 }
 
+void Stanza::setFrom(std::string jid) {
+	tag->setAttribute("from", jid);
+}
+
+void Stanza::setTo(JID &jid) {
+	tag->setAttribute("to", jid.full());
+}
+
+void Stanza::setTo(std::string jid) {
+	tag->setAttribute("to", jid);
+}
+
 Stanza Stanza::badRequest(JID server, JID reply_to, std::string id) {
 	// <iq from="admin@underjabber.net.ru" type="error" xml:lang="ru-RU" to="admin@underjabber.net.ru/home" >
 	// <error type="modify" code="400" >

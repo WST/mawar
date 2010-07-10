@@ -72,6 +72,7 @@ VirtualHost::~VirtualHost() {
 * Адресованные клиентом данному узлу
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
+	stanza.setTo(name);
 	if(stanza->hasChild("ping")) {
 		xmpp_ping_queries++;
 		// ping (XEP-0199)
@@ -915,10 +916,19 @@ void VirtualHost::saveOfflineMessage(Stanza stanza) {
 	}
 	DB::result r = db.query("SELECT count(*) AS cnt FROM spool WHERE message_to=%s", db.quote(stanza.to().bare()).c_str());
 	if(atoi(r["cnt"].c_str()) < 100) { // TODO — брать максимальное число оффлайн-сообщений из конфига
-		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(stanza->asString()).c_str(), time(NULL));
+		std::string data = stanza->asString();
+		if(data.length() > 61440) {
+			Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
+			server->routeStanza(error);
+			delete error;
+			r.free();
+			return;
+		}
+		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(data).c_str(), time(NULL));
 	} else {
-		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+		Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
 		server->routeStanza(error);
+		delete error;
 	}
 	r.free();
 }
@@ -1141,7 +1151,15 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 			delete iq;
 		} else if(stanza.type() == "set") {
 			// Установка собственной vcard
-			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(stanza["vCard"]->asString()).c_str());
+			std::string data = stanza["vCard"]->asString();
+			if(data.length() > 61440) {
+				Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
+				error.setFrom(name);
+				server->routeStanza(error);
+				delete error;
+				return;
+			}
+			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(data).c_str());
 			Stanza iq = new ATXmlTag("iq");
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");

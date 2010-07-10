@@ -40,6 +40,9 @@ class Stanza: public TagHelper
 		std::string type();
 		std::string id();
 		void setFrom(JID &jid);
+		void setFrom(std::string jid);
+		void setTo(JID &jid);
+		void setTo(std::string jid);
 		
 		static Stanza serverVersion(JID server, JID reply_to, std::string id);
 		static Stanza badRequest(JID server, JID reply_to, std::string id);
