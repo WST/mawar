@@ -4,6 +4,7 @@
 #include <s2slistener.h>
 #include <virtualhost.h>
 #include <functions.h>
+#include <logs.h>
 #include <stdio.h>
 
 using namespace std;
@@ -29,7 +30,7 @@ XMPPServerInput::~XMPPServerInput()
 */
 void XMPPServerInput::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	printf("s2s-input(%d): new stream\n", fd);
+	printf("%s s2s-input(%d): new stream\n", logtime().c_str(), fd);
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
@@ -45,7 +46,7 @@ void XMPPServerInput::onStartStream(const std::string &name, const attributes_t 
 */
 void XMPPServerInput::onEndStream()
 {
-	fprintf(stderr, "s2s-input(%d): end of stream\n", fd);
+	printf("%s s2s-input(%d): end of stream\n", logtime().c_str(), fd);
 	terminate();
 }
 
@@ -54,7 +55,6 @@ void XMPPServerInput::onEndStream()
 */
 void XMPPServerInput::onStanza(Stanza stanza)
 {
-	printf("s2s-input(%s from %s): stanza: %s\n", stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->name().c_str());
 	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
 	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
 	else
@@ -106,6 +106,7 @@ void XMPPServerInput::onStanza(Stanza stanza)
 */
 void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 {
+	printf("%s s2s-input(%d): db:verify from %s to %s\n", logtime().c_str(), fd, stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 	string to = stanza.to().hostname();
 	XMPPDomain *host = server->getHostByName(to);
@@ -158,6 +159,8 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 */
 void XMPPServerInput::onDBResultStanza(Stanza stanza)
 {
+	printf("%s s2s-input(%d): db:result from %s to %s\n", logtime().c_str(), fd, stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
+	
 	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 	string to = stanza.to().hostname();
 	XMPPDomain *host = server->getHostByName(to);
@@ -239,7 +242,7 @@ void XMPPServerInput::authorize(const std::string &from, const std::string &to, 
 */
 void XMPPServerInput::onPeerDown()
 {
-	printf("s2s-input(%d): onPeerDown\n", fd);
+	printf("%s s2s-input(%d): peer down\n", logtime().c_str(), fd);
 	terminate();
 }
 
@@ -251,7 +254,7 @@ void XMPPServerInput::onPeerDown()
 */
 void XMPPServerInput::onTerminate()
 {
-	printf("s2s-input(%d): onTerminate\n", fd);
+	printf("%s s2s-input(%d): terminate\n", logtime().c_str(), fd);
 	
 	mutex.lock();
 		endElement("stream:stream");

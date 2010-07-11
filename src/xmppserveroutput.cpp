@@ -231,6 +231,8 @@ void XMPPServerOutput::onStanza(Stanza stanza)
 */
 void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 {
+	printf("%s s2s-output(%s): db:verify to %s from %s type %s\n", logtime().c_str(), hostname().c_str(), stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->getAttribute("type").c_str());
+	
 	// Шаг 1. проверка: "id" должен совпадать тем, что мы давали (id s2s-input'а)
 	// TODO
 	std::string id = stanza->getAttribute("id");
@@ -286,7 +288,7 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 */
 void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 {
-	printf("%s s2s-output(%s): db:result %s from %s type %s\n", logtime().c_str(), hostname().c_str(), stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->getAttribute("type").c_str());
+	printf("%s s2s-output(%s): db:result to %s from %s type %s\n", logtime().c_str(), hostname().c_str(), stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->getAttribute("type").c_str());
 	if ( stanza->getAttribute("type") != "valid" )
 	{
 		terminate();
