@@ -187,6 +187,8 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 	attributes_t::const_iterator it = attributes.find("id");
 	std::string recieved_id = (it != attributes.end()) ? it->second : std::string();
 	
+	mutex.lock();
+	
 	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
 	{
 		vhost_t *vhost = iter->second;
@@ -197,7 +199,17 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 		dbresult += sha1(recieved_id + "key");
 		sendStanza(dbresult);
 		delete dbresult;
+		
+		printf("%s s2s-output(%s): flush connected\n", logtime().c_str(), hostname().c_str());
+		for(buffer_t::iterator bi = vhost->connbuffer.begin(); bi != vhost->connbuffer.end(); bi++)
+		{
+			Stanza stanza = parse_xml_string(*bi);
+			sendStanza(stanza);
+			delete stanza;
+		}
 	}
+	
+	mutex.unlock();
 }
 
 /**
@@ -302,7 +314,7 @@ void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 		{
 			vhost->authorized = true;
 			
-			printf("%s s2s-output(%s): flush to %s\n", logtime().c_str(), hostname().c_str(), vhostname.c_str(), stanza.to().hostname().c_str());
+			printf("%s s2s-output(%s): flush authorized to %s\n", logtime().c_str(), hostname().c_str(), vhostname.c_str());
 			for(buffer_t::iterator bi = vhost->buffer.begin(); bi != vhost->buffer.end(); bi++)
 			{
 				Stanza stanza = parse_xml_string(*bi);
@@ -394,9 +406,14 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 		}
 	mutex.unlock();
 	
-	if ( vhost->authorized || stanza->name() == "verify" || stanza->name() == "result" )
+	if ( vhost->authorized )
 	{
 		sendStanza(stanza);
+	}
+	else if ( stanza->name() == "verify" )
+	{
+		if ( state == CONNECTED ) sendStanza(stanza);
+		else vhost->connbuffer.push_back(stanza->asString());
 	}
 	else
 	{

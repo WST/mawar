@@ -71,6 +71,11 @@ protected:
 		bool authorized;
 		
 		/**
+		* Буфер станз ожидающих коннекта
+		*/
+		buffer_t connbuffer;
+		
+		/**
 		* Буфер станз ожидающих авторизации виртуального хоста
 		*/
 		buffer_t buffer;
