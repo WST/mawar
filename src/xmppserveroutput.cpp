@@ -412,8 +412,10 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 	}
 	else if ( stanza->name() == "verify" )
 	{
-		if ( state == CONNECTED ) sendStanza(stanza);
-		else vhost->connbuffer.push_back(stanza->asString());
+		mutex.lock();
+			if ( state == CONNECTED ) sendStanza(stanza);
+			else vhost->connbuffer.push_back(stanza->asString());
+		mutex.unlock();
 	}
 	else
 	{
