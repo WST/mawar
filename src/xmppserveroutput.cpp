@@ -200,7 +200,7 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 		sendStanza(dbresult);
 		delete dbresult;
 		
-		printf("%s s2s-output(%s): flush connected\n", logtime().c_str(), hostname().c_str());
+		printf("%s s2s-output(%s): flush connected to %s\n", logtime().c_str(), hostname().c_str(), iter->first.c_str());
 		for(buffer_t::iterator bi = vhost->connbuffer.begin(); bi != vhost->connbuffer.end(); bi++)
 		{
 			Stanza stanza = parse_xml_string(*bi);
