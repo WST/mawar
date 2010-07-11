@@ -185,7 +185,7 @@ void XMPPServerOutput::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns
 void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t &attributes)
 {
 	attributes_t::const_iterator it = attributes.find("id");
-	std::string recieved_id = (it != attributes.end()) ? it->second : std::string();
+	recieved_id = (it != attributes.end()) ? it->second : std::string();
 	
 	mutex.lock();
 	
