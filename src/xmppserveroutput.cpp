@@ -6,6 +6,7 @@
 #include <xmppdomain.h>
 #include <virtualhost.h>
 #include <functions.h>
+#include <logs.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -30,7 +31,7 @@ XMPPServerOutput::XMPPServerOutput(XMPPServer *srv, const char *host):
 */
 XMPPServerOutput::~XMPPServerOutput()
 {
-	printf("s2s-output(%s) delete\n", hostname().c_str());
+	printf("%s s2s-output(%s) delete\n", logtime().c_str(), hostname().c_str());
 	
 	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
 	{
@@ -53,7 +54,7 @@ void XMPPServerOutput::onWrite()
 		want_write = false;
 		state = CONNECTED;
 		//mutex.unlock();
-		printf("s2s-output(%s): connected\n", hostname().c_str());
+		printf("%s s2s-output(%s): connected\n", logtime().c_str(), hostname().c_str());
 		
 		// поздоровайся с дядей
 		initXML();
@@ -84,7 +85,7 @@ void XMPPServerOutput::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *r
 		
 		p->state = CONNECTING;
 		p->fd = ::socket(PF_INET, SOCK_STREAM, 0);
-		printf("s2s-output(%s): connect to %s:%d, sock: %d\n", p->hostname().c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[0], buf, sizeof(buf)), p->port, p->fd);
+		printf("%s s2s-output(%s): connect to %s:%d, sock: %d\n", logtime().c_str(), p->hostname().c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[0], buf, sizeof(buf)), p->port, p->fd);
 		
 		target.sin_family = AF_INET;
 		target.sin_port = htons(p->port);
@@ -105,11 +106,11 @@ void XMPPServerOutput::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *r
 			return;
 		}
 		
-		fprintf(stderr, "s2s-output(%s): connect to %s:%d fault\n", p->hostname().c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[0], buf, sizeof(buf)), p->port);
+		printf("%s s2s-output(%s): connect to %s:%d fault\n", logtime().c_str(), p->hostname().c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[0], buf, sizeof(buf)), p->port);
 	}
 	else
 	{
-		fprintf(stderr, "s2s-output(%s): connect failed: no IP address\n", p->hostname().c_str());
+		printf("%s s2s-output(%s): connect failed: no IP address\n", logtime().c_str(), p->hostname().c_str());
 	}
 	
 	p->XMPPDomain::server->removeDomain(p);
@@ -129,7 +130,8 @@ void XMPPServerOutput::on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_s
 		for(int i = 0; i < result->dnssrv_nrr; i++)
 		{
 			char buf[40];
-			printf("SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
+			printf("%s SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
+			logtime().c_str(),
 			p->hostname().c_str(),
 			result->dnssrv_srv[i].priority,
 			result->dnssrv_srv[i].weight,
@@ -159,7 +161,8 @@ void XMPPServerOutput::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns
 		for(int i = 0; i < result->dnssrv_nrr; i++)
 		{
 			char buf[40];
-			printf("SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
+			printf("%s SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
+			logtime().c_str(),
 			p->hostname().c_str(),
 			result->dnssrv_srv[i].priority,
 			result->dnssrv_srv[i].weight,
@@ -202,7 +205,7 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 */
 void XMPPServerOutput::onEndStream()
 {
-	printf("s2s-output(%s) end of stream\n", hostname().c_str());
+	printf("% s2s-output(%s): end of stream\n", logtime().c_str(), hostname().c_str());
 	terminate();
 }
 
@@ -211,12 +214,11 @@ void XMPPServerOutput::onEndStream()
 */
 void XMPPServerOutput::onStanza(Stanza stanza)
 {
-	printf("s2s-output(%s) stanza: %s\n", hostname().c_str(), stanza->name().c_str());
 	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
 	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
 	else
 	{
-		printf("s2s-output(%s): unexpected stanza arrived: %s\n", hostname().c_str(), stanza->name().c_str());
+		printf("%s s2s-output(%s): unexpected stanza arrived: %s\n", logtime().c_str(), hostname().c_str(), stanza->name().c_str());
 		Stanza error = Stanza::streamError("not-authoized");
 		sendStanza(error);
 		delete error;
@@ -284,6 +286,7 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 */
 void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 {
+	printf("%s s2s-output(%s): db:result %s from %s type %s\n", logtime().c_str(), hostname().c_str(), stanza.to().hostname().c_str(), stanza.from().hostname().c_str(), stanza->getAttribute("type").c_str());
 	if ( stanza->getAttribute("type") != "valid" )
 	{
 		terminate();
@@ -297,7 +300,7 @@ void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 		{
 			vhost->authorized = true;
 			
-			printf("s2s-output(%s to %s): flush\n", hostname().c_str(), vhostname.c_str());
+			printf("%s s2s-output(%s): flush to %s\n", logtime().c_str(), hostname().c_str(), vhostname.c_str(), stanza.to().hostname().c_str());
 			for(buffer_t::iterator bi = vhost->buffer.begin(); bi != vhost->buffer.end(); bi++)
 			{
 				Stanza stanza = parse_xml_string(*bi);
@@ -317,7 +320,7 @@ void XMPPServerOutput::onDBResultStanza(Stanza stanza)
 */
 void XMPPServerOutput::onPeerDown()
 {
-	printf("s2s-output(%s) onPeerDown\n", hostname().c_str());
+	printf("%s s2s-output(%s): peer down\n", logtime().c_str(), hostname().c_str());
 	terminate();
 }
 
@@ -329,7 +332,7 @@ void XMPPServerOutput::onPeerDown()
 */
 void XMPPServerOutput::onTerminate()
 {
-	printf("s2s-output(%s) onTerminate\n", hostname().c_str());
+	printf("%s s2s-output(%s): terminate\n", logtime().c_str(), hostname().c_str());
 	
 	mutex.lock();
 		endElement("stream:stream");
