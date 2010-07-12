@@ -42,7 +42,12 @@ protected:
 		/**
 		* Подключены
 		*/
-		CONNECTED
+		CONNECTED,
+		
+		/**
+		* Готов к обмену станзами
+		*/
+		READY
 	} state;
 	
 	/**

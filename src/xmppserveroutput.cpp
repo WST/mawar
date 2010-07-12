@@ -48,13 +48,12 @@ XMPPServerOutput::~XMPPServerOutput()
 */
 void XMPPServerOutput::onWrite()
 {
-	//mutex.lock();
+	mutex.lock();
 	if ( state == CONNECTING )
 	{
+		printf("%s s2s-output(%s): connected\n", logtime().c_str(), hostname().c_str());
 		want_write = false;
 		state = CONNECTED;
-		//mutex.unlock();
-		printf("%s s2s-output(%s): connected\n", logtime().c_str(), hostname().c_str());
 		
 		// поздоровайся с дядей
 		initXML();
@@ -64,9 +63,10 @@ void XMPPServerOutput::onWrite()
 		setAttribute("xmlns:db", "jabber:server:dialback");
 		setAttribute("xml:lang", "en");
 		flush();
+		mutex.unlock();
 		return;
 	}
-	//mutex.unlock();
+	mutex.unlock();
 	XMPPStream::onWrite();
 }
 
@@ -188,6 +188,8 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 	recieved_id = (it != attributes.end()) ? it->second : std::string();
 	
 	mutex.lock();
+	
+	state = READY;
 	
 	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
 	{
@@ -394,7 +396,7 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 			vhost->authorized = false;
 			vhosts[vhostname] = vhost;
 			
-			if ( state == CONNECTED )
+			if ( state == READY )
 			{
 				Stanza dbresult = new ATXmlTag("db:result");
 				dbresult->setAttribute("to", hostname());
