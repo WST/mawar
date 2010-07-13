@@ -12,6 +12,8 @@
 */
 std::string getUniqueId();
 
+bool verifyUsername(std::string username);
+
 // Скопировано из Lana, авось пригодится
 std::string mawarPrintInteger(unsigned long int number);
 void mawarInformation(std::string text);

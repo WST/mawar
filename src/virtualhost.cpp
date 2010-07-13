@@ -1026,11 +1026,12 @@ void VirtualHost::onOnline(XMPPClient *client)
 		reslist_t::iterator resource = user->second.find(client->jid().resource());
 		if(resource != user->second.end()) {
 			//replaced by new connection
-			//Stanza offline = parse_xml_string("<?xml version=\"1.0\"\n<presence type=\"unavailable\"><status>Replaced by new connection</status></presence>");
-			//onliners[client->jid().username()][client->jid().resource()]->handleUnavailablePresence(offline);
-			//delete offline;
-			//delete onliners[client->jid().username()][client->jid().resource()]; // если удалять элемент карты, в деструкторе XMPPClient вызовется повторное удаление!
-			//user->second[client->jid().resource()] = client;
+			Stanza offline = parse_xml_string("<?xml version=\"1.0\"\n<presence type=\"unavailable\"><status>Replaced by new connection</status></presence>");
+			onliners[client->jid().username()][client->jid().resource()]->handleUnavailablePresence(offline);
+			onliners[client->jid().username()][client->jid().resource()]->terminate();
+			delete offline;
+			delete onliners[client->jid().username()][client->jid().resource()]; // если удалять элемент карты, в деструкторе XMPPClient вызовется повторное удаление!
+			user->second[client->jid().resource()] = client;
 			// Число онлайнов не изменилось, onliners_number менять не надо
 		} else {
 			user->second[client->jid().resource()] = client;
@@ -1384,7 +1385,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 			
 			if(!exists) {
 				// Новый пользователь
-				if(username->getCharacterData().empty() || password->getCharacterData().empty()) {
+				if(!verifyUsername(username->getCharacterData()) || password->getCharacterData().empty()) {
 					Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
 					if(client) {
 						client->sendStanza(error);

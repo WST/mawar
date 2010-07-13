@@ -10,6 +10,20 @@ std::string getUniqueId() {
 	return std::string(buf);
 }
 
+bool verifyUsername(std::string username) {
+	if(username.empty()) {
+		return false;
+	}
+	if(username.find("\"") != -1) return false;
+	if(username.find("\'") != -1) return false;
+	if(username.find("&") != -1) return false;
+	if(username.find("<") != -1) return false;
+	if(username.find(">") != -1) return false;
+	if(username.find("@") != -1) return false;
+	if(username.find(" ") != -1) return false;
+	return true;
+}
+
 std::string mawarPrintInteger(unsigned long int number) {
 	char buf[40];
 	sprintf(buf, "%lu", number);
