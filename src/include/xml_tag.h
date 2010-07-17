@@ -7,6 +7,7 @@
 
 // Mawar
 #include <xml_types.h>
+#include <attagparser.h>
 
 class ATXmlTag
 {
@@ -39,6 +40,7 @@ class ATXmlTag
 		ATXmlTag *getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value);
 		nodes_list_t getChildNodes();
 		attributes_t getAttributes();
+		ATXmlTag *clone();
 		
 		// === новые методы ===
 		

@@ -396,7 +396,6 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		std::string node = cmd->node();
-		Form *form = cmd->form(); // удаляется в деструкторе Command
 		
 		if(node == "stop") {
 			Stanza reply = Command::commandDoneStanza(name, stanza);
@@ -407,7 +406,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		else if(node == "create-vhost") {
-			if(form) {
+			if(cmd->form()) {
 				// Обработчик формы тут
 				Stanza reply = Command::commandDoneStanza(name, stanza);
 				server->routeStanza(reply);
@@ -430,7 +429,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		else if(node == "drop-vhost") {
-			if(form) {
+			if(cmd->form()) {
 				mawarWarning("Delete virtual host: " + cmd->form()->getFieldValue("vhost-name", ""));
 				Stanza reply = Command::commandDoneStanza(name, stanza);
 				server->routeStanza(reply);
@@ -448,7 +447,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		} 
 		
 		else if(node == "stop-vhost" || node == "start-vhost") {
-			if(form) {
+			if(cmd->form()) {
 				// Кстати, если что-то в присланных данных неверно, можно сделать проверку типа такой:
 				bool valid = true; // установить флаг верности
 				if(valid) {
@@ -474,7 +473,7 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		
 		else if(node == "route-stanza") {
-			if(form) {
+			if(cmd->form()) {
 				// parse_xml_string должно возвращать 0 при ошибках парсинга, что возвращается я ХЗ © WST
 				ATXmlTag *custom_tag = parse_xml_string("<?xml version=\"1.0\" ?>\n" + cmd->form()->getFieldValue("rawxml", ""));
 				if(custom_tag) {

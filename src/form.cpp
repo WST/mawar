@@ -38,17 +38,14 @@ Form::Form(std::string x_type): type() {
 }
 
 Form::~Form() {
-	// Удалять ли tag, и если да, то при каких условиях?
-	// TODO: разобраться после реализации ad-hoc
-	// тег удаляется после преобразования команды в станзу!
-	//delete tag;
+	delete tag;
 }
 
 /*
 Получить представление формы в виде тега
 */
 ATXmlTag *Form::asTag() {
-	return tag;
+	return tag->clone();
 }
 
 /*

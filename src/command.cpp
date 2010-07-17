@@ -6,7 +6,7 @@
 */
 Command::Command(ATXmlTag *command) {
 	_form = command->hasChild("x") ? new Form(command->getChild("x")) : 0;
-	cmdtag = command;
+	cmdtag = command->clone();
 }
 
 /*
@@ -18,8 +18,8 @@ Command::Command() {
 }
 
 Command::~Command() {
-	// TODO: если удаляем станзу, у которой фигурирует Command, то тут может быть двойное удаление
 	delete _form;
+	delete cmdtag;
 }
 
 std::string Command::action() {
@@ -60,16 +60,16 @@ void Command::setStatus(std::string status) {
 
 void Command::createForm(std::string x_type) {
 	_form = new Form(x_type);
-	cmdtag->insertChildElement(_form->asTag());
 }
 
 Stanza Command::asIqStanza(std::string from, std::string to, std::string type, std::string id) {
+	cmdtag->insertChildElement(_form->asTag()); // TODO: костыль!
 	Stanza iq = new ATXmlTag("iq");
 	iq->setAttribute("from", from);
 	iq->setAttribute("to", to);
 	iq->setAttribute("type", type);
 	if(!id.empty()) iq->setAttribute("id", id);
-	iq->insertChildElement(cmdtag);
+	iq->insertChildElement(cmdtag->clone());
 	return iq;
 }
 

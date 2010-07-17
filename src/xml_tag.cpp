@@ -37,6 +37,10 @@ ATXmlTag *ATXmlTag::getParent() {
 	return parent;
 }
 
+ATXmlTag *ATXmlTag::clone() {
+	return parse_xml_string(asString());
+}
+
 std::string ATXmlTag::getNameSpace() {
 	return prefix;
 }
