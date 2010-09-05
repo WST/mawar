@@ -1038,8 +1038,6 @@ void VirtualHost::onOnline(XMPPClient *client)
 		}
 	} else {
 		onliners[client->jid().username()][client->jid().resource()] = client;
-		DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
-		r.free();
 		onliners_number++;
 	}
 	mutex.unlock();
