@@ -5,6 +5,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef DUMP_IO
+#include <string>
+#endif
+
 /**
 * Конструктор буфера
 * @param fdmax число поддерживаемых дескрипторов
@@ -313,6 +317,11 @@ bool StanzaBuffer::push(int fd)
 			// попробовать записать
 			ssize_t r = write(fd, fb->first->data + fb->offset, rest);
 			if ( r <= 0 ) break;
+			
+#ifdef DUMP_IO
+			std::string s(fb->first->data + fb->offset, r);
+			fprintf(stdout, "[StanzaBuffer: %d] write: \033[22;34m%s\033[0m\n", fd, s.c_str());
+#endif
 			
 			fb->size -= r;
 			fb->offset += r;

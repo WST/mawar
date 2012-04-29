@@ -35,6 +35,11 @@ AC_CHECK_TOOL(MKDIR, mkdir, mkdir)
 
 AC_LANG_CPLUSPLUS
 
+AC_ARG_ENABLE(dump_io, AS_HELP_STRING([--enable-dump_io], [echo I/O messages to stdout]), [
+		CFLAGS="$CFLAGS -DDUMP_IO"
+		CXXFLAGS="$CXXFLAGS -DDUMP_IO"
+	])
+
 AC_CHECK_LIB(stdc++, main)
 
 AC_ARG_WITH(expat, AS_HELP_STRING([--with-expat=PREFIX], [expat XML parser]), [
