@@ -4127,12 +4127,31 @@ fi
 # Check whether --with-pthread was given.
 if test "${with_pthread+set}" = set; then :
   withval=$with_pthread;
-		CXXFLAGS="$CXXFLAGS -I$withval/include"
-		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
+		case "$withval" in
+		yes)
+			USE_PTHREAD=yes
+			PTHREAD_CFLAGS=""
+			PTHREAD_CXXFLAGS=""
+			PTHREAD_LDFLAGS=""
+			;;
+		no)
+			USE_PTHREAD=no
+			;;
+		*)
+			USE_PTHREAD=yes
+			PTHREAD_CFLAGS="-I$withval/include"
+			PTHREAD_CXXFLAGS="-I$withval/include"
+			PTHREAD_LDFLAGS="-L$withval/lib -Wl,-rpath=$withval/lib"
+			CFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+			CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
+			LDFLAGS="$LDFLAGS $PTHREAD_LDFLAGS"
+			;;
+		esac
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpthread" >&5
+if test "$USE_PTHREAD" = "yes"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpthread" >&5
 $as_echo_n "checking for main in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_main+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -4173,6 +4192,9 @@ else
   as_fn_error $? "pthread library is required" "$LINENO" 5
 fi
 
+	CFLAGS="$CFLAGS -DUSE_PTHREAD"
+	CXXFLAGS="$CXXFLAGS -DUSE_PTHREAD"
+fi
 
 
 # Check whether --with-nanosoft was given.
@@ -4343,13 +4365,21 @@ if test "${with_mysql+set}" = set; then :
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for mysql_real_connect in -lmysqlclient_r" >&5
-$as_echo_n "checking for mysql_real_connect in -lmysqlclient_r... " >&6; }
-if ${ac_cv_lib_mysqlclient_r_mysql_real_connect+:} false; then :
+
+if test "$USE_PTHREAD" = "yes"; then
+	MYSQL_LIBNAME="mysqlclient_r"
+else
+	MYSQL_LIBNAME="mysqlclient"
+fi
+
+as_ac_Lib=`$as_echo "ac_cv_lib_$MYSQL_LIBNAME''_mysql_real_connect" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for mysql_real_connect in -l$MYSQL_LIBNAME" >&5
+$as_echo_n "checking for mysql_real_connect in -l$MYSQL_LIBNAME... " >&6; }
+if eval \${$as_ac_Lib+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmysqlclient_r  $LIBS"
+LIBS="-l$MYSQL_LIBNAME  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4369,19 +4399,20 @@ return mysql_real_connect ();
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_mysqlclient_r_mysql_real_connect=yes
+  eval "$as_ac_Lib=yes"
 else
-  ac_cv_lib_mysqlclient_r_mysql_real_connect=no
+  eval "$as_ac_Lib=no"
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mysqlclient_r_mysql_real_connect" >&5
-$as_echo "$ac_cv_lib_mysqlclient_r_mysql_real_connect" >&6; }
-if test "x$ac_cv_lib_mysqlclient_r_mysql_real_connect" = xyes; then :
+eval ac_res=\$$as_ac_Lib
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
 
-		MYSQL_LIBS="-lmysqlclient_r"
+		MYSQL_LIBS="-l$MYSQL_LIBNAME"
 		WITH_MYSQL="yes"
 
 else

@@ -49,10 +49,32 @@ AC_ARG_WITH(expat, AS_HELP_STRING([--with-expat=PREFIX], [expat XML parser]), [
 AC_CHECK_LIB(expat, main, [], [AC_ERROR(expat library required)])
 
 AC_ARG_WITH(pthread, AS_HELP_STRING([--with-pthread=PREFIX], [pthread]), [
-		CXXFLAGS="$CXXFLAGS -I$withval/include"
-		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
-	])
-AC_CHECK_LIB(pthread, main, [], [AC_ERROR(pthread library is required)])
+		case "$withval" in
+		yes)
+			USE_PTHREAD=yes
+			PTHREAD_CFLAGS=""
+			PTHREAD_CXXFLAGS=""
+			PTHREAD_LDFLAGS=""
+			;;
+		no)
+			USE_PTHREAD=no
+			;;
+		*)
+			USE_PTHREAD=yes
+			PTHREAD_CFLAGS="-I$withval/include"
+			PTHREAD_CXXFLAGS="-I$withval/include"
+			PTHREAD_LDFLAGS="-L$withval/lib -Wl,-rpath=$withval/lib"
+			CFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+			CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
+			LDFLAGS="$LDFLAGS $PTHREAD_LDFLAGS"
+			;;
+		esac
+	], [])
+if test "$USE_PTHREAD" = "yes"; then
+	AC_CHECK_LIB(pthread, main, [], [AC_ERROR(pthread library is required)])
+	CFLAGS="$CFLAGS -DUSE_PTHREAD"
+	CXXFLAGS="$CXXFLAGS -DUSE_PTHREAD"
+fi
 
 AC_ARG_WITH(nanosoft, AS_HELP_STRING([--with-nanosoft=PREFIX], [prefix to nanosoft libraries]), [
 		CXXFLAGS="$CXXFLAGS -I$withval/include"
@@ -114,8 +136,15 @@ AC_ARG_WITH(mysql, AS_HELP_STRING([--with-mysql=PREFIX], [MySQL client library])
 		fi
 		WITH_MYSQL=yes
 	])
-AC_CHECK_LIB(mysqlclient_r, mysql_real_connect, [
-		MYSQL_LIBS="-lmysqlclient_r"
+
+if test "$USE_PTHREAD" = "yes"; then
+	MYSQL_LIBNAME="mysqlclient_r"
+else
+	MYSQL_LIBNAME="mysqlclient"
+fi
+
+AC_CHECK_LIB($MYSQL_LIBNAME, mysql_real_connect, [
+		MYSQL_LIBS="-l$MYSQL_LIBNAME"
 		WITH_MYSQL="yes"
 	], [
 		if test "$WITH_MYSQL" = "yes"; then
