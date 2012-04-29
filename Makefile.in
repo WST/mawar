@@ -93,10 +93,10 @@ MAWAR_TESTS=test-01 test-02
 all: maward proxyd
 
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS) libns_core.a libns_netd.a libns_xml.a libns_sasl.a
-	$(CXX) $(srcdir)/main.cpp $(PATHS) $(MAWAR_OBJECTS) $(LDFLAGS) -lns_core -lns_netd -lns_xml -lns_sasl $(MYSQL_LIBS) $(LIBS) -o maward
+	$(CXX) $(srcdir)/main.cpp  $(PATHS) $(MAWAR_OBJECTS) $(LDFLAGS) -lns_core -lns_netd -lns_xml -lns_sasl $(MYSQL_LIBS) $(LIBS) -o maward
 
 proxyd: $(srcdir)/proxy.cpp $(PROXY_OBJECTS) libns_core.a libns_netd.a
-	$(CXX) $(srcdir)/proxy.cpp $(PROXY_OBJECTS) $(LDFLAGS) -lns_core -lns_netd $(PROXY_LIBS) -o proxyd
+	$(CXX) $(srcdir)/proxy.cpp $(PROXY_OBJECTS) $(LDFLAGS) -lns_core -lns_netd $(LIBS) -o proxyd
 
 include $(ns_root)/core.mf
 include $(ns_root)/xml.mf

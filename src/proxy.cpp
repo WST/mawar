@@ -9,6 +9,7 @@
 #include <pwd.h>
 #include <cstdlib>
 #include <logs.h>
+#include <nanosoft/error.h>
 
 using namespace std;
 
@@ -63,7 +64,7 @@ int main()
 	*/
 	
 	open_stdlog("proxyd.log");
-	fprintf(stdlog, "%s [proxyd] started\n", logtime().c_str());
+	fprintf(stdlog, "%s [proxyd] started\n", logtime().c_str(), nanosoft::stderror());
 	
 	// демон управляющий воркерами вводом-выводом
 	NetDaemon daemon(1000);
