@@ -22,7 +22,7 @@ using namespace nanosoft;
 * Конструктор модуля-расширения
 */
 XMPPExtension::XMPPExtension(XMPPServer *srv, const char *urn, const char *fname):
-	server(srv)
+	server(srv), active(0)
 {
 	this->urn = urn;
 	this->fname = fname;
@@ -60,7 +60,6 @@ bool XMPPExtension::open()
 	}
 	if ( pid == 0 )
 	{
-		printf("forked child\n");
 		/* dup pipe read/write to stdin/stdout */
 		dup2(pipe_stdin[0], STDIN_FILENO);
 		dup2(pipe_stdout[1], STDOUT_FILENO);
@@ -77,13 +76,13 @@ bool XMPPExtension::open()
 	}
 	else
 	{
-		printf("forked parent\n");
 		/* Close unused pipe ends. This is especially important for the
 		* pipefrom[1] write descriptor, otherwise readFromPipe will never 
 		* get an EOF. */
 		close( pipe_stdin[0] );
 		close( pipe_stdout[1] );
 		
+		active = 1;
 		ctime = time(0);
 		ext_in = new XMPPExtensionInput(this, pipe_stdout[0]);
 		ext_out = new XMPPExtensionOutput(this, pipe_stdin[1]);
@@ -93,6 +92,12 @@ bool XMPPExtension::open()
 		
 		ext_out->init();
 	}
+}
+
+static void XMPPExtension_resetTimer(int wid, void *data)
+{
+	printf("restart on timer\n");
+	static_cast<XMPPExtension*>(data)->open();
 }
 
 /**
@@ -106,6 +111,8 @@ void XMPPExtension::terminate()
 	ext_in = 0;
 	ext_out = 0;
 	
+	active = 0;
+	
 	int tm = time(0);
 	if ( server->daemon->getDaemonActive() )
 	{
@@ -115,7 +122,7 @@ void XMPPExtension::terminate()
 		}
 		else
 		{
-			// TODO set timer
+			server->daemon->setTimer(tm + 60, XMPPExtension_resetTimer, this);
 		}
 	}
 }
@@ -126,5 +133,5 @@ void XMPPExtension::terminate()
 */
 void XMPPExtension::handleStanza(Stanza stanza)
 {
-	ext_out->sendStanza(stanza);
+	if ( active ) ext_out->sendStanza(stanza);
 }

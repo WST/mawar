@@ -21,6 +21,7 @@ class XMPPExtension: public nanosoft::Object
 {
 protected:
 	int ctime;
+	int active;
 	nanosoft::ptr<XMPPExtensionInput> ext_in;
 	nanosoft::ptr<XMPPExtensionOutput> ext_out;
 	std::string urn;

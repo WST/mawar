@@ -83,30 +83,99 @@ VirtualHost::~VirtualHost() {
 * Адресованные клиентом данному узлу
 */
 void VirtualHost::handleVHostIq(Stanza stanza) {
-	Stanza item = stanza->firstChild();
-	if ( item.to().full() == hostname() )
+	// если станза адресуется клиенту, то доставить нужно клиенту
+	if ( stanza.to().username() != "" )
 	{
-		std::string xmlns = item->getAttribute("xmlns", "");
+		// TODO отправить станзу клиенту
+		VirtualHost::sessions_t::iterator it;
+		VirtualHost::reslist_t reslist;
+		VirtualHost::reslist_t::iterator jt;
+		
+		it = onliners.find(stanza.to().username());
+		if( it != onliners.end() )
+		{
+			// Проверить, есть ли ресурс, если он указан
+			JID to = stanza.to();
+			if( ! to.resource().empty() ) {
+				jt = it->second.find(to.resource());
+				if( jt != it->second.end() )
+				{
+					jt->second->sendStanza(stanza); // TODO — учесть bool
+					return;
+				}
+				// Не отправили на выбранный ресурс, смотрим дальше…
+			}
+			else
+			{
+				// TODO как правильно?
+				std::list<XMPPClient *> sendto_list;
+				std::list<XMPPClient *>::iterator kt;
+				int max_priority = 0;
+				for(jt = it->second.begin(); jt != it->second.end(); jt++)
+				{
+					if( jt->second->presence().priority == max_priority )
+					{
+						sendto_list.push_back(jt->second);
+					}
+					else if( jt->second->presence().priority > max_priority )
+					{
+						sendto_list.clear();
+						sendto_list.push_back(jt->second);
+					}
+				}
+				if( ! sendto_list.empty() )
+				{
+					for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++)
+					{
+						(*kt)->sendStanza(stanza); // TODO — учесть bool
+					}
+					return;
+				}
+			}
+		}
+		
+		Stanza result = new ATXmlTag("iq");
+		result->setAttribute("from", stanza.to().full());
+		result->setAttribute("to", stanza.from().full());
+		result->setAttribute("type", "error");
+		result->setAttribute("id", stanza->getAttribute("id", ""));
+		Stanza err = result["error"];
+		err->setAttribute("type", "cancel");
+		err["service-unavailable"]->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-stanzas");
+		server->routeStanza(result);
+		delete result;
+		return;
+	}
+	
+	// если станза адресуется к серверу, то обработать должен сервер
+	if ( stanza.to().full() == hostname() )
+	{
+		// сначала ищем в модулях-расширениях
+		Stanza body = stanza->firstChild();
+		std::string xmlns = body->getAttribute("xmlns", "");
 		extlist_t::iterator it = ext.find(xmlns);
 		if ( it != ext.end() )
 		{
 			ext[xmlns]->handleStanza(stanza);
 			return;
 		}
+		
+		// потом жесткие определения
+		if( body->getAttribute("xmlns", "") == "urn:xmpp:ping" )
+		{
+			xmpp_ping_queries++;
+			// ping (XEP-0199)
+			Stanza result = new ATXmlTag("iq");
+			result->setAttribute("from", stanza.to().full());
+			result->setAttribute("to", stanza.from().full());
+			result->setAttribute("type", "result");
+			result->setAttribute("id", stanza->getAttribute("id", ""));
+			server->routeStanza(result);
+			delete result;
+			return;
+		}
 	}
-	//stanza.setTo(name);
-	/*if(stanza->hasChild("ping")) {
-		xmpp_ping_queries++;
-		// ping (XEP-0199)
-		Stanza iq = new ATXmlTag("iq");
-		iq->setAttribute("from", name);
-		iq->setAttribute("to", stanza.from().full());
-		iq->setAttribute("type", "result");
-		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-		server->routeStanza(iq);
-		delete iq;
-		return;
-	}*/
+	
 	if(stanza->hasChild("query")) {
 		// Входящие запросы информации
 		
@@ -1251,7 +1320,8 @@ bool VirtualHost::routeStanza(Stanza stanza)
 		return true;
 	}
 	
-	if(!stanza->hasAttribute("to") || stanza->getAttribute("to", "") == name) {
+	if ( stanza->name() == "iq" )
+	{
 		handleVHostIq(stanza);
 		return true;
 	}
