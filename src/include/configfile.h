@@ -24,6 +24,7 @@ class ConfigFile
 		
 		//system
 		const char *user();
+		const char *extension_dir();
 		
 		/**
 		* Порт для XEP-0114

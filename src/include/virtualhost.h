@@ -4,10 +4,12 @@
 #include <xmppserver.h>
 #include <xmppclient.h>
 #include <xmppdomain.h>
+#include <xmppextension.h>
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
 #include <jid.h>
+#include <nanosoft/object.h>
 #include <nanosoft/gsaslserver.h>
 #include <nanosoft/mutex.h>
 #include <db.h>
@@ -184,6 +186,16 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		bool isAdmin(std::string barejid);
 		
 		bool userExists(std::string username);
+		
+		/**
+		* Добавить расширение
+		*/
+		void addExtension(const char *urn, const char *fname);
+		
+		/**
+		* Удалить расширение
+		*/
+		void removeExtension(const char *urn);
 	
 	private:
 		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
@@ -192,6 +204,9 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		sessions_t onliners; // Онлайнеры
+		
+		typedef std::map<std::string, nanosoft::ptr<XMPPExtension> > extlist_t;
+		extlist_t ext;
 		
 		bool registration_allowed; // разрешена ли регистрация
 		unsigned long int onliners_number; // число подключённых пользователей

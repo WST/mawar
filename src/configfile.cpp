@@ -35,6 +35,15 @@ const char *ConfigFile::user() {
 	return CONFIG_USERNAME;
 }
 
+const char *ConfigFile::extension_dir()
+{
+	if( system )
+	{
+		return system->getChildValue("extension_dir", "").c_str();
+	}
+	return "";
+}
+
 unsigned short int ConfigFile::workers() {
 	if(limits) {
 		return atoi(limits->getChildValue("workers", CONFIG_WORKERS).c_str());

@@ -77,6 +77,9 @@ MAWAR_OBJECTS+=xep0114.o
 MAWAR_OBJECTS+=s2slistener.o
 MAWAR_OBJECTS+=xmppserverinput.o
 MAWAR_OBJECTS+=xmppserveroutput.o
+MAWAR_OBJECTS+=xmppextension.o
+MAWAR_OBJECTS+=xmppextensioninput.o
+MAWAR_OBJECTS+=xmppextensionoutput.o
 MAWAR_OBJECTS+=serverstatus.o
 #MAWAR_OBJECTS+=geoip.o
 MAWAR_OBJECTS+=logs.o
@@ -170,6 +173,15 @@ xmppserveroutput.o: $(srcdir)/xmppserveroutput.cpp $(srcdir)/include/xmppservero
 
 xmppserverinput.o: $(srcdir)/xmppserverinput.cpp $(srcdir)/include/xmppserverinput.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
 	$(CXX) -c $(srcdir)/xmppserverinput.cpp -o xmppserverinput.o
+
+xmppextension.o: $(srcdir)/xmppextension.cpp $(srcdir)/include/xmppextension.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppextension.cpp -o xmppextension.o
+
+xmppextensioninput.o: $(srcdir)/xmppextensioninput.cpp $(srcdir)/include/xmppextensioninput.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppextensioninput.cpp -o xmppextensioninput.o
+
+xmppextensionoutput.o: $(srcdir)/xmppextensionoutput.cpp $(srcdir)/include/xmppextensionoutput.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppextensionoutput.cpp -o xmppextensionoutput.o
 
 #geoip.o: $(srcdir)/geoip.cpp $(srcdir)/include/geoip.h
 #	$(CXX) -c $(srcdir)/geoip.cpp -o geoip.o
