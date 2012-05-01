@@ -63,16 +63,38 @@ void XMPPClient::onTerminate()
 }
 
 /**
-* Обработчик станз
+* Обработка станз поступивших от клиента
+*
+* TODO привести в порядок и в соответствии с RFC 6120 XMPP CORE
 */
 void XMPPClient::onStanza(Stanza stanza)
 {
+	// первым делом пофиксим атрибут from - впишем в него полный JID
+	// TODO не будет ли это противоречить RFC ?..
+	stanza->setAttribute("from", client_jid.full());
+	
+	// TODO привести маршрутизацию в порядок и в соответствии
+	// с RFC 6120. Полагаю здесь можно оставить обработку авторизации
+	// а всё остальное перевести в VirtualHost, точнее маршрутизировать
+	// через server->routeStanza() которая доставит в нужный домен
+	// и маршрутизацией будет заниматься этот домен
+	
 	if (stanza->name() == "iq") onIqStanza(stanza);
 	else if (stanza->name() == "auth") onAuthStanza(stanza);
 	else if (stanza->name() == "response" ) onResponseStanza(stanza);
 	else if (stanza->name() == "message" ) onMessageStanza(stanza);
 	else if (stanza->name() == "presence") onPresenceStanza(stanza);
-	else ; // ...
+	else
+	{
+		// RFC 6120, 10.3.  No 'to' Address
+		if ( stanza->getAttribute("to", "") == "" )
+		{
+			if ( vhost )
+			{
+				vhost->handleDirectly(stanza);
+			}
+		}
+	}
 }
 
 /**
@@ -133,11 +155,13 @@ void XMPPClient::onResponseStanza(Stanza stanza)
 }
 
 /**
-* Обработчик iq-станзы
+* Устаревший обработчик iq bind
+*
+* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
+* или в отдельный модуль
 */
-void XMPPClient::onIqStanza(Stanza stanza) {
-	stanza.setFrom(client_jid);
-	
+void XMPPClient::handleIQBind(Stanza stanza)
+{
 	if(stanza->hasChild("bind") && (stanza.type() == "set" || stanza.type() == "get")) {
 		client_jid.setResource(stanza.type() == "set" ? string(stanza["bind"]["resource"]) : "foo");
 		Stanza iq = new ATXmlTag("iq");
@@ -151,7 +175,16 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 		//vhost->onOnline(this);
 		return;
 	}
-	
+}
+
+/**
+* Устаревший обрабтчик iq bind
+*
+* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
+* или в отдельный модуль
+*/
+void XMPPClient::handleIQSession(Stanza stanza)
+{
 	if(stanza->hasChild("session") && stanza.type() == "set") {
 		Stanza iq = new ATXmlTag("iq");
 			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
@@ -163,28 +196,66 @@ void XMPPClient::onIqStanza(Stanza stanza) {
 		state = session;
 		return;
 	}
+}
+
+/**
+* Устаревший обработчик iq roster
+*
+* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
+* или в отдельный модуль
+*/
+void XMPPClient::handleIQRoster(Stanza stanza)
+{
+	handleRosterIq(stanza);
+}
+
+/**
+* Обработчик iq-станзы
+*/
+void XMPPClient::onIqStanza(Stanza stanza)
+{
+	Stanza child = stanza->firstChild();
+	string xmlns = child ? child->getAttribute("xmlns", "") : "";
 	
-	TagHelper query = stanza->firstChild("query");
-	if ( query ) {
-		if(query->getAttribute("xmlns") == "jabber:iq:register") {
-			vhost->handleRegisterIq(this, stanza);
-		}
-		
-		if ( query->getAttribute("xmlns") == "jabber:iq:roster" ) {
-			handleRosterIq(stanza);
-			return;
-		}
-	}
-	
-	if ( ! stanza->hasAttribute("to") ) {
-		vhost->routeStanza(stanza);
+	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
+	{
+		handleIQBind(stanza);
 		return;
 	}
 	
-	server->routeStanza(stanza.to().hostname(), stanza);
+	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
+	{
+		handleIQSession(stanza);
+		return;
+	}
+	
+	if ( xmlns == "jabber:iq:roster" )
+	{
+		handleIQRoster(stanza);
+		return;
+	}
+	
+	// TODO желательно вынести регистрацию в отдельный модуль
+	// как и все остальные модули, но пока это не представляется
+	// возможным, т.к. регистрируются неавторизованные клиенты,
+	// а они в свою очередь не имеют полноценного jid без которого
+	// обычный маршрутизатор станз не может найти отправителя
+	// без спомогательного XMPPClient. Не хотелось бы везде тягать
+	// XMPPClient только ради одного компонента, поэтому над
+	// решением ещё предстоить подумать отдельно, уж лучше
+	// сделать обработать регистрацию отдельно, чем во все остальные
+	// модули передавать более никому не нужные параметры.
+	if ( xmlns == "jabber:iq:register" )
+	{
+		vhost->handleRegisterIq(this, stanza);
+		return;
+	}
+	
+	server->routeStanza(stanza);
 }
 
-ClientPresence XMPPClient::presence() {
+ClientPresence XMPPClient::presence()
+{
 	return client_presence;
 }
 
@@ -769,6 +840,8 @@ void XMPPClient::handleRosterIq(Stanza stanza)
 		handleRosterSet(stanza);
 		return;
 	}
+	
+	return;
 }
 
 /**
@@ -784,7 +857,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 	setAttribute("xmlns", "jabber:client");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
 	setAttribute("id", getUniqueId());
-	setAttribute("from", "localhost");
+	setAttribute("from", tohost);
 	setAttribute("version", "1.0");
 	setAttribute("xml:lang", "en");
 	

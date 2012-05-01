@@ -155,6 +155,30 @@ public:
 	virtual void onResponseStanza(Stanza stanza);
 	
 	/**
+	* Устаревший обработчик iq bind
+	*
+	* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
+	* или в отдельный модуль
+	*/
+	void handleIQBind(Stanza stanza);
+	
+	/**
+	* Устаревший обрабтчик iq bind
+	*
+	* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
+	* или в отдельный модуль
+	*/
+	void handleIQSession(Stanza stanza);
+	
+	/**
+	* Устаревший обработчик iq roster
+	*
+	* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
+	* или в отдельный модуль
+	*/
+	void handleIQRoster(Stanza stanza);
+	
+	/**
 	* Обработчик iq-станзы
 	*/
 	virtual void onIqStanza(Stanza stanza);

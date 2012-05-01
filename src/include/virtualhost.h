@@ -42,6 +42,57 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		virtual void handleMessage(Stanza stanza); // Обработать message
 		
 		/**
+		* RFC 6120, 10.3.  No 'to' Address
+		* 
+		* If the stanza possesses no 'to' attribute, the server MUST handle
+		* it directly on behalf of the entity that sent it, where the meaning
+		* of "handle it directly" depends on whether the stanza is message,
+		* presence, or IQ. Because all stanzas received from other servers
+		* MUST possess a 'to' attribute, this rule applies only to stanzas
+		* received from a local entity (typically a client) that is connected
+		* to the server. 
+		*/
+		void handleDirectly(Stanza stanza);
+		
+		/**
+		* RFC 6120, 10.3.1  No 'to' Address, Message
+		* 
+		* If the server receives a message stanza with no 'to' attribute,
+		* it MUST treat the message as if the 'to' address were the bare
+		* JID <localpart@domainpart> of the sending entity. 
+		*/
+		void handleDirectlyMessage(Stanza stanza);
+		
+		/**
+		* RFC 6120, 10.3.2  No 'to' Address, Presence
+		* 
+		* If the server receives a presence stanza with no 'to' attribute,
+		* it MUST broadcast it to the entities that are subscribed to the
+		* sending entity's presence, if applicable ([XMPP‑IM] defines the
+		* semantics of such broadcasting for presence applications). 
+		*/
+		void handleDirectlyPresence(Stanza stanza);
+		
+		/**
+		* RFC 6120, 10.3.3  No 'to' Address, IQ
+		* 
+		* If the server receives an IQ stanza with no 'to' attribute, it MUST
+		* process the stanza on behalf of the account from which received
+		* the stanza
+		*/
+		void handleDirectlyIQ(Stanza stanza);
+		
+		/**
+		* XEP-0199: XMPP Ping
+		*/
+		void handleIQPing(Stanza stanza);
+		
+		/**
+		* Обработка неизвестной IQ-станзы
+		*/
+		void handleIQUnknown(Stanza stanza);
+		
+		/**
 		* Обслуживание обычного презенса
 		*/
 		void serveCommonPresence(Stanza stanza);
@@ -179,6 +230,8 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void rosterPush(const std::string &username, Stanza stanza);
 		
 		/**
+		* XEP-0077: In-Band Registration
+		*
 		* Регистрация пользователей
 		*/
 		void handleRegisterIq(XMPPClient *client, Stanza stanza);
@@ -213,6 +266,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		unsigned long int vcard_queries; // число запросов vcard
 		unsigned long int stats_queries; // число запросов статистики
 		unsigned long int xmpp_ping_queries; // число обслуженных XMPP-пингов
+		unsigned long int xmpp_error_queries; // число неопозанных запросов
 		unsigned long int version_requests; // число запросов верси сервера
 		unsigned long int start_time; // момент запуска виртуального узл
 		

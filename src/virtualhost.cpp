@@ -66,6 +66,7 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 	vcard_queries = 0;
 	stats_queries = 0;
 	xmpp_ping_queries = 0;
+	xmpp_error_queries = 0;
 	version_requests = 0;
 	start_time = time(0);
 	
@@ -82,7 +83,8 @@ VirtualHost::~VirtualHost() {
 * Информационные запросы без атрибута to
 * Адресованные клиентом данному узлу
 */
-void VirtualHost::handleVHostIq(Stanza stanza) {
+void VirtualHost::handleVHostIq(Stanza stanza)
+{
 	// если станза адресуется клиенту, то доставить нужно клиенту
 	if ( stanza.to().username() != "" )
 	{
@@ -96,7 +98,9 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		{
 			// Проверить, есть ли ресурс, если он указан
 			JID to = stanza.to();
-			if( ! to.resource().empty() ) {
+			if( ! to.resource().empty() )
+			{
+				// если указан ресурс, то отправить на ресурс
 				jt = it->second.find(to.resource());
 				if( jt != it->second.end() )
 				{
@@ -104,76 +108,42 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 					return;
 				}
 				// Не отправили на выбранный ресурс, смотрим дальше…
+				// TODO сообщить что такого клиента нет
+				return;
 			}
 			else
 			{
 				// TODO как правильно?
-				std::list<XMPPClient *> sendto_list;
-				std::list<XMPPClient *>::iterator kt;
-				int max_priority = 0;
-				for(jt = it->second.begin(); jt != it->second.end(); jt++)
-				{
-					if( jt->second->presence().priority == max_priority )
-					{
-						sendto_list.push_back(jt->second);
-					}
-					else if( jt->second->presence().priority > max_priority )
-					{
-						sendto_list.clear();
-						sendto_list.push_back(jt->second);
-					}
-				}
-				if( ! sendto_list.empty() )
-				{
-					for(kt = sendto_list.begin(); kt != sendto_list.end(); kt++)
-					{
-						(*kt)->sendStanza(stanza); // TODO — учесть bool
-					}
-					return;
-				}
+				// а правильно обработать должен сервер, т.е. в данном
+				// случае vhost
+				// ? handleDirectlyIQ(stanza);
 			}
 		}
-		
-		Stanza result = new ATXmlTag("iq");
-		result->setAttribute("from", stanza.to().full());
-		result->setAttribute("to", stanza.from().full());
-		result->setAttribute("type", "error");
-		result->setAttribute("id", stanza->getAttribute("id", ""));
-		Stanza err = result["error"];
-		err->setAttribute("type", "cancel");
-		err["service-unavailable"]->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-stanzas");
-		server->routeStanza(result);
-		delete result;
-		return;
+		else
+		{
+			// TODO клиент не найден, надо отправить соответствующую станзу
+			Stanza result = new ATXmlTag("iq");
+			result->setAttribute("from", stanza.to().full());
+			result->setAttribute("to", stanza.from().full());
+			result->setAttribute("type", "error");
+			result->setAttribute("id", stanza->getAttribute("id", ""));
+			Stanza err = result["error"];
+			err->setAttribute("type", "cancel");
+			err["service-unavailable"]->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-stanzas");
+			server->routeStanza(result);
+			delete result;
+			return;
+		}
 	}
 	
 	// если станза адресуется к серверу, то обработать должен сервер
 	if ( stanza.to().full() == hostname() )
 	{
-		// сначала ищем в модулях-расширениях
-		Stanza body = stanza->firstChild();
-		std::string xmlns = body->getAttribute("xmlns", "");
-		extlist_t::iterator it = ext.find(xmlns);
-		if ( it != ext.end() )
-		{
-			ext[xmlns]->handleStanza(stanza);
-			return;
-		}
-		
-		// потом жесткие определения
-		if( body->getAttribute("xmlns", "") == "urn:xmpp:ping" )
-		{
-			xmpp_ping_queries++;
-			// ping (XEP-0199)
-			Stanza result = new ATXmlTag("iq");
-			result->setAttribute("from", stanza.to().full());
-			result->setAttribute("to", stanza.from().full());
-			result->setAttribute("type", "result");
-			result->setAttribute("id", stanza->getAttribute("id", ""));
-			server->routeStanza(result);
-			delete result;
-			return;
-		}
+		handleDirectlyIQ(stanza);
+		// TODO return;
+		// весь ниже лежаший код относиться к handleDirectlyIQ()
+		// однако вместо того тупо копипастить, будем по тихоньку
+		// делить на функции и запихивать в handleDirectlyIQ()
 	}
 	
 	if(stanza->hasChild("query")) {
@@ -412,6 +382,12 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 				query->insertChildElement(stat);
 			
 			stat = new ATXmlTag("stat");
+				stat->setAttribute("name", "queries/xmpp-errors");
+				stat->setAttribute("value", mawarPrintInteger(xmpp_error_queries));
+				stat->setAttribute("units", "queries");
+				query->insertChildElement(stat);
+			
+			stat = new ATXmlTag("stat");
 				stat->setAttribute("name", "queries/version");
 				stat->setAttribute("value", mawarPrintInteger(version_requests));
 				stat->setAttribute("units", "queries");
@@ -597,6 +573,8 @@ void VirtualHost::handleVHostIq(Stanza stanza) {
 		}
 		delete cmd;
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -1069,6 +1047,117 @@ void VirtualHost::handleMessage(Stanza stanza) {
 }
 
 /**
+* RFC 6120, 10.3.  No 'to' Address
+* 
+* If the stanza possesses no 'to' attribute, the server MUST handle
+* it directly on behalf of the entity that sent it, where the meaning
+* of "handle it directly" depends on whether the stanza is message,
+* presence, or IQ. Because all stanzas received from other servers
+* MUST possess a 'to' attribute, this rule applies only to stanzas
+* received from a local entity (typically a client) that is connected
+* to the server. 
+*/
+void VirtualHost::handleDirectly(Stanza stanza)
+{
+	if (stanza->name() == "message" ) handleDirectlyMessage(stanza);
+	else if (stanza->name() == "presence") handleDirectlyPresence(stanza);
+	else if (stanza->name() == "iq") handleDirectlyIQ(stanza);
+	else ; // ??
+}
+
+/**
+* RFC 6120, 10.3.1  No 'to' Address, Message
+* 
+* If the server receives a message stanza with no 'to' attribute,
+* it MUST treat the message as if the 'to' address were the bare
+* JID <localpart@domainpart> of the sending entity. 
+*/
+void VirtualHost::handleDirectlyMessage(Stanza stanza)
+{
+}
+
+/**
+* RFC 6120, 10.3.2  No 'to' Address, Presence
+* 
+* If the server receives a presence stanza with no 'to' attribute,
+* it MUST broadcast it to the entities that are subscribed to the
+* sending entity's presence, if applicable ([XMPP‑IM] defines the
+* semantics of such broadcasting for presence applications). 
+*/
+void VirtualHost::handleDirectlyPresence(Stanza stanza)
+{
+}
+
+/**
+* RFC 6120, 10.3.3  No 'to' Address, IQ
+* 
+* If the server receives an IQ stanza with no 'to' attribute, it MUST
+* process the stanza on behalf of the account from which received
+* the stanza
+*/
+void VirtualHost::handleDirectlyIQ(Stanza stanza)
+{
+	printf("vhost[%s] handle direct iq: %s\n", hostname().c_str(), stanza->asString().c_str());
+	
+	// сначала ищем в модулях-расширениях
+	Stanza body = stanza->firstChild();
+	std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
+	
+	// ищем модуль-расширение
+	extlist_t::iterator it = ext.find(xmlns);
+	if ( it != ext.end() )
+	{
+		ext[xmlns]->handleStanza(stanza);
+		return;
+	}
+	
+	if( xmlns == "urn:xmpp:ping" )
+	{
+		handleIQPing(stanza);
+		return;
+	}
+	
+	// TODO handleIQUnknown(stanza);
+	// пока не пересем сюда весь нужный код, handleIQUnknown()
+	// будет в конце handleVHostIq()
+}
+
+/**
+* XEP-0199: XMPP Ping
+*/
+void VirtualHost::handleIQPing(Stanza stanza)
+{
+	xmpp_ping_queries++;
+	Stanza result = new ATXmlTag("iq");
+	result->setAttribute("from", stanza.to().full());
+	result->setAttribute("to", stanza.from().full());
+	result->setAttribute("type", "result");
+	result->setAttribute("id", stanza->getAttribute("id", ""));
+	server->routeStanza(result);
+	delete result;
+}
+
+/**
+* Обработка неизвестной IQ-станзы
+*/
+void VirtualHost::handleIQUnknown(Stanza stanza)
+{
+	xmpp_error_queries++;
+	
+	if ( stanza->getAttribute("type", "") == "error" ) return;
+	
+	Stanza result = new ATXmlTag("iq");
+	result->setAttribute("from", stanza.to().full());
+	result->setAttribute("to", stanza.from().full());
+	result->setAttribute("type", "error");
+	result->setAttribute("id", stanza->getAttribute("id", ""));
+	result["error"]["service-unavailable"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+	
+	server->routeStanza(result);
+	delete result;
+}
+
+/**
 * Найти клиента по JID (thread-safe)
 *
 * @note возможно в нем отпадет необходимость по завершении routeStanza()
@@ -1381,9 +1470,18 @@ void VirtualHost::rosterPush(const std::string &username, Stanza stanza)
 }
 
 /**
+* XEP-0077: In-Band Registration
+*
 * Регистрация пользователей
 * Вызывается из XMPPClient::onIqStanza() и VirtualHost::handleVHostIq()
 * во втором случае client = 0
+* 
+* TODO нужна ревизия, во-первых, нужно разбить эту портянку на несколько
+* небольших функций, во-вторых, желательно вынести в отдельный модуль.
+* На данный момент вынести в отдельный модуль не представляется возможным.
+* Проблема в том, что если клиент ещё неавторизован, то в станзе-запросе
+* поле from неполное и невозможно найти автора запроса без вспомогательного
+* XMPPClient
 */
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 	if(!registration_allowed) {
