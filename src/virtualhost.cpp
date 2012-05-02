@@ -154,78 +154,6 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 		std::string stanza_type = stanza.type();
 		
 		
-		if(query_xmlns == "http://jabber.org/protocol/stats" && stanza_type == "get") {
-			stats_queries++;
-			mawarWarning("Served incoming stats request");
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("from", name);
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			TagHelper query = iq["query"];
-			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/stats");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			
-			ATXmlTag *stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "users/online");
-				stat->setAttribute("value", mawarPrintInteger(onliners_number));
-				stat->setAttribute("units", "users");
-				query->insertChildElement(stat);
-			
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "users/total");
-				DB::result r = db.query("SELECT count(*) AS cnt FROM users");
-				stat->setAttribute("value", r["cnt"]);
-				r.free();
-				stat->setAttribute("units", "users");
-				query->insertChildElement(stat);
-				
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "queries/vcard");
-				stat->setAttribute("value", mawarPrintInteger(vcard_queries));
-				stat->setAttribute("units", "queries");
-				query->insertChildElement(stat);
-			
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "queries/stats");
-				stat->setAttribute("value", mawarPrintInteger(stats_queries));
-				stat->setAttribute("units", "queries");
-				query->insertChildElement(stat);
-				
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "queries/xmpp-pings");
-				stat->setAttribute("value", mawarPrintInteger(xmpp_ping_queries));
-				stat->setAttribute("units", "queries");
-				query->insertChildElement(stat);
-			
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "queries/xmpp-errors");
-				stat->setAttribute("value", mawarPrintInteger(xmpp_error_queries));
-				stat->setAttribute("units", "queries");
-				query->insertChildElement(stat);
-			
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "queries/version");
-				stat->setAttribute("value", mawarPrintInteger(version_requests));
-				stat->setAttribute("units", "queries");
-				query->insertChildElement(stat);
-				
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "misc/registration_allowed");
-				stat->setAttribute("value", registration_allowed ? "yes," : "no,");
-				stat->setAttribute("units", registration_allowed ? "allowed" : "not allowed");
-				query->insertChildElement(stat);
-			
-			stat = new ATXmlTag("stat");
-				stat->setAttribute("name", "misc/uptime");
-				stat->setAttribute("value", mawarPrintInteger(time(0) - start_time));
-				stat->setAttribute("units", "seconds");
-				query->insertChildElement(stat);
-			
-			// TODO: другая статистика
-			
-			server->routeStanza(iq);
-			delete iq;
-		}
 		
 	}
 	else if(stanza->hasChild("command"))
@@ -819,9 +747,13 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 		return;
 	}
 	
+	if ( xmlns == "http://jabber.org/protocol/stats" )
+	{
+		handleIQStats(stanza);
+		return;
+	}
+	
 	handleIQUnknown(stanza);
-	// пока не пересем сюда весь нужный код, handleIQUnknown()
-	// будет в конце handleVHostIq()
 }
 
 /**
@@ -1028,6 +960,86 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			server->routeStanza(iq);
 			delete iq;
 		}
+	}
+}
+
+/**
+* XEP-0039: Statistics Gathering
+*/
+void VirtualHost::handleIQStats(Stanza stanza)
+{
+	if( stanza->getAttribute("type") == "get")
+	{
+		stats_queries++;
+		mawarWarning("Served incoming stats request");
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", name);
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/stats");
+		iq->setAttribute("id", stanza->getAttribute("id", ""));
+		
+		ATXmlTag *stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "users/online");
+			stat->setAttribute("value", mawarPrintInteger(onliners_number));
+			stat->setAttribute("units", "users");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "users/total");
+			DB::result r = db.query("SELECT count(*) AS cnt FROM users");
+			stat->setAttribute("value", r["cnt"]);
+			r.free();
+			stat->setAttribute("units", "users");
+			query->insertChildElement(stat);
+			
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/vcard");
+			stat->setAttribute("value", mawarPrintInteger(vcard_queries));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/stats");
+			stat->setAttribute("value", mawarPrintInteger(stats_queries));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+			
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/xmpp-pings");
+			stat->setAttribute("value", mawarPrintInteger(xmpp_ping_queries));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/xmpp-errors");
+			stat->setAttribute("value", mawarPrintInteger(xmpp_error_queries));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/version");
+			stat->setAttribute("value", mawarPrintInteger(version_requests));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+			
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "misc/registration_allowed");
+			stat->setAttribute("value", registration_allowed ? "yes," : "no,");
+			stat->setAttribute("units", registration_allowed ? "allowed" : "not allowed");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "misc/uptime");
+			stat->setAttribute("value", mawarPrintInteger(time(0) - start_time));
+			stat->setAttribute("units", "seconds");
+			query->insertChildElement(stat);
+		
+		// TODO: другая статистика
+		
+		server->routeStanza(iq);
+		delete iq;
 	}
 }
 
