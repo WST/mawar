@@ -103,6 +103,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleIQPrivateStorage(Stanza stanza);
 		
 		/**
+		* XEP-0050: Ad-Hoc Commands
+		*/
+		void handleIQAdHocCommands(Stanza stanza);
+		
+		/**
 		* XEP-0092: Software Version
 		*/
 		void handleIQVersion(Stanza stanza);
