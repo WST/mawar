@@ -82,9 +82,21 @@ VirtualHost::~VirtualHost() {
 /**
 * Информационные запросы без атрибута to
 * Адресованные клиентом данному узлу
+* 
+* TODO требуется привести в порядок маршрутизацию
 */
 void VirtualHost::handleVHostIq(Stanza stanza)
 {
+	// если станза адресуется к серверу, то обработать должен сервер
+	if ( stanza.to().full() == hostname() )
+	{
+		handleDirectlyIQ(stanza);
+		return;
+		// весь ниже лежаший код относиться к handleDirectlyIQ()
+		// однако вместо того тупо копипастить, будем по тихоньку
+		// делить на функции и запихивать в handleDirectlyIQ()
+	}
+	
 	// если станза адресуется клиенту, то доставить нужно клиенту
 	if ( stanza.to().username() != "" )
 	{
@@ -116,7 +128,8 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 				// TODO как правильно?
 				// а правильно обработать должен сервер, т.е. в данном
 				// случае vhost
-				// ? handleDirectlyIQ(stanza);
+				handleDirectlyIQ(stanza);
+				return;
 			}
 		}
 		else
@@ -134,31 +147,6 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 			delete result;
 			return;
 		}
-	}
-	
-	// если станза адресуется к серверу, то обработать должен сервер
-	if ( stanza.to().full() == hostname() )
-	{
-		handleDirectlyIQ(stanza);
-		return;
-		// весь ниже лежаший код относиться к handleDirectlyIQ()
-		// однако вместо того тупо копипастить, будем по тихоньку
-		// делить на функции и запихивать в handleDirectlyIQ()
-	}
-	
-	if(stanza->hasChild("query"))
-	{
-		// Входящие запросы информации
-		
-		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
-		std::string stanza_type = stanza.type();
-		
-		
-		
-	}
-	else if(stanza->hasChild("command"))
-	{
-		// Ad-hoc реализация
 	}
 	
 	handleIQUnknown(stanza);
@@ -684,8 +672,6 @@ void VirtualHost::handleDirectlyPresence(Stanza stanza)
 */
 void VirtualHost::handleDirectlyIQ(Stanza stanza)
 {
-	printf("vhost[%s] handle direct iq: %s\n", hostname().c_str(), stanza->asString().c_str());
-	
 	// сначала ищем в модулях-расширениях
 	Stanza body = stanza->firstChild();
 	std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
@@ -764,17 +750,29 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 
 /**
 * XEP-0012: Last Activity
+*
+* TODO привести в порядок
 */
 void VirtualHost::handleIQLast(Stanza stanza)
 {
-	if( stanza->getAttribute("type") == "get" )
+	if ( stanza->getAttribute("type") == "get" )
 	{
-		Stanza iq;
 		unsigned long int uptime = time(0) - start_time;
-		iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(uptime) + "\"/></iq>");
+		
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", stanza.to().full());
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("id", stanza->getAttribute("id", ""));
+		iq->setAttribute("type", "result");
+		Stanza query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:last");
+			query->setAttribute("seconds", mawarPrintInteger(uptime));
 		server->routeStanza(iq);
 		delete iq;
+		return;
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -787,6 +785,7 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 {
 	if ( stanza->getAttribute("type") == "get")
 	{
+		// TODO segfault possible
 		std::string node = stanza["query"]->getAttribute("node", "");
 		if( node == "config" )
 		{
@@ -797,7 +796,7 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
 			query->setAttribute("node", "config");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			iq->setAttribute("id", stanza->getAttribute("id", ""));
 				ATXmlTag *identity = new ATXmlTag("identity");
 				identity->setAttribute("category", "automation");
 				identity->setAttribute("type", "command-node");
@@ -814,6 +813,7 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 					query->insertChildElement(feature);
 				
 			server->routeStanza(iq);
+			return;
 		}
 		else
 		{
@@ -823,7 +823,7 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 			iq->setAttribute("type", "result");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			iq->setAttribute("id", stanza->getAttribute("id", ""));
 				ATXmlTag *identity = new ATXmlTag("identity");
 				identity->setAttribute("category", "server");
 				identity->setAttribute("type", "im");
@@ -870,8 +870,11 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 			
 			server->routeStanza(iq);
 			delete iq;
+			return;
 		}
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -892,10 +895,10 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			iq->setAttribute("from", name);
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
+			iq->setAttribute("id", stanza->getAttribute("id", ""));
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 			query->setAttribute("node", "http://jabber.org/protocol/commands");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 		
 			ATXmlTag *item;
 			// здесь можно засунуть команды, доступные простым юзерам
@@ -940,6 +943,7 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 		
 			server->routeStanza(iq);
 			delete iq;
+			return;
 		}
 		else
 		{
@@ -965,8 +969,11 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			
 			server->routeStanza(iq);
 			delete iq;
+			return;
 		}
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -1046,7 +1053,11 @@ void VirtualHost::handleIQStats(Stanza stanza)
 		
 		server->routeStanza(iq);
 		delete iq;
+		
+		return;
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -1056,16 +1067,13 @@ void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 {
 	mawarWarning("Served incoming private storage request");
 	
-	printf("vhost[%s] handle private storage iq: %s\n", hostname().c_str(), stanza->asString().c_str());
-	
-	
 	if ( stanza->getAttribute("type") == "get" )
 	{
 		Stanza iq = new ATXmlTag("iq");
 		iq->setAttribute("from", name);
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("type", "result");
-		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		iq->setAttribute("id", stanza->getAttribute("id", ""));
 		TagHelper query = iq["query"];
 		query->setDefaultNameSpaceAttribute("jabber:iq:private");
 		
@@ -1077,6 +1085,7 @@ void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 		}
 		getClientByJid(stanza.from())->sendStanza(iq);
 		r.free();
+		return;
 	}
 	else if ( stanza->getAttribute("type") == "set" )
 	{
@@ -1090,20 +1099,28 @@ void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 		TagHelper query = iq["query"];
 		query->setDefaultNameSpaceAttribute("jabber:iq:private");
 		getClientByJid(stanza.from())->sendStanza(iq);
+		return;
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
 * XEP-0050: Ad-Hoc Commands
+*
+* TODO разбить эту портянку кода на несколько функций
+* провести ревизию на предмет разыменования NULL и утечек памяти
 */
 void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 {
 	if( ! isAdmin(stanza.from().bare()) )
 	{
+		handleIQForbidden(stanza);
 		return;
 	}
 	
 	Command *cmd = new Command(stanza->getChild("command"));
+	// TODO segfault possible
 	
 	if ( cmd->action() == "cancel" )
 	{
@@ -1249,6 +1266,7 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 		return;
 	}
 	
+	// TODO ??? может handleIQUnknown(stanza); ???
 	Stanza reply = Command::commandDoneStanza(name, stanza);
 	server->routeStanza(reply);
 	delete reply;
@@ -1291,6 +1309,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			r.free();
 			server->routeStanza(iq);
 			delete iq;
+			return;
 		}
 		else if ( stanza.type() == "set" )
 		{
@@ -1314,6 +1333,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			iq->insertChildElement(vCard);
 			server->routeStanza(iq);
 			delete iq;
+			return;
 		}
 	}
 	else
@@ -1351,7 +1371,10 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 		}
 		server->routeStanza(iq);
 		delete iq;
+		return;
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -1366,7 +1389,10 @@ void VirtualHost::handleIQVersion(Stanza stanza)
 		Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
 		server->routeStanza(version);
 		delete version;
+		return;
 	}
+	
+	handleIQUnknown(stanza);
 }
 
 /**
@@ -1374,12 +1400,42 @@ void VirtualHost::handleIQVersion(Stanza stanza)
 */
 void VirtualHost::handleIQPing(Stanza stanza)
 {
-	xmpp_ping_queries++;
+	if ( stanza->getAttribute("type") == "get" )
+	{
+		xmpp_ping_queries++;
+		Stanza result = new ATXmlTag("iq");
+		result->setAttribute("from", stanza.to().full());
+		result->setAttribute("to", stanza.from().full());
+		result->setAttribute("type", "result");
+		result->setAttribute("id", stanza->getAttribute("id", ""));
+		server->routeStanza(result);
+		delete result;
+		return;
+	}
+	
+	handleIQUnknown(stanza);
+}
+
+/**
+* Обработка запрещенной IQ-станзы (недостаточно прав)
+*/
+void VirtualHost::handleIQForbidden(Stanza stanza)
+{
+	if ( stanza->getAttribute("type", "") == "error" ) return;
+	if ( stanza->getAttribute("type", "") == "result" ) return;
+	
+	xmpp_error_queries++;
+	
 	Stanza result = new ATXmlTag("iq");
 	result->setAttribute("from", stanza.to().full());
 	result->setAttribute("to", stanza.from().full());
-	result->setAttribute("type", "result");
+	result->setAttribute("type", "error");
 	result->setAttribute("id", stanza->getAttribute("id", ""));
+		Stanza error = result["error"];
+		error->setAttribute("type", "auth");
+		error->setAttribute("code", "403");
+		error["forbidden"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+	
 	server->routeStanza(result);
 	delete result;
 }
@@ -1389,16 +1445,20 @@ void VirtualHost::handleIQPing(Stanza stanza)
 */
 void VirtualHost::handleIQUnknown(Stanza stanza)
 {
-	xmpp_error_queries++;
-	
 	if ( stanza->getAttribute("type", "") == "error" ) return;
+	if ( stanza->getAttribute("type", "") == "result" ) return;
+	
+	xmpp_error_queries++;
 	
 	Stanza result = new ATXmlTag("iq");
 	result->setAttribute("from", stanza.to().full());
 	result->setAttribute("to", stanza.from().full());
 	result->setAttribute("type", "error");
 	result->setAttribute("id", stanza->getAttribute("id", ""));
-	result["error"]["service-unavailable"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+		Stanza error = result["error"];
+		error->setAttribute("type", "cancel");
+		error->setAttribute("code", "501");
+		error["feature-not-implemented"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
 	
 	server->routeStanza(result);
 	delete result;

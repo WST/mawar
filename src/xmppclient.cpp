@@ -247,6 +247,7 @@ void XMPPClient::onIqStanza(Stanza stanza)
 		if ( vhost )
 		{
 			vhost->handleDirectly(stanza);
+			return;
 		}
 	}
 	

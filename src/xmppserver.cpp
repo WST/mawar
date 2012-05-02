@@ -138,6 +138,11 @@ void XMPPServer::addHost(const std::string &name, ATXmlTag *config)
 */
 bool XMPPServer::routeStanza(const std::string &host, Stanza stanza)
 {
+	if ( host == "" )
+	{
+		printf("routeStanza(unknown host): %s\n", stanza->asString().c_str());
+		return false;
+	}
 	mutex.lock();
 		domains_t::const_iterator iter = domains.find(host);
 		XMPPDomain *domain = iter != domains.end() ? iter->second : 0;

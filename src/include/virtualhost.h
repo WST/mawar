@@ -128,6 +128,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleIQPing(Stanza stanza);
 		
 		/**
+		* Обработка запрещенной IQ-станзы (недостаточно прав)
+		*/
+		void handleIQForbidden(Stanza stanza);
+		
+		/**
 		* Обработка неизвестной IQ-станзы
 		*/
 		void handleIQUnknown(Stanza stanza);
