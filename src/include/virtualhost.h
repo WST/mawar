@@ -88,6 +88,21 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleIQLast(Stanza stanza);
 		
 		/**
+		* XEP-0030: Service Discovery #info
+		*/
+		void handleIQServiceDiscoveryInfo(Stanza stanza);
+		
+		/**
+		* XEP-0030: Service Discovery #items
+		*/
+		void handleIQServiceDiscoveryItems(Stanza stanza);
+		
+		/**
+		* XEP-0049: Private XML Storage
+		*/
+		void handleIQPrivateStorage(Stanza stanza);
+		
+		/**
 		* XEP-0092: Software Version
 		*/
 		void handleIQVersion(Stanza stanza);

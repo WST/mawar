@@ -84,17 +84,7 @@ void XMPPClient::onStanza(Stanza stanza)
 	else if (stanza->name() == "response" ) onResponseStanza(stanza);
 	else if (stanza->name() == "message" ) onMessageStanza(stanza);
 	else if (stanza->name() == "presence") onPresenceStanza(stanza);
-	else
-	{
-		// RFC 6120, 10.3.  No 'to' Address
-		if ( stanza->getAttribute("to", "") == "" )
-		{
-			if ( vhost )
-			{
-				vhost->handleDirectly(stanza);
-			}
-		}
-	}
+	else ; // ???
 }
 
 /**
@@ -249,6 +239,15 @@ void XMPPClient::onIqStanza(Stanza stanza)
 	{
 		vhost->handleRegisterIq(this, stanza);
 		return;
+	}
+	
+	// RFC 6120, 10.3.  No 'to' Address
+	if ( stanza->getAttribute("to", "") == "" )
+	{
+		if ( vhost )
+		{
+			vhost->handleDirectly(stanza);
+		}
 	}
 	
 	server->routeStanza(stanza);

@@ -140,7 +140,7 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 	if ( stanza.to().full() == hostname() )
 	{
 		handleDirectlyIQ(stanza);
-		// TODO return;
+		return;
 		// весь ниже лежаший код относиться к handleDirectlyIQ()
 		// однако вместо того тупо копипастить, будем по тихоньку
 		// делить на функции и запихивать в handleDirectlyIQ()
@@ -152,168 +152,6 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		std::string stanza_type = stanza.type();
 		
-		if(query_xmlns == "http://jabber.org/protocol/disco#info" && stanza_type == "get") {
-			std::string node = stanza["query"]->getAttribute("node", "");
-			if(node == "config") {
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
-				query->setAttribute("node", "config");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-					ATXmlTag *identity = new ATXmlTag("identity");
-					identity->setAttribute("category", "automation");
-					identity->setAttribute("type", "command-node");
-					identity->setAttribute("name", "Configure Service");
-					query->insertChildElement(identity);
-				
-					ATXmlTag *feature;
-					feature = new ATXmlTag("feature");
-						feature->setAttribute("var", "http://jabber.org/protocol/commands");
-						query->insertChildElement(feature);
-					
-					feature = new ATXmlTag("feature");
-						feature->setAttribute("var", "jabber:x:data");
-						query->insertChildElement(feature);
-					
-				server->routeStanza(iq);
-			} else {
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-					ATXmlTag *identity = new ATXmlTag("identity");
-					identity->setAttribute("category", "server");
-					identity->setAttribute("type", "im");
-					identity->setAttribute("name", "@}->--"); // TODO: макросы с именем, версией итп
-					query->insertChildElement(identity);
-				
-					ATXmlTag *feature;
-				
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "http://jabber.org/protocol/disco#info");
-					query->insertChildElement(feature);
-				
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "http://jabber.org/protocol/disco#items");
-					query->insertChildElement(feature);
-				
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "http://jabber.org/protocol/stats");
-					query->insertChildElement(feature);
-				
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "jabber:iq:version");
-					query->insertChildElement(feature);
-				
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "msgoffline");
-					query->insertChildElement(feature);
-				
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "vcard-temp");
-					query->insertChildElement(feature);
-				
-					// XEP-0050 ad-hoc commands
-					feature = new ATXmlTag("feature");
-					feature->setAttribute("var", "http://jabber.org/protocol/commands");
-					query->insertChildElement(feature);
-				
-					if(registration_allowed) {
-						feature = new ATXmlTag("feature");
-						feature->setAttribute("var", "jabber:iq:register");
-						query->insertChildElement(feature);
-					}
-			
-				server->routeStanza(iq);
-				delete iq;
-			}
-		}
-		
-		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
-			std::string node = stanza["query"]->getAttribute("node", "");
-			if(node == "http://jabber.org/protocol/commands") {
-				// Нода команд ad-hoc
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
-				query->setAttribute("node", "http://jabber.org/protocol/commands");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			
-				ATXmlTag *item;
-				// здесь можно засунуть команды, доступные простым юзерам
-				if(isAdmin(stanza.from().bare())) {
-					item = new ATXmlTag("item");
-						item->setAttribute("jid", name);
-						item->setAttribute("node", "stop");
-						item->setAttribute("name", "Stop Mawar daemon");
-						query->insertChildElement(item);
-					
-					item = new ATXmlTag("item");
-						item->setAttribute("jid", name);
-						item->setAttribute("node", "stop-vhost");
-						item->setAttribute("name", "Stop a virtual host");
-						query->insertChildElement(item);
-					
-					item = new ATXmlTag("item");
-						item->setAttribute("jid", name);
-						item->setAttribute("node", "start-vhost");
-						item->setAttribute("name", "Start a virtual host");
-						query->insertChildElement(item);
-					
-					item = new ATXmlTag("item");
-						item->setAttribute("jid", name);
-						item->setAttribute("node", "create-vhost");
-						item->setAttribute("name", "Create a new virtual host");
-						query->insertChildElement(item);
-					
-					item = new ATXmlTag("item");
-						item->setAttribute("jid", name);
-						item->setAttribute("node", "drop-vhost");
-						item->setAttribute("name", "Delete virtual host");
-						query->insertChildElement(item);
-					
-					item = new ATXmlTag("item");
-						item->setAttribute("jid", name);
-						item->setAttribute("node", "route-stanza");
-						item->setAttribute("name", "Push stanza to the router");
-						query->insertChildElement(item);
-				}
-			
-				server->routeStanza(iq);
-				delete iq;
-			} else {
-				// Нода не указана или неизвестна
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				
-				ATXmlTag *item;
-				for(ATXmlTag *i = config->find("disco/item"); i; i = config->findNext("disco/item", i)) {
-					item = new ATXmlTag("item");
-					item->setAttribute("jid", i->getAttribute("jid", name));
-					query->insertChildElement(item);
-				}
-				// TODO: здесь также неплохо бы добавить приконнекченные компоненты…
-				// Хотя, конечно, можно обойтись и ручным указанием списка элементов обзора
-				// © WST
-				
-				server->routeStanza(iq);
-				delete iq;
-			}
-		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/stats" && stanza_type == "get") {
 			stats_queries++;
@@ -388,39 +226,6 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 			delete iq;
 		}
 		
-		if(query_xmlns == "jabber:iq:private") {
-			mawarWarning("Served incoming private storage request");
-			// private storage
-			if(stanza_type == "get") {
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("jabber:iq:private");
-				
-				TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
-				DB::result r = db.query("SELECT block_data FROM private_storage WHERE username = %s AND block_xmlns = %s", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str());
-				if(!r.eof()) {
-					ATXmlTag *res = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
-					iq["query"]->insertChildElement(res);
-				}
-				getClientByJid(stanza.from())->sendStanza(iq);
-				r.free();
-			} else { // set
-				TagHelper block = stanza["query"]->firstChild();
-				db.query("REPLACE INTO private_storage (username, block_xmlns, block_data) VALUES (%s, %s, %s)", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("jabber:iq:private");
-				getClientByJid(stanza.from())->sendStanza(iq);
-			}
-		}
 	} else if(stanza->hasChild("command")) {
 		// Ad-hoc реализация
 		
@@ -1088,32 +893,50 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 		return;
 	}
 	
-	if( xmlns == "urn:xmpp:ping" )
+	if ( xmlns == "urn:xmpp:ping" )
 	{
 		handleIQPing(stanza);
 		return;
 	}
 	
-	if( xmlns == "jabber:iq:register" )
+	if ( xmlns == "jabber:iq:register" )
 	{
 		// Запрос регистрации на s2s
 		handleRegisterIq(0, stanza);
 		return;
 	}
 	
-	if( xmlns == "jabber:iq:version" )
+	if ( xmlns == "jabber:iq:version" )
 	{
 		handleIQVersion(stanza);
 		return;
 	}
 	
-	if( xmlns == "jabber:iq:last" )
+	if ( xmlns == "jabber:iq:last" )
 	{
 		handleIQLast(stanza);
 		return;
 	}
 	
-	// TODO handleIQUnknown(stanza);
+	if ( xmlns == "jabber:iq:private" )
+	{
+		handleIQPrivateStorage(stanza);
+		return;
+	}
+	
+	if ( xmlns == "http://jabber.org/protocol/disco#info" )
+	{
+		handleIQServiceDiscoveryInfo(stanza);
+		return;
+	}
+	
+	if ( xmlns == "http://jabber.org/protocol/disco#items" )
+	{
+		handleIQServiceDiscoveryItems(stanza);
+		return;
+	}
+	
+	handleIQUnknown(stanza);
 	// пока не пересем сюда весь нужный код, handleIQUnknown()
 	// будет в конце handleVHostIq()
 }
@@ -1130,6 +953,242 @@ void VirtualHost::handleIQLast(Stanza stanza)
 		iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(uptime) + "\"/></iq>");
 		server->routeStanza(iq);
 		delete iq;
+	}
+}
+
+/**
+* XEP-0030: Service Discovery #info
+* 
+* TODO требуется ревизия и поддержка модульности: должен уметь представлять
+* возможности других модулей
+*/
+void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
+{
+	if ( stanza->getAttribute("type") == "get")
+	{
+		std::string node = stanza["query"]->getAttribute("node", "");
+		if( node == "config" )
+		{
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+			query->setAttribute("node", "config");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				ATXmlTag *identity = new ATXmlTag("identity");
+				identity->setAttribute("category", "automation");
+				identity->setAttribute("type", "command-node");
+				identity->setAttribute("name", "Configure Service");
+				query->insertChildElement(identity);
+			
+				ATXmlTag *feature;
+				feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "http://jabber.org/protocol/commands");
+					query->insertChildElement(feature);
+				
+				feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "jabber:x:data");
+					query->insertChildElement(feature);
+				
+			server->routeStanza(iq);
+		}
+		else
+		{
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+				ATXmlTag *identity = new ATXmlTag("identity");
+				identity->setAttribute("category", "server");
+				identity->setAttribute("type", "im");
+				identity->setAttribute("name", "@}->--"); // TODO: макросы с именем, версией итп
+				query->insertChildElement(identity);
+			
+				ATXmlTag *feature;
+			
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/disco#info");
+				query->insertChildElement(feature);
+			
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/disco#items");
+				query->insertChildElement(feature);
+			
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/stats");
+				query->insertChildElement(feature);
+			
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "jabber:iq:version");
+				query->insertChildElement(feature);
+			
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "msgoffline");
+				query->insertChildElement(feature);
+			
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "vcard-temp");
+				query->insertChildElement(feature);
+			
+				// XEP-0050 ad-hoc commands
+				feature = new ATXmlTag("feature");
+				feature->setAttribute("var", "http://jabber.org/protocol/commands");
+				query->insertChildElement(feature);
+			
+				if( registration_allowed )
+				{
+					feature = new ATXmlTag("feature");
+					feature->setAttribute("var", "jabber:iq:register");
+					query->insertChildElement(feature);
+				}
+			
+			server->routeStanza(iq);
+			delete iq;
+		}
+	}
+}
+
+/**
+* XEP-0030: Service Discovery #items
+*
+* TODO требуется ревизия и поддержка модульности: должен уметь представлять
+* возможности других модулей
+*/
+void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
+{
+	if( stanza->getAttribute("type") == "get" )
+	{
+		std::string node = stanza["query"]->getAttribute("node", "");
+		if( node == "http://jabber.org/protocol/commands" )
+		{
+			// Нода команд ad-hoc
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+			query->setAttribute("node", "http://jabber.org/protocol/commands");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		
+			ATXmlTag *item;
+			// здесь можно засунуть команды, доступные простым юзерам
+			if(isAdmin(stanza.from().bare()))
+			{
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "stop");
+					item->setAttribute("name", "Stop Mawar daemon");
+					query->insertChildElement(item);
+				
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "stop-vhost");
+					item->setAttribute("name", "Stop a virtual host");
+					query->insertChildElement(item);
+				
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "start-vhost");
+					item->setAttribute("name", "Start a virtual host");
+					query->insertChildElement(item);
+				
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "create-vhost");
+					item->setAttribute("name", "Create a new virtual host");
+					query->insertChildElement(item);
+				
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "drop-vhost");
+					item->setAttribute("name", "Delete virtual host");
+					query->insertChildElement(item);
+				
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
+					item->setAttribute("node", "route-stanza");
+					item->setAttribute("name", "Push stanza to the router");
+					query->insertChildElement(item);
+			}
+		
+			server->routeStanza(iq);
+			delete iq;
+		}
+		else
+		{
+			// Нода не указана или неизвестна
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", name);
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			
+			ATXmlTag *item;
+			for(ATXmlTag *i = config->find("disco/item"); i; i = config->findNext("disco/item", i))
+			{
+				item = new ATXmlTag("item");
+				item->setAttribute("jid", i->getAttribute("jid", name));
+				query->insertChildElement(item);
+			}
+			// TODO: здесь также неплохо бы добавить приконнекченные компоненты…
+			// Хотя, конечно, можно обойтись и ручным указанием списка элементов обзора
+			// © WST
+			
+			server->routeStanza(iq);
+			delete iq;
+		}
+	}
+}
+
+/**
+* XEP-0049: Private XML Storage
+*/
+void VirtualHost::handleIQPrivateStorage(Stanza stanza)
+{
+	mawarWarning("Served incoming private storage request");
+	
+	printf("vhost[%s] handle private storage iq: %s\n", hostname().c_str(), stanza->asString().c_str());
+	
+	
+	if ( stanza->getAttribute("type") == "get" )
+	{
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", name);
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:private");
+		
+		TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
+		DB::result r = db.query("SELECT block_data FROM private_storage WHERE username = %s AND block_xmlns = %s", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str());
+		if(!r.eof()){
+			ATXmlTag *res = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
+			iq["query"]->insertChildElement(res);
+		}
+		getClientByJid(stanza.from())->sendStanza(iq);
+		r.free();
+	}
+	else if ( stanza->getAttribute("type") == "set" )
+	{
+		TagHelper block = stanza["query"]->firstChild();
+		db.query("REPLACE INTO private_storage (username, block_xmlns, block_data) VALUES (%s, %s, %s)", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", name);
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("type", "result");
+		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+		TagHelper query = iq["query"];
+		query->setDefaultNameSpaceAttribute("jabber:iq:private");
+		getClientByJid(stanza.from())->sendStanza(iq);
 	}
 }
 
