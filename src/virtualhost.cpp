@@ -753,6 +753,12 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 		return;
 	}
 	
+	if ( xmlns == "vcard-temp" )
+	{
+		handleIQVCardTemp(stanza);
+		return;
+	}
+	
 	handleIQUnknown(stanza);
 }
 
@@ -1250,6 +1256,105 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 }
 
 /**
+* XEP-0054: vcard-temp
+*/
+void VirtualHost::handleIQVCardTemp(Stanza stanza)
+{
+	if ( ! stanza->hasAttribute("to") )
+	{
+		// Обращение пользователя к собственной vcard
+		// vcard-temp
+		// http://xmpp.org/extensions/xep-0054.html
+		if ( stanza.type() == "get" )
+		{
+			// Получение собственной vcard
+			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
+			// or an IQ-result containing an empty <vCard/> element.
+			vcard_queries++;
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", getUserId(stanza.from().username()));
+			if( r.eof() )
+			{
+				// Вернуть пустой vcard
+				ATXmlTag *vCard = new ATXmlTag("vCard");
+				vCard->setDefaultNameSpaceAttribute("vcard-temp");
+				iq->insertChildElement(vCard);
+			}
+			else
+			{
+				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			}
+			r.free();
+			server->routeStanza(iq);
+			delete iq;
+		}
+		else if ( stanza.type() == "set" )
+		{
+			// Установка собственной vcard
+			std::string data = stanza["vCard"]->asString();
+			if( data.length() > 61440 )
+			{
+				Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
+				error.setFrom(name);
+				server->routeStanza(error);
+				delete error;
+				return;
+			}
+			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(data).c_str());
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			iq->setAttribute("id", stanza->getAttribute("id", ""));
+			ATXmlTag *vCard = new ATXmlTag("vCard");
+			vCard->setDefaultNameSpaceAttribute("vcard-temp");
+			iq->insertChildElement(vCard);
+			server->routeStanza(iq);
+			delete iq;
+		}
+	}
+	else
+	{
+		// Запрос чужого vcard (или своего способом псей)
+		// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
+		// or an IQ-result containing an empty <vCard/> element.
+		vcard_queries++;
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("from", stanza.to().bare());
+		iq->setAttribute("type", "result");
+		iq->setAttribute("id", stanza->getAttribute("id", ""));
+		
+		if( stanza.to().bare() == hostname() )
+		{
+			// запрос вкарда сервера
+			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?><vCard xmlns=\"vcard-temp\"><FN>Mawar Jabber/XMPP daemon</FN><NICKNAME>@}-&gt;--</NICKNAME><BDAY>2010-06-13</BDAY><ADR><HOME/><LOCALITY>Tangerang</LOCALITY><REGION>Banten</REGION><CTRY>Indonesia</CTRY></ADR><TITLE>Server</TITLE><ORG><ORGNAME>SmartCommunity</ORGNAME><ORGUNIT>Jabber/XMPP</ORGUNIT></ORG><URL>http://mawar.jsmart.web.id</URL></vCard>"));
+		}
+		else
+		{
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = (SELECT id_user FROM users WHERE user_login = %s)", db.quote(stanza.to().username()).c_str());
+			if( r.eof() )
+			{
+				// Вернуть пустой vcard
+				ATXmlTag *vCard = new ATXmlTag("vCard");
+				vCard->setDefaultNameSpaceAttribute("vcard-temp");
+				iq->insertChildElement(vCard);
+			}
+			else
+			{
+				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
+			}
+			r.free();
+		}
+		server->routeStanza(iq);
+		delete iq;
+	}
+}
+
+/**
 * XEP-0092: Software Version
 */
 void VirtualHost::handleIQVersion(Stanza stanza)
@@ -1442,85 +1547,6 @@ int VirtualHost::getUserId(const std::string &login) {
 	return user_id;
 }
 
-void VirtualHost::handleVcardRequest(Stanza stanza) {
-	if(!stanza->hasAttribute("to")) {
-		// Обращение пользователя к собственной vcard
-		// vcard-temp
-		// http://xmpp.org/extensions/xep-0054.html
-		if(stanza.type() == "get") {
-			// Получение собственной vcard
-			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
-			// or an IQ-result containing an empty <vCard/> element.
-			vcard_queries++;
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			
-			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", getUserId(stanza.from().username()));
-			if(r.eof()) {
-				// Вернуть пустой vcard
-				ATXmlTag *vCard = new ATXmlTag("vCard");
-				vCard->setDefaultNameSpaceAttribute("vcard-temp");
-				iq->insertChildElement(vCard);
-			} else {
-				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
-			}
-			r.free();
-			server->routeStanza(iq);
-			delete iq;
-		} else if(stanza.type() == "set") {
-			// Установка собственной vcard
-			std::string data = stanza["vCard"]->asString();
-			if(data.length() > 61440) {
-				Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
-				error.setFrom(name);
-				server->routeStanza(error);
-				delete error;
-				return;
-			}
-			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(data).c_str());
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("to", stanza.from().full());
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			ATXmlTag *vCard = new ATXmlTag("vCard");
-			vCard->setDefaultNameSpaceAttribute("vcard-temp");
-			iq->insertChildElement(vCard);
-			server->routeStanza(iq);
-			delete iq;
-		}
-	} else {
-		// Запрос чужого vcard (или своего способом псей)
-		// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
-		// or an IQ-result containing an empty <vCard/> element.
-		vcard_queries++;
-		Stanza iq = new ATXmlTag("iq");
-		iq->setAttribute("to", stanza.from().full());
-		iq->setAttribute("from", stanza.to().bare());
-		iq->setAttribute("type", "result");
-		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-		
-		if(stanza.to().bare() == hostname()) {
-			// запрос вкарда сервера
-			iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?><vCard xmlns=\"vcard-temp\"><FN>Mawar Jabber/XMPP daemon</FN><NICKNAME>@}-&gt;--</NICKNAME><BDAY>2010-06-13</BDAY><ADR><HOME/><LOCALITY>Tangerang</LOCALITY><REGION>Banten</REGION><CTRY>Indonesia</CTRY></ADR><TITLE>Server</TITLE><ORG><ORGNAME>SmartCommunity</ORGNAME><ORGUNIT>Jabber/XMPP</ORGUNIT></ORG><URL>http://mawar.jsmart.web.id</URL></vCard>"));
-		} else {
-			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = (SELECT id_user FROM users WHERE user_login = %s)", db.quote(stanza.to().username()).c_str());
-			if(r.eof()) {
-				// Вернуть пустой vcard
-				ATXmlTag *vCard = new ATXmlTag("vCard");
-				vCard->setDefaultNameSpaceAttribute("vcard-temp");
-				iq->insertChildElement(vCard);
-			} else {
-				iq->insertChildElement(parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["vcard_data"]));
-			}
-			r.free();
-		}
-		server->routeStanza(iq);
-		delete iq;
-	}
-}
-
 /**
 * Роутер исходящих станз (thread-safe)
 *
@@ -1545,12 +1571,6 @@ void VirtualHost::handleVcardRequest(Stanza stanza) {
 */
 bool VirtualHost::routeStanza(Stanza stanza)
 {
-	if(stanza->hasChild("vCard") && (stanza->getAttribute("type", "") == "get" || stanza->getAttribute("type", "") == "set")) {
-		// Запрос vcard может как содержать атрибут to, так и не содержать его…
-		handleVcardRequest(stanza);
-		return true;
-	}
-	
 	if ( stanza->name() == "iq" )
 	{
 		handleVHostIq(stanza);
