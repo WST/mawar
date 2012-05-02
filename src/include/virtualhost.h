@@ -83,6 +83,16 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleDirectlyIQ(Stanza stanza);
 		
 		/**
+		* XEP-0012: Last Activity
+		*/
+		void handleIQLast(Stanza stanza);
+		
+		/**
+		* XEP-0092: Software Version
+		*/
+		void handleIQVersion(Stanza stanza);
+		
+		/**
 		* XEP-0199: XMPP Ping
 		*/
 		void handleIQPing(Stanza stanza);

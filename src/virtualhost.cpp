@@ -151,21 +151,6 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 		
 		std::string query_xmlns = stanza["query"]->getAttribute("xmlns");
 		std::string stanza_type = stanza.type();
-
-		if(query_xmlns == "jabber:iq:register" && stanza.from().hostname() != hostname()) {
-			// Запрос регистрации на s2s
-			handleRegisterIq(0, stanza);
-			return;
-		}
-		
-		if(query_xmlns == "jabber:iq:version" && stanza_type == "get") {
-			version_requests++;
-			mawarWarning("Served incoming version request");
-			Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
-			server->routeStanza(version);
-			delete version;
-			return;
-		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#info" && stanza_type == "get") {
 			std::string node = stanza["query"]->getAttribute("node", "");
@@ -248,14 +233,6 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 				server->routeStanza(iq);
 				delete iq;
 			}
-		}
-		
-		if(query_xmlns == "jabber:iq:last" && stanza_type == "get") {
-			Stanza iq;
-			unsigned long int uptime = time(0) - start_time;
-			iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(uptime) + "\"/></iq>");
-			server->routeStanza(iq);
-			delete iq;
 		}
 		
 		if(query_xmlns == "http://jabber.org/protocol/disco#items" && stanza_type == "get") {
@@ -1117,9 +1094,58 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 		return;
 	}
 	
+	if( xmlns == "jabber:iq:register" )
+	{
+		// Запрос регистрации на s2s
+		handleRegisterIq(0, stanza);
+		return;
+	}
+	
+	if( xmlns == "jabber:iq:version" )
+	{
+		handleIQVersion(stanza);
+		return;
+	}
+	
+	if( xmlns == "jabber:iq:last" )
+	{
+		handleIQLast(stanza);
+		return;
+	}
+	
 	// TODO handleIQUnknown(stanza);
 	// пока не пересем сюда весь нужный код, handleIQUnknown()
 	// будет в конце handleVHostIq()
+}
+
+/**
+* XEP-0012: Last Activity
+*/
+void VirtualHost::handleIQLast(Stanza stanza)
+{
+	if( stanza->getAttribute("type") == "get" )
+	{
+		Stanza iq;
+		unsigned long int uptime = time(0) - start_time;
+		iq = parse_xml_string("<iq from=\"" + hostname() + "\" id=\"" + stanza.id() + "\" to=\"" + stanza.from().full() + "\" type=\"result\"><query xmlns=\"jabber:iq:last\" seconds=\"" + mawarPrintInteger(uptime) + "\"/></iq>");
+		server->routeStanza(iq);
+		delete iq;
+	}
+}
+
+/**
+* XEP-0092: Software Version
+*/
+void VirtualHost::handleIQVersion(Stanza stanza)
+{
+	if( stanza->getAttribute("type") == "get" )
+	{
+		version_requests++;
+		mawarWarning("Served incoming version request");
+		Stanza version = Stanza::serverVersion(hostname(), stanza.from(), stanza.id());
+		server->routeStanza(version);
+		delete version;
+	}
 }
 
 /**
