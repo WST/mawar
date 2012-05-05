@@ -138,6 +138,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleIQUnknown(Stanza stanza);
 		
 		/**
+		* Enable/disable user registration command
+		*
+		* XEP-0050: Ad-Hoc Commands
+		*/
+		void handleIQAdHocEnableRegistration(Stanza stanza);
+		
+		/**
 		* Обслуживание обычного презенса
 		*/
 		void serveCommonPresence(Stanza stanza);

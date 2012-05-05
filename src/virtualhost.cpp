@@ -906,6 +906,12 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			{
 				item = new ATXmlTag("item");
 					item->setAttribute("jid", name);
+					item->setAttribute("node", "enable_registration");
+					item->setAttribute("name", "Enable/disable user's registation");
+					query->insertChildElement(item);
+				
+				item = new ATXmlTag("item");
+					item->setAttribute("jid", name);
 					item->setAttribute("node", "stop");
 					item->setAttribute("name", "Stop Mawar daemon");
 					query->insertChildElement(item);
@@ -1121,6 +1127,11 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 	
 	Command *cmd = new Command(stanza->getChild("command"));
 	// TODO segfault possible
+	if ( ! cmd )
+	{
+		handleIQUnknown(stanza);
+		return;
+	}
 	
 	if ( cmd->action() == "cancel" )
 	{
@@ -1133,6 +1144,12 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 	}
 	
 	std::string node = cmd->node();
+	
+	if ( node == "enable_registration" )
+	{
+		handleIQAdHocEnableRegistration(stanza);
+		return;
+	}
 	
 	if ( node == "stop" )
 	{
@@ -1462,6 +1479,47 @@ void VirtualHost::handleIQUnknown(Stanza stanza)
 	
 	server->routeStanza(result);
 	delete result;
+}
+
+/**
+* Enable/disable user registration command
+*
+* XEP-0050: Ad-Hoc Commands
+*/
+void VirtualHost::handleIQAdHocEnableRegistration(Stanza stanza)
+{
+	Stanza form = stanza["command"]->firstChild("x");
+	if ( form && form->getAttribute("xmlns") == "jabber:x:data" )
+	{
+		string value = form["field"]["value"]->getCharacterData();
+		if ( value == "yes" )
+		{
+			registration_allowed = true;
+			
+			Stanza reply = Command::commandDoneStanza(name, stanza);
+			server->routeStanza(reply);
+			delete reply;
+			return;
+		}
+		else if ( value == "no" )
+		{
+			registration_allowed = false;
+			
+			Stanza reply = Command::commandDoneStanza(name, stanza);
+			server->routeStanza(reply);
+			delete reply;
+			return;
+		}
+	}
+	
+	Command *reply = new Command();
+	reply->setNode("enable_registration");
+	reply->setStatus("executing");
+	reply->createForm("form");
+	reply->form()->setTitle("Enable/disable user registation");
+	reply->form()->insertLineEdit("enabe-registation", "Enable registation (yes/no)", registration_allowed ? "yes" : "no", true);
+	server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
+	delete reply;
 }
 
 /**
