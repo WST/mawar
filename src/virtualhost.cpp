@@ -960,13 +960,15 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			iq->setAttribute("type", "result");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
+			iq->setAttribute("id", stanza->getAttribute("id", ""));
 			
 			ATXmlTag *item;
 			for(ATXmlTag *i = config->find("disco/item"); i; i = config->findNext("disco/item", i))
 			{
 				item = new ATXmlTag("item");
 				item->setAttribute("jid", i->getAttribute("jid", name));
+				item->setAttribute("node", i->getAttribute("node"));
+				item->setAttribute("name", i->getCharacterData());
 				query->insertChildElement(item);
 			}
 			// TODO: здесь также неплохо бы добавить приконнекченные компоненты…
