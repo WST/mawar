@@ -43,7 +43,7 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 	if ( onBindConflict )
 	{
 		string action = onBindConflict->getCharacterData();
-		if ( action == "override-resouce" ) bind_conflict = bind_override;
+		if ( action == "override-resource" ) bind_conflict = bind_override;
 		else if ( action == "reject-new" ) bind_conflict = bind_reject_new;
 		else if ( action == "remove-old" ) bind_conflict = bind_remove_old;
 		switch ( bind_conflict )
@@ -585,7 +585,7 @@ void VirtualHost::saveOfflineMessage(Stanza stanza) {
 	if(atoi(r["cnt"].c_str()) < 100) { // TODO — брать максимальное число оффлайн-сообщений из конфига
 		std::string data = stanza->asString();
 		if(data.length() > 61440) {
-			Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
+			Stanza error = Stanza::iqError(stanza, "resource-constraint", "cancel");
 			server->routeStanza(error);
 			delete error;
 			r.free();
@@ -593,7 +593,7 @@ void VirtualHost::saveOfflineMessage(Stanza stanza) {
 		}
 		db.query("INSERT INTO spool (message_to, message_stanza, message_when) VALUES (%s, %s, %d)", db.quote(stanza.to().bare()).c_str(), db.quote(data).c_str(), time(NULL));
 	} else {
-		Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
+		Stanza error = Stanza::iqError(stanza, "resource-constraint", "cancel");
 		server->routeStanza(error);
 		delete error;
 	}
@@ -864,7 +864,7 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 * RFC 6120, 7. Resource Binding
 */
 void VirtualHost::handleIQBind(Stanza stanza, XMPPClient *client)
-{	
+{
 	if ( client )
 	{
 		if ( stanza->getAttribute("type") == "set" )
@@ -1499,7 +1499,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			std::string data = stanza["vCard"]->asString();
 			if( data.length() > 61440 )
 			{
-				Stanza error = Stanza::iqError(stanza, "resouce-constraint", "cancel");
+				Stanza error = Stanza::iqError(stanza, "resource-constraint", "cancel");
 				error.setFrom(name);
 				server->routeStanza(error);
 				delete error;
