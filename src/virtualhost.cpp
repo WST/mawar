@@ -46,6 +46,18 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 		if ( action == "override-resouce" ) bind_conflict = bind_override;
 		else if ( action == "reject-new" ) bind_conflict = bind_reject_new;
 		else if ( action == "remove-old" ) bind_conflict = bind_remove_old;
+		switch ( bind_conflict )
+		{
+			case bind_override:
+				printf("on-bind-conflict: bind_override\n");
+				break;
+			case bind_reject_new:
+				printf("on-bind-conflict: bind_reject_new\n");
+				break;
+			case bind_remove_old:
+				printf("on-bind-conflict: bind_remove_old\n");
+				break;
+		}
 	}
 	
 	TagHelper storage = cfg->getChild("storage");
@@ -1680,17 +1692,33 @@ void VirtualHost::handleIQAdHocEnableRegistration(Stanza stanza)
 *
 * @note возможно в нем отпадет необходимость по завершении routeStanza()
 */
-XMPPClient *VirtualHost::getClientByJid(const JID &jid) {
+XMPPClient *VirtualHost::getClientByJid(const JID &jid)
+{
+	XMPPClient *client;
+	
 	mutex.lock();
-		sessions_t::iterator it = onliners.find(jid.username());
-		if(it != onliners.end()) {
-			reslist_t::iterator jt = it->second.find(jid.resource());
-			if(jt != it->second.end()) {
-				mutex.unlock(); // NB: unlock перед каждым return!
-				return jt->second;
-			}
-		}
+		client = getClientByJid0(jid);
 	mutex.unlock();
+	
+	return client;
+}
+
+/**
+* Найти клиента по JID (thread-unsafe)
+*
+* @note возможно в нем отпадет необходимость по завершении routeStanza()
+*/
+XMPPClient *VirtualHost::getClientByJid0(const JID &jid)
+{
+	sessions_t::iterator it = onliners.find(jid.username());
+	if ( it != onliners.end() )
+	{
+		reslist_t::iterator jt = it->second.find(jid.resource());
+		if ( jt != it->second.end() )
+		{
+			return jt->second;
+		}
+	}
 	return 0;
 }
 
@@ -1719,8 +1747,10 @@ std::string VirtualHost::genResource(const char *username)
 */
 bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
 {
+	mutex.lock();
+	
 	string new_resource = resource;
-	XMPPClient *old = getClientByJid(client->client_jid);
+	XMPPClient *old = getClientByJid0(client->client_jid);
 	if ( old )
 	{
 		if ( bind_conflict == bind_override )
@@ -1730,6 +1760,7 @@ bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
 		else if ( bind_conflict == bind_reject_new )
 		{
 			// отказать в новом соединении
+			mutex.unlock();
 			return false;
 		}
 		else if ( bind_conflict == bind_remove_old )
@@ -1748,6 +1779,7 @@ bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
 	client->client_jid.setResource(new_resource);
 	onliners[client->jid().username()][new_resource] = client;
 	
+	mutex.unlock();
 	return true;
 }
 
@@ -1756,6 +1788,28 @@ bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
 */
 void VirtualHost::unbindResource(const char *resource, XMPPClient *client)
 {
+	printf("vhost[%s] unbind(%s, %s, %d)\n", hostname().c_str(), resource, client->client_jid.full().c_str(), client->getFd());
+	mutex.lock();
+	
+	sessions_t::iterator user = onliners.find(client->client_jid.username());
+	if ( user != onliners.end() )
+	{
+		reslist_t::iterator res = user->second.find(resource);
+		if ( res != user->second.end() )
+		{
+			if ( res->second == client )
+			{
+				printf("vhost[%s] remove resource(%s, %s)\n", hostname().c_str(), resource, client->client_jid.full().c_str());
+				user->second.erase(res);
+			}
+			else
+			{
+				printf("vhost[%s] resource (%s, %d)\n", hostname().c_str(), res->second->client_jid.full().c_str(), res->second->getFd());
+			}
+		}
+	}
+	
+	mutex.unlock();
 }
 
 void VirtualHost::sendOfflineMessages(XMPPClient *client) {

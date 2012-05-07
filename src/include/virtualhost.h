@@ -239,6 +239,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		XMPPClient *getClientByJid(const JID &jid);
 		
 		/**
+		* Найти клиента по JID (thread-unsafe)
+		*
+		* @note возможно в нем отпадет необходимость по завершении routeStanza()
+		*/
+		XMPPClient *getClientByJid0(const JID &jid);
+		
+		/**
 		* Генерировать случайный ресурс для абонента
 		*/
 		std::string genResource(const char *username);

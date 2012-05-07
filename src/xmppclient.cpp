@@ -53,6 +53,7 @@ void XMPPClient::onPeerDown()
 */
 void XMPPClient::onTerminate()
 {
+	if ( vhost ) vhost->unbindResource(client_jid.resource().c_str(), this);
 	mutex.lock();
 		endElement("stream:stream");
 		flush();

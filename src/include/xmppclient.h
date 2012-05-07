@@ -114,6 +114,8 @@ public:
 	* JID потока
 	*/
 	JID jid() const;
+	
+	int getFd() const { return fd; }
 
 	/**
 	* Показывает, что клиент уже авторизовался
