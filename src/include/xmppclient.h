@@ -47,8 +47,6 @@ protected:
 		session
 	} state;
 	
-	JID client_jid;
-	
 	/**
 	* ID пользователя
 	*/
@@ -96,6 +94,11 @@ public:
 	* FLASE - Initial presense ещё не отправлен
 	*/
 	bool available;
+	
+	/**
+	* JID клиента
+	*/
+	JID client_jid;
 	
 	/**
 	* Конструктор потока
@@ -153,14 +156,6 @@ public:
 	* Обработчик авторизации: ответ клиента
 	*/
 	virtual void onResponseStanza(Stanza stanza);
-	
-	/**
-	* Устаревший обработчик iq bind
-	*
-	* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
-	* или в отдельный модуль
-	*/
-	void handleIQBind(Stanza stanza);
 	
 	/**
 	* Устаревший обрабтчик iq bind

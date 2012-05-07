@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <nanosoft/gsaslserver.h>
 #include <db.h>
 #include <time.h>
@@ -22,8 +23,10 @@ using namespace nanosoft;
 * @param aName имя хоста
 * @param config конфигурация хоста
 */
-VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cfg): XMPPDomain(srv, aName) {
-	
+VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cfg):
+	XMPPDomain(srv, aName),
+	bind_conflict(bind_override)
+{
 	ATXmlTag *extensions = cfg->firstChild("extensions");
 	if ( extensions )
 	{
@@ -35,6 +38,15 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 	
 	TagHelper registration = cfg->getChild("registration");
 	registration_allowed = registration->getAttribute("enabled", "no") == "yes";
+	
+	TagHelper onBindConflict = cfg->getChild("on-bind-conflict");
+	if ( onBindConflict )
+	{
+		string action = onBindConflict->getCharacterData();
+		if ( action == "override-resouce" ) bind_conflict = bind_override;
+		else if ( action == "reject-new" ) bind_conflict = bind_reject_new;
+		else if ( action == "remove-old" ) bind_conflict = bind_remove_old;
+	}
 	
 	TagHelper storage = cfg->getChild("storage");
 	if(storage->getAttribute("engine", "mysql") != "mysql") {
@@ -744,11 +756,8 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 	
 	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
 	{
-		if ( client )
-		{
-			client->handleIQBind(stanza);
-			return;
-		}
+		handleIQBind(stanza, client);
+		return;
 	}
 	
 	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
@@ -834,6 +843,57 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 	{
 		handleIQVCardTemp(stanza);
 		return;
+	}
+	
+	handleIQUnknown(stanza);
+}
+
+/**
+* RFC 6120, 7. Resource Binding
+*/
+void VirtualHost::handleIQBind(Stanza stanza, XMPPClient *client)
+{	
+	if ( client )
+	{
+		if ( stanza->getAttribute("type") == "set" )
+		{
+			Stanza resource = stanza["bind"]->firstChild("resource");
+			if ( resource )
+			{
+				// RFC 6120, 7.7. Client-Submitted Resource Identifier
+				client->client_jid.setResource(resource);
+			}
+			else
+			{
+				// RFC 6120, 7.6. Server-Generated Resource Identifier
+				client->client_jid.setResource(genResource(client->client_jid.username().c_str()));
+			}
+			
+			if ( bindResource(client->client_jid.resource().c_str(), client) )
+			{
+				Stanza iq = new ATXmlTag("iq");
+					iq->setAttribute("type", "result");
+					iq->setAttribute("id", stanza->getAttribute("id"));
+					TagHelper bind = iq["bind"];
+						bind->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-bind");
+						bind["jid"] = client->client_jid.full();
+				client->sendStanza(iq);
+				delete iq;
+			}
+			else
+			{
+				Stanza iq = new ATXmlTag("iq");
+					iq->setAttribute("type", "error");
+					iq->setAttribute("id", stanza->getAttribute("id"));
+					TagHelper error = iq["error"];
+						error->setAttribute("type", "wait");
+						error["resource-constraint"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+				client->sendStanza(iq);
+				delete iq;
+			}
+			
+			return;
+		}
 	}
 	
 	handleIQUnknown(stanza);
@@ -1634,6 +1694,70 @@ XMPPClient *VirtualHost::getClientByJid(const JID &jid) {
 	return 0;
 }
 
+/**
+* Генерировать случайный ресурс для абонента
+*/
+std::string VirtualHost::genResource(const char *username)
+{
+	JID jid;
+	jid.setHostname(hostname());
+	jid.setUsername(username);
+	
+	do
+	{
+		char buf[80];
+		sprintf(buf, "%4X-%4X-%4X-%4X", random() % 0x10000, random() % 0x10000, random() % 0x10000, random() % 0x10000);
+		jid.setResource(buf);
+	}
+	while ( getClientByJid(jid) );
+	
+	return jid.resource();
+}
+
+/**
+* Привязать ресурс
+*/
+bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
+{
+	string new_resource = resource;
+	XMPPClient *old = getClientByJid(client->client_jid);
+	if ( old )
+	{
+		if ( bind_conflict == bind_override )
+		{
+			new_resource = genResource(client->client_jid.username().c_str());
+		}
+		else if ( bind_conflict == bind_reject_new )
+		{
+			// отказать в новом соединении
+			return false;
+		}
+		else if ( bind_conflict == bind_remove_old )
+		{
+			// выкинуть старого клиента
+			Stanza presence = new ATXmlTag("presence");
+			presence->setAttribute("type", "unavailable");
+			presence["status"] = "Replaced by new connection";
+			old->handleUnavailablePresence(presence);
+			old->terminate();
+			delete presence;
+		}
+	}
+	
+	onliners_number++;
+	client->client_jid.setResource(new_resource);
+	onliners[client->jid().username()][new_resource] = client;
+	
+	return true;
+}
+
+/**
+* Отвязать ресурс
+*/
+void VirtualHost::unbindResource(const char *resource, XMPPClient *client)
+{
+}
+
 void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 	DB::result r = db.query("SELECT * FROM spool WHERE message_to = %s ORDER BY message_when ASC", db.quote(client->jid().bare()).c_str());
 	for(; !r.eof(); r.next())
@@ -1657,28 +1781,6 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 void VirtualHost::onOnline(XMPPClient *client)
 {
 	// NOTE вызывается только при успешной инициализации session (после bind)
-	mutex.lock();
-	sessions_t::iterator user = onliners.find(client->jid().username());
-	if(user != onliners.end()) {
-		reslist_t::iterator resource = user->second.find(client->jid().resource());
-		if(resource != user->second.end()) {
-			//replaced by new connection
-			Stanza offline = parse_xml_string("<?xml version=\"1.0\"\n<presence type=\"unavailable\"><status>Replaced by new connection</status></presence>");
-			onliners[client->jid().username()][client->jid().resource()]->handleUnavailablePresence(offline);
-			onliners[client->jid().username()][client->jid().resource()]->terminate();
-			delete offline;
-			delete onliners[client->jid().username()][client->jid().resource()]; // если удалять элемент карты, в деструкторе XMPPClient вызовется повторное удаление!
-			user->second[client->jid().resource()] = client;
-			// Число онлайнов не изменилось, onliners_number менять не надо
-		} else {
-			user->second[client->jid().resource()] = client;
-			onliners_number++;
-		}
-	} else {
-		onliners[client->jid().username()][client->jid().resource()] = client;
-		onliners_number++;
-	}
-	mutex.unlock();
 	sendOfflineMessages(client);
 }
 

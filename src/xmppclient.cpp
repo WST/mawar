@@ -150,30 +150,7 @@ void XMPPClient::onResponseStanza(Stanza stanza)
 }
 
 /**
-* Устаревший обработчик iq bind
-*
-* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
-* или в отдельный модуль
-*/
-void XMPPClient::handleIQBind(Stanza stanza)
-{
-	if(stanza->hasChild("bind") && (stanza.type() == "set" || stanza.type() == "get")) {
-		client_jid.setResource(stanza.type() == "set" ? string(stanza["bind"]["resource"]) : "foo");
-		Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("type", "result");
-			iq->setAttribute("id", stanza->getAttribute("id"));
-			TagHelper bind = iq["bind"];
-				bind->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-bind");
-				bind["jid"] = jid().full();
-		sendStanza(iq);
-		delete iq;
-		//vhost->onOnline(this);
-		return;
-	}
-}
-
-/**
-* Устаревший обрабтчик iq bind
+* Устаревший обрабтчик iq session
 *
 * TODO необходима ревизия, скорее всего надо перенести в VirtualHost
 * или в отдельный модуль
@@ -211,12 +188,6 @@ void XMPPClient::onIqStanza(Stanza stanza)
 {
 	Stanza child = stanza->firstChild();
 	string xmlns = child ? child->getAttribute("xmlns", "") : "";
-	
-	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
-	{
-		handleIQBind(stanza);
-		return;
-	}
 	
 	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
 	{

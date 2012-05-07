@@ -31,6 +31,28 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		nanosoft::Mutex mutex;
 		
 		/**
+		* RFC 6120, 7.7.2.2. Resource Binding, Conflict
+		*
+		* Возможные варианты поведения при конфликте ресурса во время bind
+		*/
+		enum bind_conflict_t {
+			/**
+			* Сервер генерирует клиенту новый ресурс
+			*/
+			bind_override,
+			
+			/**
+			* Отказать в привязке ресурса новому клиенту
+			*/
+			bind_reject_new,
+			
+			/**
+			* Выкинуть старого клиента
+			*/
+			bind_remove_old
+		} state;
+		
+		/**
 		* Конструктор
 		* @param srv ссылка на сервер
 		* @param aName имя хоста
@@ -81,6 +103,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* the stanza
 		*/
 		void handleDirectlyIQ(Stanza stanza, XMPPClient *client = 0);
+		
+		/**
+		* RFC 6120, 7. Resource Binding
+		*/
+		void handleIQBind(Stanza stanza, XMPPClient *client);
 		
 		/**
 		* XEP-0012: Last Activity
@@ -212,6 +239,21 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		XMPPClient *getClientByJid(const JID &jid);
 		
 		/**
+		* Генерировать случайный ресурс для абонента
+		*/
+		std::string genResource(const char *username);
+		
+		/**
+		* Привязать ресурс
+		*/
+		bool bindResource(const char *resource, XMPPClient *client);
+		
+		/**
+		* Отвязать ресурс
+		*/
+		void unbindResource(const char *resource, XMPPClient *client);
+		
+		/**
 		* Событие: Пользователь появился в online (thread-safe)
 		* @param client поток
 		*/
@@ -313,6 +355,8 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		extlist_t ext;
 		
 		bool registration_allowed; // разрешена ли регистрация
+		
+		bind_conflict_t bind_conflict; // политика разрешения конфликта ресурсов
 		unsigned long int onliners_number; // число подключённых пользователей
 		unsigned long int vcard_queries; // число запросов vcard
 		unsigned long int stats_queries; // число запросов статистики
