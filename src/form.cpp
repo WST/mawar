@@ -137,6 +137,23 @@ void Form::insertList(std::string var, std::string label, std::list<std::string>
 	tag->insertChildElement(field);
 }
 
+void Form::insertCheckbox(std::string var, std::string label, bool checked, bool required) {
+	ATXmlTag *field = new ATXmlTag("field");
+	field->setAttribute("type", "boolean");
+	field->setAttribute("var", var);
+	field->setAttribute("label", label);
+	
+	ATXmlTag *value = new ATXmlTag("value");
+	value->insertCharacterData(checked ? "1" : "0");
+	field->insertChildElement(value);
+	
+	if(required) {
+		field->insertChildElement(new ATXmlTag("required"));
+	}
+	
+	tag->insertChildElement(field);
+}
+
 /*
 Получить значение поля по его имени
 */

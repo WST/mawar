@@ -20,6 +20,7 @@ class Form
 		void insertLineEdit(std::string var, std::string label, std::string value, bool required = false);
 		void insertTextEdit(std::string var, std::string label, std::string value, bool required = false);
 		void insertList(std::string var, std::string label, std::list<std::string> values, std::string default_value, bool required = false, bool allow_multiple = false);
+		void insertCheckbox(std::string var, std::string label, bool checked, bool required);
 		ATXmlTag *asTag();
 		
 	private:
@@ -29,4 +30,3 @@ class Form
 };
 
 #endif
-
