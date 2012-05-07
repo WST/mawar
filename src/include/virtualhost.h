@@ -52,7 +52,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* received from a local entity (typically a client) that is connected
 		* to the server. 
 		*/
-		void handleDirectly(Stanza stanza);
+		void handleDirectly(Stanza stanza, XMPPClient *client = 0);
 		
 		/**
 		* RFC 6120, 10.3.1  No 'to' Address, Message
@@ -61,7 +61,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* it MUST treat the message as if the 'to' address were the bare
 		* JID <localpart@domainpart> of the sending entity. 
 		*/
-		void handleDirectlyMessage(Stanza stanza);
+		void handleDirectlyMessage(Stanza stanza, XMPPClient *client = 0);
 		
 		/**
 		* RFC 6120, 10.3.2  No 'to' Address, Presence
@@ -71,7 +71,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* sending entity's presence, if applicable ([XMPP‑IM] defines the
 		* semantics of such broadcasting for presence applications). 
 		*/
-		void handleDirectlyPresence(Stanza stanza);
+		void handleDirectlyPresence(Stanza stanza, XMPPClient *client = 0);
 		
 		/**
 		* RFC 6120, 10.3.3  No 'to' Address, IQ
@@ -80,7 +80,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* process the stanza on behalf of the account from which received
 		* the stanza
 		*/
-		void handleDirectlyIQ(Stanza stanza);
+		void handleDirectlyIQ(Stanza stanza, XMPPClient *client = 0);
 		
 		/**
 		* XEP-0012: Last Activity

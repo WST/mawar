@@ -57,14 +57,6 @@ protected:
 	ClientPresence client_presence;
 	
 	/**
-	* Маркер online/offline
-	*
-	* TRUE - Initial presense уже отправлен
-	* FLASE - Initial presense ещё не отправлен
-	*/
-	bool available;
-	
-	/**
 	* Событие: начало потока
 	*/
 	virtual void onStartStream(const std::string &name, const attributes_t &attributes);
@@ -96,6 +88,14 @@ public:
 	* FALSE - пользователь не запрашивал ростер и хочет с ним работать
 	*/
 	bool use_roster;
+	
+	/**
+	* Маркер online/offline
+	*
+	* TRUE - Initial presense уже отправлен
+	* FLASE - Initial presense ещё не отправлен
+	*/
+	bool available;
 	
 	/**
 	* Конструктор потока

@@ -632,12 +632,52 @@ void VirtualHost::handleMessage(Stanza stanza) {
 * received from a local entity (typically a client) that is connected
 * to the server. 
 */
-void VirtualHost::handleDirectly(Stanza stanza)
+void VirtualHost::handleDirectly(Stanza stanza, XMPPClient *client)
 {
-	if (stanza->name() == "message" ) handleDirectlyMessage(stanza);
-	else if (stanza->name() == "presence") handleDirectlyPresence(stanza);
-	else if (stanza->name() == "iq") handleDirectlyIQ(stanza);
-	else ; // ??
+	string name = stanza->name();
+	
+	if ( name == "message" )
+	{
+		// RFC 6120, 10.3.1.
+		handleDirectlyMessage(stanza, client);
+		return;
+	}
+	
+	if ( name == "presence")
+	{
+		// RFC 6120, 10.3.2.
+		handleDirectlyPresence(stanza, client);
+		return;
+	}
+	
+	if ( name == "iq")
+	{
+		// RFC 6120, 10.3.3.
+		handleDirectlyIQ(stanza, client);
+		return;
+	}
+	
+	// TODO something
+	if ( name == "auth" )
+	{
+		if ( client )
+		{
+			client->onAuthStanza(stanza);
+			return;
+		}
+	}
+	
+	// TODO something
+	if ( name == "response" )
+	{
+		if ( client )
+		{
+			client->onResponseStanza(stanza);
+			return;
+		}
+	}
+	
+	// else ??
 }
 
 /**
@@ -647,8 +687,10 @@ void VirtualHost::handleDirectly(Stanza stanza)
 * it MUST treat the message as if the 'to' address were the bare
 * JID <localpart@domainpart> of the sending entity. 
 */
-void VirtualHost::handleDirectlyMessage(Stanza stanza)
+void VirtualHost::handleDirectlyMessage(Stanza stanza, XMPPClient *client)
 {
+	stanza->setAttribute("to", stanza.from().bare());
+	server->routeStanza(stanza);
 }
 
 /**
@@ -659,8 +701,24 @@ void VirtualHost::handleDirectlyMessage(Stanza stanza)
 * sending entity's presence, if applicable ([XMPP‑IM] defines the
 * semantics of such broadcasting for presence applications). 
 */
-void VirtualHost::handleDirectlyPresence(Stanza stanza)
+void VirtualHost::handleDirectlyPresence(Stanza stanza, XMPPClient *client)
 {
+	// TODO
+	if ( client )
+	{
+		if ( ! client->available )
+		{
+			// RFC 3921 (5.1.1) Initial Presence
+			client->handleInitialPresence(stanza);
+			return;
+		}
+		
+		// RFC 3921 (5.1.2) Presence Broadcast
+		client->handlePresenceBroadcast(stanza);
+		return;
+	}
+	
+	// else ???
 }
 
 /**
@@ -670,7 +728,7 @@ void VirtualHost::handleDirectlyPresence(Stanza stanza)
 * process the stanza on behalf of the account from which received
 * the stanza
 */
-void VirtualHost::handleDirectlyIQ(Stanza stanza)
+void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 {
 	// сначала ищем в модулях-расширениях
 	Stanza body = stanza->firstChild();
@@ -684,6 +742,39 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 		return;
 	}
 	
+	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
+	{
+		if ( client )
+		{
+			client->handleIQBind(stanza);
+			return;
+		}
+	}
+	
+	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
+	{
+		if ( client )
+		{
+			client->handleIQSession(stanza);
+			return;
+		}
+	}
+	
+	if ( xmlns == "jabber:iq:roster" )
+	{
+		if ( client )
+		{
+			client->handleIQRoster(stanza);
+			return;
+		}
+	}
+	
+	if ( xmlns == "jabber:iq:register" )
+	{
+		handleRegisterIq(client, stanza);
+		return;
+	}
+
 	if ( xmlns == "urn:xmpp:ping" )
 	{
 		handleIQPing(stanza);

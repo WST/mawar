@@ -73,18 +73,23 @@ void XMPPClient::onStanza(Stanza stanza)
 	// TODO не будет ли это противоречить RFC ?..
 	stanza->setAttribute("from", client_jid.full());
 	
-	// TODO привести маршрутизацию в порядок и в соответствии
-	// с RFC 6120. Полагаю здесь можно оставить обработку авторизации
-	// а всё остальное перевести в VirtualHost, точнее маршрутизировать
-	// через server->routeStanza() которая доставит в нужный домен
-	// и маршрутизацией будет заниматься этот домен
+	// RFC 6120, 10.3.  No 'to' Address
+	// Если атрибута 'to' нет, то станзу обработать должен
+	// сам сервер (vhost).
+	if ( ! stanza->hasAttribute("to") )
+	{
+		if ( vhost )
+		{
+			vhost->handleDirectly(stanza, this);
+			return;
+		}
+		
+		fprintf(stderr, "unexpected XMPPClient::vhost = NULL\n");
+		return;
+	}
 	
-	if (stanza->name() == "iq") onIqStanza(stanza);
-	else if (stanza->name() == "auth") onAuthStanza(stanza);
-	else if (stanza->name() == "response" ) onResponseStanza(stanza);
-	else if (stanza->name() == "message" ) onMessageStanza(stanza);
-	else if (stanza->name() == "presence") onPresenceStanza(stanza);
-	else ; // ???
+	// Если атрибут 'to' передаем маршрутизацию серверу
+	server->routeStanza(stanza);
 }
 
 /**
