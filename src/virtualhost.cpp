@@ -112,49 +112,18 @@ VirtualHost::~VirtualHost() {
 void VirtualHost::handleVHostIq(Stanza stanza)
 {
 	// если станза адресуется к серверу, то обработать должен сервер
-	if ( stanza.to().full() == hostname() )
+	if ( stanza.to().resource() == "" )
 	{
 		handleDirectlyIQ(stanza);
 		return;
-		// весь ниже лежаший код относиться к handleDirectlyIQ()
-		// однако вместо того тупо копипастить, будем по тихоньку
-		// делить на функции и запихивать в handleDirectlyIQ()
 	}
-	
-	// если станза адресуется клиенту, то доставить нужно клиенту
-	if ( stanza.to().username() != "" )
+	else
 	{
-		// TODO отправить станзу клиенту
-		VirtualHost::sessions_t::iterator it;
-		VirtualHost::reslist_t reslist;
-		VirtualHost::reslist_t::iterator jt;
-		
-		it = onliners.find(stanza.to().username());
-		if( it != onliners.end() )
+		XMPPClient *client = getClientByJid(stanza.to());
+		if ( client )
 		{
-			// Проверить, есть ли ресурс, если он указан
-			JID to = stanza.to();
-			if( ! to.resource().empty() )
-			{
-				// если указан ресурс, то отправить на ресурс
-				jt = it->second.find(to.resource());
-				if( jt != it->second.end() )
-				{
-					jt->second->sendStanza(stanza); // TODO — учесть bool
-					return;
-				}
-				// Не отправили на выбранный ресурс, смотрим дальше…
-				// TODO сообщить что такого клиента нет
-				return;
-			}
-			else
-			{
-				// TODO как правильно?
-				// а правильно обработать должен сервер, т.е. в данном
-				// случае vhost
-				handleDirectlyIQ(stanza);
-				return;
-			}
+			client->sendStanza(stanza);
+			return;
 		}
 		else
 		{
@@ -1957,7 +1926,7 @@ bool VirtualHost::routeStanza(Stanza stanza)
 	XMPPClient *client = 0;
 	
 	// TODO корректный роутинг станз возможно на основе анализа типа станзы
-	// NB код марштрутизации должен быть thread-safe, getClientByJID сейчас thread-safe
+	// NB код марштрутизации должен быть thread-safe, getClientByJid сейчас thread-safe
 	client = getClientByJid(stanza.to());
 	
 	if ( client ) {
