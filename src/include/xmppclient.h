@@ -88,6 +88,14 @@ public:
 	bool use_roster;
 	
 	/**
+	* "connected resource"
+	*
+	* TRUE - client has bound a resource to the stream
+	* FALSE - client hasn't bound a resource to the stream
+	*/
+	bool connected;
+	
+	/**
 	* Маркер online/offline
 	*
 	* TRUE - Initial presense уже отправлен
@@ -234,6 +242,11 @@ public:
 	* Обработчик presence-станзы
 	*/
 	void onPresenceStanza(Stanza stanza);
+	
+	/**
+	* Обработчик message-станзы
+	*/
+	void onMessageStanza(Stanza stanza);
 	
 	/**
 	* Чтение ростера клиентом

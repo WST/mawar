@@ -1729,6 +1729,7 @@ bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
 	onliners_number++;
 	client->client_jid.setResource(new_resource);
 	onliners[client->jid().username()][new_resource] = client;
+	client->connected = true;
 	
 	mutex.unlock();
 	return true;

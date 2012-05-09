@@ -20,7 +20,7 @@ using namespace nanosoft;
 */
 XMPPClient::XMPPClient(XMPPServer *srv, int sock):
 	XMPPStream(srv, sock), vhost(0),
-	state(init), available(false), use_roster(false)
+	state(init), connected(false), available(false), use_roster(false)
 {
 	lock();
 }
@@ -78,7 +78,7 @@ void XMPPClient::onStanza(Stanza stanza)
 	
 	if ( name == "message" )
 	{
-		server->routeStanza(stanza);
+		onMessageStanza(stanza);
 		return;
 	}
 	
@@ -574,6 +574,35 @@ void XMPPClient::onPresenceStanza(Stanza stanza)
 	// что с ним делать в RFC не нашел, можно конечно послать ошибку
 	// не будем напрягаться, просто выкинем станзу в /dev/null
 	// (c) shade
+}
+
+/**
+* Обработчик message-станзы
+*/
+void XMPPClient::onMessageStanza(Stanza stanza)
+{
+	if ( connected )
+	{
+		server->routeStanza(stanza);
+		return;
+	}
+	
+	if ( stanza->getAttribute("type", "") == "error" ) return;
+	
+	//vhost->xmpp_error_queries++;
+	
+	Stanza result = new ATXmlTag("message");
+	result->setAttribute("from", stanza.to().full());
+	result->setAttribute("to", stanza.from().full());
+	result->setAttribute("type", "error");
+	if ( stanza->hasAttribute("id") ) result->setAttribute("id", stanza->getAttribute("id"));
+	Stanza error = result["error"];
+		error->setAttribute("type", "auth");
+		error->setAttribute("code", "401");
+		error["not-authorized"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+	
+	sendStanza(result);
+	delete result;
 }
 
 /**
