@@ -53,7 +53,20 @@ void XMPPClient::onPeerDown()
 */
 void XMPPClient::onTerminate()
 {
-	if ( vhost ) vhost->unbindResource(client_jid.resource().c_str(), this);
+	if ( vhost )
+	{
+		if ( available )
+		{
+			Stanza presence = new ATXmlTag("presence");
+			presence->setAttribute("from", client_jid.full());
+			presence->setAttribute("type", "unavailable");
+			presence["status"] = "Connection was lost";
+			handleUnavailablePresence(presence);
+			delete presence;
+		}
+		
+		vhost->unbindResource(client_jid.resource().c_str(), this);
+	}
 	mutex.lock();
 		endElement("stream:stream");
 		flush();
