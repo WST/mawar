@@ -750,7 +750,7 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 	
 	if ( xmlns == "jabber:iq:register" )
 	{
-		handleRegisterIq(client, stanza);
+		handleRegisterIq(0, stanza);
 		return;
 	}
 
@@ -1965,6 +1965,7 @@ void VirtualHost::rosterPush(const std::string &username, Stanza stanza)
 * XMPPClient
 */
 void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
+	printf("vhost[%s, %d] handleRegisterIq: %s\n", hostname().c_str(), (client ? client->getFd() : 0), stanza->asString().c_str());
 	if(!registration_allowed) {
 		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
 		error->setAttribute("from", hostname());
@@ -1996,7 +1997,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		if(client) {
 			client->sendStanza(iq);
 		} else {
-			iq->setAttribute("to", stanza.to().full());
+			iq->setAttribute("to", stanza.from().full());
 			server->routeStanza(iq);
 		}
 		delete iq;
@@ -2016,7 +2017,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 			if(client) {
 				client->sendStanza(iq);
 			} else {
-				iq->setAttribute("to", stanza.to().full());
+				iq->setAttribute("to", stanza.from().full());
 				server->routeStanza(iq);
 			}
 			delete iq;
@@ -2041,7 +2042,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				if(client) {
 					client->sendStanza(iq);
 				} else {
-					iq->setAttribute("to", stanza.to().full());
+					iq->setAttribute("to", stanza.from().full());
 					server->routeStanza(iq);
 				}
 				delete iq;
@@ -2058,7 +2059,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 					if(client) {
 						client->sendStanza(error);
 					} else {
-						error->setAttribute("to", stanza.to().full());
+						error->setAttribute("to", stanza.from().full());
 						server->routeStanza(error);
 					}
 					delete error;
@@ -2071,7 +2072,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				if(client) {
 					client->sendStanza(iq);
 				} else {
-					iq->setAttribute("to", stanza.to().full());
+					iq->setAttribute("to", stanza.from().full());
 					server->routeStanza(iq);
 				}
 				delete iq;
@@ -2081,7 +2082,7 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 				if(client) {
 					client->sendStanza(error);
 				} else {
-					error->setAttribute("to", stanza.to().full());
+					error->setAttribute("to", stanza.from().full());
 					server->routeStanza(error);
 				}
 				delete error;

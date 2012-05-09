@@ -20,7 +20,7 @@ using namespace nanosoft;
 */
 XMPPClient::XMPPClient(XMPPServer *srv, int sock):
 	XMPPStream(srv, sock), vhost(0),
-	state(init), connected(false), available(false), use_roster(false)
+	authorized(false), connected(false), available(false), use_roster(false)
 {
 	lock();
 }
@@ -114,8 +114,12 @@ void XMPPClient::onStanza(Stanza stanza)
 */
 void XMPPClient::onAuthStanza(Stanza stanza)
 {
-	sasl = vhost->start("xmpp", vhost->hostname(), stanza->getAttribute("mechanism"));
-	onSASLStep(string());
+	if ( ! authorized )
+	{
+		sasl = vhost->start("xmpp", vhost->hostname(), stanza->getAttribute("mechanism"));
+		onSASLStep(string());
+		return;
+	}
 }
 
 /**
@@ -133,7 +137,7 @@ void XMPPClient::onSASLStep(const std::string &input)
 		vhost->GSASLServer::close(sasl);
 		stanza = new ATXmlTag("success");
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-		state = authorized;
+		authorized = true;
 		depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
 		resetParser();
 		resetWriter();
@@ -163,7 +167,11 @@ void XMPPClient::onSASLStep(const std::string &input)
 */
 void XMPPClient::onResponseStanza(Stanza stanza)
 {
-	onSASLStep(base64_decode(stanza));
+	if ( ! authorized )
+	{
+		onSASLStep(base64_decode(stanza));
+		return;
+	}
 }
 
 /**
@@ -182,7 +190,6 @@ void XMPPClient::handleIQSession(Stanza stanza)
 		
 		sendStanza(iq);
 		vhost->onOnline(this);
-		state = session;
 		return;
 	}
 }
@@ -203,6 +210,26 @@ void XMPPClient::handleIQRoster(Stanza stanza)
 */
 void XMPPClient::onIqStanza(Stanza stanza)
 {
+	if ( ! connected )
+	{
+		Stanza body = stanza->firstChild();
+		std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
+		
+		if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
+		{
+			vhost->handleIQBind(stanza, this);
+			return;
+		}
+		
+		if ( xmlns == "jabber:iq:register" )
+		{
+			vhost->handleRegisterIq(this, stanza);
+			return;
+		}
+		
+		return;
+	}
+	
 	// RFC 6120, 10.3.  No 'to' Address
 	// Если атрибута 'to' нет, то станзу обработать должен
 	// сам сервер (vhost).
@@ -532,6 +559,27 @@ void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
 
 void XMPPClient::onPresenceStanza(Stanza stanza)
 {
+	if ( ! connected )
+	{
+		if ( stanza->getAttribute("type", "") == "error" ) return;
+		
+		//vhost->xmpp_error_queries++;
+		
+		Stanza result = new ATXmlTag("presence");
+		result->setAttribute("from", stanza.to().full());
+		result->setAttribute("to", stanza.from().full());
+		result->setAttribute("type", "error");
+		if ( stanza->hasAttribute("id") ) result->setAttribute("id", stanza->getAttribute("id"));
+		Stanza error = result["error"];
+			error->setAttribute("type", "auth");
+			error->setAttribute("code", "401");
+			error["not-authorized"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+		
+		sendStanza(result);
+		delete result;
+		return;
+	}
+	
 	if ( ! stanza->hasAttribute("to") )
 	{
 		if ( ! stanza->hasAttribute("type") )
@@ -852,7 +900,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 	setAttribute("version", "1.0");
 	setAttribute("xml:lang", "en");
 	
-	if ( state == init )
+	if ( ! authorized  )
 	{
 		vhost = dynamic_cast<VirtualHost*>(server->getHostByName(tohost));
 		if ( vhost == 0 ) {
@@ -866,7 +914,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 	flush();
 	
 	Stanza features = new ATXmlTag("stream:features");
-	if ( state == init )
+	if ( ! authorized )
 	{
 		client_jid.setHostname(vhost->hostname());
 		Stanza stanza = features["mechanisms"];
@@ -914,9 +962,9 @@ JID XMPPClient::jid() const
 }
 
 bool XMPPClient::isAuthorized() {
-	return state == authorized;
+	return authorized;
 }
 
 bool XMPPClient::isActive() {
-	return state == session;
+	return authorized;
 }
