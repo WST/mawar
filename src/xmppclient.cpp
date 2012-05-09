@@ -210,23 +210,62 @@ void XMPPClient::handleIQRoster(Stanza stanza)
 */
 void XMPPClient::onIqStanza(Stanza stanza)
 {
+	Stanza body = stanza->firstChild();
+	std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
+	
+	if ( xmlns == "jabber:iq:register" )
+	{
+		vhost->handleRegisterIq(this, stanza);
+		return;
+	}
+	
+	if ( ! authorized )
+	{
+		//vhost->xmpp_error_queries++;
+		
+		Stanza result = new ATXmlTag("iq");
+		result->setAttribute("from", stanza.to().full());
+		result->setAttribute("to", stanza.from().full());
+		result->setAttribute("type", "error");
+		result->setAttribute("id", stanza->getAttribute("id"));
+		Stanza error = result["error"];
+			error->setAttribute("type", "auth");
+			error->setAttribute("code", "401");
+			error["not-authorized"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+		sendStanza(result);
+		delete result;
+		return;
+	}
+	
 	if ( ! connected )
 	{
-		Stanza body = stanza->firstChild();
-		std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
-		
 		if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
 		{
 			vhost->handleIQBind(stanza, this);
 			return;
 		}
 		
-		if ( xmlns == "jabber:iq:register" )
-		{
-			vhost->handleRegisterIq(this, stanza);
-			return;
-		}
+		return;
 		
+		//vhost->xmpp_error_queries++;
+		
+		Stanza result = new ATXmlTag("iq");
+		result->setAttribute("from", stanza.to().full());
+		result->setAttribute("to", stanza.from().full());
+		result->setAttribute("type", "error");
+		result->setAttribute("id", stanza->getAttribute("id"));
+		Stanza error = result["error"];
+			error->setAttribute("type", "auth");
+			error->setAttribute("code", "401");
+			error["not-authorized"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
+		sendStanza(result);
+		delete result;
+		return;
+	}
+	
+	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
+	{
+		handleIQSession(stanza);
 		return;
 	}
 	

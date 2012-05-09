@@ -724,21 +724,6 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 		return;
 	}
 	
-	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
-	{
-		handleIQBind(stanza, client);
-		return;
-	}
-	
-	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
-	{
-		if ( client )
-		{
-			client->handleIQSession(stanza);
-			return;
-		}
-	}
-	
 	if ( xmlns == "jabber:iq:roster" )
 	{
 		if ( client )
