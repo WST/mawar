@@ -178,12 +178,7 @@ public:
 	/**
 	* Обработчик iq-станзы
 	*/
-	virtual void onIqStanza(Stanza stanza);
-	
-	/**
-	* Обработчик message-станзы
-	*/
-	virtual void onMessageStanza(Stanza stanza);
+	void onIqStanza(Stanza stanza);
 	
 	/**
 	* RFC 3921 (5.1.1) Initial Presence
@@ -238,7 +233,7 @@ public:
 	/**
 	* Обработчик presence-станзы
 	*/
-	virtual void onPresenceStanza(Stanza stanza);
+	void onPresenceStanza(Stanza stanza);
 	
 	/**
 	* Чтение ростера клиентом

@@ -650,26 +650,6 @@ void VirtualHost::handleDirectly(Stanza stanza, XMPPClient *client)
 		return;
 	}
 	
-	// TODO something
-	if ( name == "auth" )
-	{
-		if ( client )
-		{
-			client->onAuthStanza(stanza);
-			return;
-		}
-	}
-	
-	// TODO something
-	if ( name == "response" )
-	{
-		if ( client )
-		{
-			client->onResponseStanza(stanza);
-			return;
-		}
-	}
-	
 	// else ??
 }
 
@@ -699,16 +679,25 @@ void VirtualHost::handleDirectlyPresence(Stanza stanza, XMPPClient *client)
 	// TODO
 	if ( client )
 	{
-		if ( ! client->available )
+		if ( ! stanza->hasAttribute("type") )
 		{
-			// RFC 3921 (5.1.1) Initial Presence
-			client->handleInitialPresence(stanza);
+			if ( ! client->available )
+			{
+				// RFC 3921 (5.1.1) Initial Presence
+				client->handleInitialPresence(stanza);
+				return;
+			}
+			
+			// RFC 3921 (5.1.2) Presence Broadcast
+			client->handlePresenceBroadcast(stanza);
 			return;
 		}
-		
-		// RFC 3921 (5.1.2) Presence Broadcast
-		client->handlePresenceBroadcast(stanza);
-		return;
+		else if ( stanza->getAttribute("type") == "unavailable" )
+		{
+			// RFC 3921 (5.1.5) Unavailable Presence
+			client->handleUnavailablePresence(stanza);
+			return;
+		}
 	}
 	
 	// else ???
@@ -768,13 +757,6 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 	if ( xmlns == "urn:xmpp:ping" )
 	{
 		handleIQPing(stanza);
-		return;
-	}
-	
-	if ( xmlns == "jabber:iq:register" )
-	{
-		// Запрос регистрации на s2s
-		handleRegisterIq(0, stanza);
 		return;
 	}
 	

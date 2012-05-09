@@ -74,23 +74,39 @@ void XMPPClient::onStanza(Stanza stanza)
 	// TODO не будет ли это противоречить RFC ?..
 	stanza->setAttribute("from", client_jid.full());
 	
-	// RFC 6120, 10.3.  No 'to' Address
-	// Если атрибута 'to' нет, то станзу обработать должен
-	// сам сервер (vhost).
-	if ( ! stanza->hasAttribute("to") )
+	string name = stanza->name();
+	
+	if ( name == "message" )
 	{
-		if ( vhost )
-		{
-			vhost->handleDirectly(stanza, this);
-			return;
-		}
-		
-		fprintf(stderr, "unexpected XMPPClient::vhost = NULL\n");
+		server->routeStanza(stanza);
 		return;
 	}
 	
-	// Если атрибут 'to' передаем маршрутизацию серверу
-	server->routeStanza(stanza);
+	if ( name == "presence")
+	{
+		onPresenceStanza(stanza);
+		return;
+	}
+	
+	if ( name == "iq")
+	{
+		onIqStanza(stanza);
+		return;
+	}
+	
+	// TODO something
+	if ( name == "auth" )
+	{
+		onAuthStanza(stanza);
+		return;
+	}
+	
+	// TODO something
+	if ( name == "response" )
+	{
+		onResponseStanza(stanza);
+		return;
+	}
 }
 
 /**
@@ -187,58 +203,28 @@ void XMPPClient::handleIQRoster(Stanza stanza)
 */
 void XMPPClient::onIqStanza(Stanza stanza)
 {
-	Stanza child = stanza->firstChild();
-	string xmlns = child ? child->getAttribute("xmlns", "") : "";
-	
-	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
-	{
-		handleIQSession(stanza);
-		return;
-	}
-	
-	if ( xmlns == "jabber:iq:roster" )
-	{
-		handleIQRoster(stanza);
-		return;
-	}
-	
-	// TODO желательно вынести регистрацию в отдельный модуль
-	// как и все остальные модули, но пока это не представляется
-	// возможным, т.к. регистрируются неавторизованные клиенты,
-	// а они в свою очередь не имеют полноценного jid без которого
-	// обычный маршрутизатор станз не может найти отправителя
-	// без спомогательного XMPPClient. Не хотелось бы везде тягать
-	// XMPPClient только ради одного компонента, поэтому над
-	// решением ещё предстоить подумать отдельно, уж лучше
-	// сделать обработать регистрацию отдельно, чем во все остальные
-	// модули передавать более никому не нужные параметры.
-	if ( xmlns == "jabber:iq:register" )
-	{
-		vhost->handleRegisterIq(this, stanza);
-		return;
-	}
-	
 	// RFC 6120, 10.3.  No 'to' Address
-	if ( stanza->getAttribute("to", "") == "" )
+	// Если атрибута 'to' нет, то станзу обработать должен
+	// сам сервер (vhost).
+	if ( ! stanza->hasAttribute("to") )
 	{
 		if ( vhost )
 		{
-			vhost->handleDirectly(stanza);
+			vhost->handleDirectly(stanza, this);
 			return;
 		}
+		
+		fprintf(stderr, "unexpected XMPPClient::vhost = NULL\n");
+		return;
 	}
 	
+	// Если атрибут 'to' передаем маршрутизацию серверу
 	server->routeStanza(stanza);
 }
 
 ClientPresence XMPPClient::presence()
 {
 	return client_presence;
-}
-
-void XMPPClient::onMessageStanza(Stanza stanza) {
-	stanza.setFrom(client_jid);
-	server->routeStanza(stanza.to().hostname(), stanza);
 }
 
 /**
@@ -544,9 +530,8 @@ void XMPPClient::handlePresenceSubscriptions(Stanza stanza)
 	}
 }
 
-void XMPPClient::onPresenceStanza(Stanza stanza) {
-	stanza->setAttribute("from", client_jid.full());
-	
+void XMPPClient::onPresenceStanza(Stanza stanza)
+{
 	if ( ! stanza->hasAttribute("to") )
 	{
 		if ( ! stanza->hasAttribute("type") )
