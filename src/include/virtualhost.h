@@ -59,9 +59,16 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* @param config конфигурация хоста
 		*/
 		VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *config);
+		
+		/**
+		* Деструктор виртуального хоста
+		*/
 		~VirtualHost();
 		
-		virtual void handleMessage(Stanza stanza); // Обработать message
+		/**
+		* Обработка message-станзц
+		*/
+		void handleMessage(Stanza stanza);
 		
 		/**
 		* RFC 6120, 10.3.  No 'to' Address
@@ -277,7 +284,15 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* @param client поток
 		*/
 		virtual void onOffline(XMPPClient *client);
+		
+		/**
+		* Сохранить офлайновое сообщение
+		*/
 		void saveOfflineMessage(Stanza stanza);
+		
+		/**
+		* Отправить офлайновое сообщение
+		*/
 		void sendOfflineMessages(XMPPClient *client);
 		
 		/**
@@ -337,8 +352,14 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*/
 		void handleRegisterIq(XMPPClient *client, Stanza stanza);
 		
+		/**
+		* Проверить является указаный JID (bare) администратором хоста
+		*/
 		bool isAdmin(std::string barejid);
 		
+		/**
+		* Проверить есть зарегистрированный клиентс указанными ником
+		*/
 		bool userExists(std::string username);
 		
 		/**
@@ -352,7 +373,10 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void removeExtension(const char *urn);
 	
 	private:
-		void handleVHostIq(Stanza stanza); // Обработать IQ, адресованный данному виртуальному узлу
+		/**
+		* Обработка IQ-странзы
+		*/
+		void handleVHostIq(Stanza stanza);
 		
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;

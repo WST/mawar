@@ -569,6 +569,9 @@ void VirtualHost::saveOfflineMessage(Stanza stanza) {
 	r.free();
 }
 
+/**
+* Обработка message-станзц
+*/
 void VirtualHost::handleMessage(Stanza stanza) {
 	
 	VirtualHost::sessions_t::iterator it;
