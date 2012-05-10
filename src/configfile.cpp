@@ -117,6 +117,22 @@ ATXmlTag *ConfigFile::nextHost(ATXmlTag *from)
 }
 
 /**
+* Вернуть первый сервер групповых сообщений
+*/
+ATXmlTag *ConfigFile::firstGroupsHost()
+{
+	return config_tag->find("hosts/xmpp-groups");
+}
+
+/**
+* Вернуть следующий сервер групповых сообщений
+*/
+ATXmlTag *ConfigFile::nextGroupsHost(ATXmlTag *from)
+{
+	return config_tag->findNext("hosts/xmpp-groups", from);
+}
+
+/**
 * Вернуть первый виртуальный хост
 */
 TagHelper ConfigFile::firstExternal()

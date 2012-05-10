@@ -189,6 +189,14 @@ int main(int argc, const char **argv)
 	}
 	printf("[main] virtual hosts loaded\n");
 	
+	// добавляем виртуальные хосты
+	printf("[main] loading xmpp groups\n");
+	for(ATXmlTag *vhost = config->firstGroupsHost(); vhost; vhost = config->nextGroupsHost(vhost)) {
+		printf("[main] load xmpp groups: %s\n", vhost->getAttribute("name").c_str());
+		server->addXMPPGroups(vhost->getAttribute("name"), vhost);
+	}
+	printf("[main] xmpp groups loaded\n");
+	
 	// асинхронный резолвер
 	nanosoft::ptr<AsyncDNS> dns = new AsyncDNS(&daemon);
 	daemon.addObject(dns);

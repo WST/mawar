@@ -43,6 +43,16 @@ class ConfigFile
 		ATXmlTag *nextHost(ATXmlTag *from);
 	
 		/**
+		* Вернуть первый сервер групповых сообщений
+		*/
+		ATXmlTag *firstGroupsHost();
+		
+		/**
+		* Вернуть следующий сервер групповых сообщений
+		*/
+		ATXmlTag *nextGroupsHost(ATXmlTag *from);
+	
+		/**
 		* Вернуть первый виртуальный хост
 		*/
 		TagHelper firstExternal();

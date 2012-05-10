@@ -80,6 +80,7 @@ MAWAR_OBJECTS+=xmppserveroutput.o
 MAWAR_OBJECTS+=xmppextension.o
 MAWAR_OBJECTS+=xmppextensioninput.o
 MAWAR_OBJECTS+=xmppextensionoutput.o
+MAWAR_OBJECTS+=xmppgroups.o
 MAWAR_OBJECTS+=serverstatus.o
 #MAWAR_OBJECTS+=geoip.o
 MAWAR_OBJECTS+=logs.o
@@ -182,6 +183,9 @@ xmppextensioninput.o: $(srcdir)/xmppextensioninput.cpp $(srcdir)/include/xmppext
 
 xmppextensionoutput.o: $(srcdir)/xmppextensionoutput.cpp $(srcdir)/include/xmppextensionoutput.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
 	$(CXX) -c $(srcdir)/xmppextensionoutput.cpp -o xmppextensionoutput.o
+
+xmppgroups.o: $(srcdir)/xmppgroups.cpp $(srcdir)/include/xmppgroups.h $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+	$(CXX) -c $(srcdir)/xmppgroups.cpp -o xmppgroups.o
 
 #geoip.o: $(srcdir)/geoip.cpp $(srcdir)/include/geoip.h
 #	$(CXX) -c $(srcdir)/geoip.cpp -o geoip.o

@@ -4,6 +4,7 @@
 #include <xmppdomain.h>
 #include <xmppserveroutput.h>
 #include <virtualhost.h>
+#include <xmppgroups.h>
 #include <s2slistener.h>
 #include <configfile.h>
 #include <string>
@@ -119,6 +120,16 @@ void XMPPServer::removeDomain(XMPPDomain *domain)
 void XMPPServer::addHost(const std::string &name, ATXmlTag *config)
 {
 	addDomain(new VirtualHost(this, name, config));
+}
+
+/**
+* Добавить сервер групповых сообщений
+*
+* thread-safe
+*/
+void XMPPServer::addXMPPGroups(const std::string &name, ATXmlTag *config)
+{
+	addDomain(new XMPPGroups(this, name, config));
 }
 
 /**
