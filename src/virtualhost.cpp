@@ -2014,28 +2014,6 @@ void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
 		if(username != 0 && password != 0) {
 			// Запрошена регистрация
 			
-			if(client != 0 && client->isAuthorized()) {
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", name);
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				TagHelper query = iq["query"];
-				query->setDefaultNameSpaceAttribute("jabber:iq:register");
-				ATXmlTag *registered = new ATXmlTag("registered");
-				ATXmlTag *username = new ATXmlTag("username"); // TODO: вписать сюда имя активного юзера
-				ATXmlTag *password = new ATXmlTag("password"); // TODO: вписать пасс активного юзера
-				query->insertChildElement(registered);
-				query->insertChildElement(username);
-				query->insertChildElement(password);
-				if(client) {
-					client->sendStanza(iq);
-				} else {
-					iq->setAttribute("to", stanza.from().full());
-					server->routeStanza(iq);
-				}
-				delete iq;
-				return;
-			}
 			DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login = %s", db.quote(username->getCharacterData()).c_str());
 			bool exists = r["cnt"] == "1";
 			r.free();
