@@ -987,10 +987,9 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		Stanza stanza = features["bind"];
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-bind");
 		
-		/*
+		// shade, не игнорируй session, без его поддержки не работают многие клиенты. Раскомментировал.
 		stanza = features["session"];
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-session");
-		*/
 	}
 	sendStanza(features);
 	delete features;
