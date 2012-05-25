@@ -19,6 +19,7 @@
 XMPPServerOutput::XMPPServerOutput(XMPPServer *srv, const char *host):
 	XMPPDomain(srv, host), XMPPStream(srv, 0)
 {
+	sprintf(key, "%06X-%06X-%06X-%06X", random() % 0x1000000, random() % 0x1000000, random() % 0x1000000, random() % 0x1000000);
 	lock();
 	
 	// Резолвим DNS записи сервера
@@ -63,6 +64,22 @@ void XMPPServerOutput::onWrite()
 		setAttribute("xmlns:db", "jabber:server:dialback");
 		setAttribute("xml:lang", "en");
 		flush();
+		
+		for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+		{
+			vhost_t *vhost = iter->second;
+			
+			sendDBRequest(iter->first, hostname());
+			
+			printf("%s s2s-output(%s): flush connected to %s\n", logtime().c_str(), hostname().c_str(), iter->first.c_str());
+			for(buffer_t::iterator bi = vhost->connbuffer.begin(); bi != vhost->connbuffer.end(); bi++)
+			{
+				Stanza stanza = parse_xml_string(*bi);
+				sendStanza(stanza);
+				delete stanza;
+			}
+		}
+		
 		mutex.unlock();
 		return;
 	}
@@ -180,38 +197,25 @@ void XMPPServerOutput::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns
 }
 
 /**
+* 2.1.1 Originating Server Generates Outbound Request for Authorization by Receiving Server
+* 
+* XEP-0220: Server Dialback
+*/
+void XMPPServerOutput::sendDBRequest(const std::string &from, const std::string &to)
+{
+	Stanza dbresult = new ATXmlTag("db:result");
+	dbresult->setAttribute("from", from);
+	dbresult->setAttribute("to", to);
+	dbresult += sha1(from + ":" + to + ":" + key);
+	sendStanza(dbresult);
+	delete dbresult;
+}
+
+/**
 * Событие: начало потока
 */
 void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	attributes_t::const_iterator it = attributes.find("id");
-	recieved_id = (it != attributes.end()) ? it->second : std::string();
-	
-	mutex.lock();
-	
-	state = READY;
-	
-	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
-	{
-		vhost_t *vhost = iter->second;
-		
-		Stanza dbresult = new ATXmlTag("db:result");
-		dbresult->setAttribute("to", hostname());
-		dbresult->setAttribute("from", iter->first);
-		dbresult += sha1(recieved_id + "key");
-		sendStanza(dbresult);
-		delete dbresult;
-		
-		printf("%s s2s-output(%s): flush connected to %s\n", logtime().c_str(), hostname().c_str(), iter->first.c_str());
-		for(buffer_t::iterator bi = vhost->connbuffer.begin(); bi != vhost->connbuffer.end(); bi++)
-		{
-			Stanza stanza = parse_xml_string(*bi);
-			sendStanza(stanza);
-			delete stanza;
-		}
-	}
-	
-	mutex.unlock();
 }
 
 /**
@@ -396,14 +400,9 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 			vhost->authorized = false;
 			vhosts[vhostname] = vhost;
 			
-			if ( state == READY )
+			if ( state == CONNECTED )
 			{
-				Stanza dbresult = new ATXmlTag("db:result");
-				dbresult->setAttribute("to", hostname());
-				dbresult->setAttribute("from", vhostname);
-				dbresult += sha1(recieved_id + "key");
-				sendStanza(dbresult);
-				delete dbresult;
+				sendDBRequest(vhostname, hostname());
 			}
 		}
 	mutex.unlock();
@@ -412,7 +411,7 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 	{
 		sendStanza(stanza);
 	}
-	else if ( stanza->name() == "verify" )
+	else if ( stanza->name() == "db:verify" )
 	{
 		mutex.lock();
 			if ( state == CONNECTED ) sendStanza(stanza);

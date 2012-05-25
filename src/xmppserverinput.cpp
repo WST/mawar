@@ -122,7 +122,18 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	// Шаг 2. проверка: "from"
 	// TODO
 	string from = stanza.from().hostname();
-	if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
+	XMPPDomain *domain = server->getHostByName(from);
+	if ( dynamic_cast<VirtualHost*>(domain) )
+	{
+		Stanza stanza = Stanza::streamError("invalid-from");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	XMPPServerOutput *so = dynamic_cast<XMPPServerOutput*>(domain);
+	if ( ! so )
 	{
 		Stanza stanza = Stanza::streamError("invalid-from");
 		sendStanza(stanza);
@@ -132,7 +143,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	}
 	
 	// Шаг 3. проверка ключа
-	if ( stanza->getCharacterData() == sha1(stanza->getAttribute("id") + "key") )
+	if ( stanza->getCharacterData() == sha1(to + ":" + from + ":" + so->key) )
 	{
 		Stanza result = new ATXmlTag("db:verify");
 		result->setAttribute("to", from);

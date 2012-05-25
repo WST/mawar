@@ -42,23 +42,13 @@ protected:
 		/**
 		* Подключены
 		*/
-		CONNECTED,
-		
-		/**
-		* Готов к обмену станзами
-		*/
-		READY
+		CONNECTED
 	} state;
 	
 	/**
 	* Порт s2s-сервера
 	*/
 	int port;
-	
-	/**
-	* ID потока к которому мы подключились
-	*/
-	std::string recieved_id;
 	
 	/**
 	* Класс буфера исходящих станз
@@ -144,7 +134,19 @@ protected:
 	* Резолвер s2s хоста, запись SRV (_jabber._tcp)
 	*/
 	static void on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_srv *result, void *data);
+	
+	/**
+	* 2.1.1 Originating Server Generates Outbound Request for Authorization by Receiving Server
+	* 
+	* XEP-0220: Server Dialback
+	*/
+	void sendDBRequest(const std::string &from, const std::string &to);
 public:
+	/**
+	* Случайный ключ
+	*/
+	char key[32];
+	
 	/**
 	* Конструктор s2s-домена
 	*/
