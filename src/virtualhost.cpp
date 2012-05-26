@@ -641,102 +641,13 @@ void VirtualHost::handleMessage(Stanza stanza) {
 }
 
 /**
-* RFC 6120, 10.3.  No 'to' Address
-* 
-* If the stanza possesses no 'to' attribute, the server MUST handle
-* it directly on behalf of the entity that sent it, where the meaning
-* of "handle it directly" depends on whether the stanza is message,
-* presence, or IQ. Because all stanzas received from other servers
-* MUST possess a 'to' attribute, this rule applies only to stanzas
-* received from a local entity (typically a client) that is connected
-* to the server. 
-*/
-void VirtualHost::handleDirectly(Stanza stanza, XMPPClient *client)
-{
-	string name = stanza->name();
-	
-	if ( name == "message" )
-	{
-		// RFC 6120, 10.3.1.
-		handleDirectlyMessage(stanza, client);
-		return;
-	}
-	
-	if ( name == "presence")
-	{
-		// RFC 6120, 10.3.2.
-		handleDirectlyPresence(stanza, client);
-		return;
-	}
-	
-	if ( name == "iq")
-	{
-		// RFC 6120, 10.3.3.
-		handleDirectlyIQ(stanza, client);
-		return;
-	}
-	
-	// else ??
-}
-
-/**
-* RFC 6120, 10.3.1  No 'to' Address, Message
-* 
-* If the server receives a message stanza with no 'to' attribute,
-* it MUST treat the message as if the 'to' address were the bare
-* JID <localpart@domainpart> of the sending entity. 
-*/
-void VirtualHost::handleDirectlyMessage(Stanza stanza, XMPPClient *client)
-{
-	stanza->setAttribute("to", stanza.from().bare());
-	server->routeStanza(stanza);
-}
-
-/**
-* RFC 6120, 10.3.2  No 'to' Address, Presence
-* 
-* If the server receives a presence stanza with no 'to' attribute,
-* it MUST broadcast it to the entities that are subscribed to the
-* sending entity's presence, if applicable ([XMPP‑IM] defines the
-* semantics of such broadcasting for presence applications). 
-*/
-void VirtualHost::handleDirectlyPresence(Stanza stanza, XMPPClient *client)
-{
-	// TODO
-	if ( client )
-	{
-		if ( ! stanza->hasAttribute("type") )
-		{
-			if ( ! client->available )
-			{
-				// RFC 3921 (5.1.1) Initial Presence
-				client->handleInitialPresence(stanza);
-				return;
-			}
-			
-			// RFC 3921 (5.1.2) Presence Broadcast
-			client->handlePresenceBroadcast(stanza);
-			return;
-		}
-		else if ( stanza->getAttribute("type") == "unavailable" )
-		{
-			// RFC 3921 (5.1.5) Unavailable Presence
-			client->handleUnavailablePresence(stanza);
-			return;
-		}
-	}
-	
-	// else ???
-}
-
-/**
 * RFC 6120, 10.3.3  No 'to' Address, IQ
 * 
 * If the server receives an IQ stanza with no 'to' attribute, it MUST
 * process the stanza on behalf of the account from which received
 * the stanza
 */
-void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
+void VirtualHost::handleDirectlyIQ(Stanza stanza)
 {
 	// сначала ищем в модулях-расширениях
 	Stanza body = stanza->firstChild();
@@ -754,15 +665,6 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 	{
 		handleIQSession(stanza);
 		return;
-	}
-	
-	if ( xmlns == "jabber:iq:roster" )
-	{
-		if ( client )
-		{
-			client->handleIQRoster(stanza);
-			return;
-		}
 	}
 	
 	if ( xmlns == "jabber:iq:register" )

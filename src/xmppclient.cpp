@@ -241,6 +241,12 @@ void XMPPClient::onIqStanza(Stanza stanza)
 		return;
 	}
 	
+	if ( xmlns == "jabber:iq:roster" )
+	{
+		handleIQRoster(stanza);
+		return;
+	}
+	
 	// RFC 6120, 10.3.  No 'to' Address
 	// Если атрибута 'to' нет, то станзу обработать должен
 	// сам сервер (vhost).
@@ -248,7 +254,7 @@ void XMPPClient::onIqStanza(Stanza stanza)
 	{
 		if ( vhost )
 		{
-			vhost->handleDirectly(stanza, this);
+			vhost->handleDirectlyIQ(stanza);
 			return;
 		}
 		
