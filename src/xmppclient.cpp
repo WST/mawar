@@ -188,26 +188,6 @@ void XMPPClient::onResponseStanza(Stanza stanza)
 }
 
 /**
-* Устаревший обрабтчик iq session
-*
-* TODO необходима ревизия, скорее всего надо перенести в VirtualHost
-* или в отдельный модуль
-*/
-void XMPPClient::handleIQSession(Stanza stanza)
-{
-	if(stanza->hasChild("session") && stanza.type() == "set") {
-		Stanza iq = new ATXmlTag("iq");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			iq->setAttribute("type", "result");
-			iq["session"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-session");
-		
-		sendStanza(iq);
-		vhost->onOnline(this);
-		return;
-	}
-}
-
-/**
 * Устаревший обработчик iq roster
 *
 * TODO необходима ревизия, скорее всего надо перенести в VirtualHost
@@ -226,48 +206,30 @@ void XMPPClient::onIqStanza(Stanza stanza)
 	Stanza body = stanza->firstChild();
 	std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
 	
-	if ( ! connected )
+	if ( xmlns == "jabber:iq:register" )
 	{
-		if ( xmlns == "jabber:iq:register" )
+		if ( ! connected )
 		{
 			handleIQRegister(stanza);
 			return;
 		}
 	}
 	
-	if ( ! authorized )
+	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
 	{
-		//vhost->xmpp_error_queries++;
-		
-		Stanza result = new ATXmlTag("iq");
-		result->setAttribute("from", stanza.to().full());
-		result->setAttribute("to", stanza.from().full());
-		result->setAttribute("type", "error");
-		result->setAttribute("id", stanza->getAttribute("id"));
-		Stanza error = result["error"];
-			error->setAttribute("type", "auth");
-			error->setAttribute("code", "401");
-			error["not-authorized"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
-		sendStanza(result);
-		delete result;
-		return;
-	}
-	
-	if ( ! connected )
-	{
-		if ( xmlns == "urn:ietf:params:xml:ns:xmpp-bind" )
+		if ( ! connected )
 		{
 			vhost->handleIQBind(stanza, this);
 			return;
 		}
-		
-		return;
-		
+	}
+	
+	if ( ! connected )
+	{
 		//vhost->xmpp_error_queries++;
 		
 		Stanza result = new ATXmlTag("iq");
-		result->setAttribute("from", stanza.to().full());
-		result->setAttribute("to", stanza.from().full());
+		result->setAttribute("from", vhost->hostname());
 		result->setAttribute("type", "error");
 		result->setAttribute("id", stanza->getAttribute("id"));
 		Stanza error = result["error"];
@@ -276,12 +238,6 @@ void XMPPClient::onIqStanza(Stanza stanza)
 			error["not-authorized"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-stanzas");
 		sendStanza(result);
 		delete result;
-		return;
-	}
-	
-	if( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
-	{
-		handleIQSession(stanza);
 		return;
 	}
 	

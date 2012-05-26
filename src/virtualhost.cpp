@@ -750,6 +750,12 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza, XMPPClient *client)
 		return;
 	}
 	
+	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
+	{
+		handleIQSession(stanza);
+		return;
+	}
+	
 	if ( xmlns == "jabber:iq:roster" )
 	{
 		if ( client )
@@ -868,6 +874,34 @@ void VirtualHost::handleIQBind(Stanza stanza, XMPPClient *client)
 			
 			return;
 		}
+	}
+	
+	handleIQUnknown(stanza);
+}
+
+/**
+* RFC 6121, Appendix E. Differences From RFC 3921
+* 
+* The protocol for session establishment was determined to be
+* unnecessary and therefore the content previously defined in
+* Section 3 of RFC 3921 was removed. However, for the sake of
+* backward-compatibility server implementations are encouraged
+* to advertise support for the feature, even though session
+* establishment is a "no-op". 
+*/
+void VirtualHost::handleIQSession(Stanza stanza)
+{
+	if( stanza->getAttribute("type") == "set" )
+	{
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("from", hostname());
+		iq->setAttribute("id", stanza->getAttribute("id"));
+		iq->setAttribute("type", "result");
+		iq["session"]->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-session");
+		server->routeStanza(iq);
+		delete iq;
+		return;
 	}
 	
 	handleIQUnknown(stanza);
@@ -1789,16 +1823,6 @@ void VirtualHost::sendOfflineMessages(XMPPClient *client) {
 	}
 	r.free();
 	db.query("DELETE FROM spool WHERE message_to = %s", db.quote(client->jid().bare()).c_str());
-}
-
-/**
-* Событие: Пользователь появился в online (thread-safe)
-* @param client поток
-*/
-void VirtualHost::onOnline(XMPPClient *client)
-{
-	// NOTE вызывается только при успешной инициализации session (после bind)
-	sendOfflineMessages(client);
 }
 
 /**

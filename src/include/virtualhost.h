@@ -124,6 +124,18 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleIQBind(Stanza stanza, XMPPClient *client);
 		
 		/**
+		* RFC 6121, Appendix E. Differences From RFC 3921
+		* 
+		* The protocol for session establishment was determined to be
+		* unnecessary and therefore the content previously defined in
+		* Section 3 of RFC 3921 was removed. However, for the sake of
+		* backward-compatibility server implementations are encouraged
+		* to advertise support for the feature, even though session
+		* establishment is a "no-op". 
+		*/
+		void handleIQSession(Stanza stanza);
+		
+		/**
 		* XEP-0012: Last Activity
 		*/
 		void handleIQLast(Stanza stanza);
@@ -273,12 +285,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* Отвязать ресурс
 		*/
 		void unbindResource(const char *resource, XMPPClient *client);
-		
-		/**
-		* Событие: Пользователь появился в online (thread-safe)
-		* @param client поток
-		*/
-		virtual void onOnline(XMPPClient *client);
 		
 		/**
 		* Отправить Presence Unavailable всем, кому был отправлен Directed Presence
