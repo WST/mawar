@@ -1,6 +1,7 @@
 
 #include <functions.h>
 #include <gsasl.h>
+#include <jid.h>
 
 unsigned long int id_counter;
 
@@ -10,10 +11,12 @@ std::string getUniqueId() {
 	return std::string(buf);
 }
 
-bool verifyUsername(std::string username) {
-	if(username.empty()) {
-		return false;
-	}
+/**
+* Проверить корректность имени пользователя
+*/
+bool verifyUsername(const std::string &username)
+{
+	if(username.empty()) return false;
 	if(username.find("\"") != -1) return false;
 	if(username.find("\'") != -1) return false;
 	if(username.find("&") != -1) return false;
@@ -22,6 +25,31 @@ bool verifyUsername(std::string username) {
 	if(username.find("@") != -1) return false;
 	if(username.find(" ") != -1) return false;
 	return true;
+}
+
+/**
+* Проверить корректность имени хоста
+*/
+bool verifyHostname(const std::string &hostname)
+{
+	if(hostname.empty()) return false;
+	if(hostname.find("\"") != -1) return false;
+	if(hostname.find("\'") != -1) return false;
+	if(hostname.find("&") != -1) return false;
+	if(hostname.find("<") != -1) return false;
+	if(hostname.find(">") != -1) return false;
+	if(hostname.find("@") != -1) return false;
+	if(hostname.find(" ") != -1) return false;
+	return true;
+}
+
+/**
+* Проверить корректность JID
+*/
+bool verifyJID(const std::string &jid)
+{
+	JID j(jid);
+	return verifyUsername(j.username()) && verifyHostname(j.hostname());
 }
 
 std::string mawarPrintInteger(unsigned long int number) {

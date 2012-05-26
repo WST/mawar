@@ -733,6 +733,8 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 	// available resources to remain in sync with the server-based roster
 	// information.
 	
+	string jid_bare = JID(item->getAttribute("jid")).bare();
+	
 	DB::result r = vhost->db.query(
 		"SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
 		user_id,
@@ -744,7 +746,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 		// добавить контакт: RFC 3921 (7.4) Adding a Roster Item
 		vhost->db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
 			user_id,
-			vhost->db.quote(item->getAttribute("jid")).c_str(), // contact_jid
+			vhost->db.quote(jid_bare).c_str(), // contact_jid
 			vhost->db.quote(item->getAttribute("name")).c_str(), // contact_nick
 			vhost->db.quote(item["group"]).c_str() // contact_group
 		);
@@ -754,7 +756,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 		TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item2 = query["item"];
-			item2->setAttribute("jid", item->getAttribute("jid"));
+			item2->setAttribute("jid", jid_bare);
 			item2->setAttribute("name", item->getAttribute("name"));
 			item2->setAttribute("subscription", "none");
 			if ( item["group"]->getCharacterData() != "" ) item2["group"] += item["group"]->getCharacterData();
@@ -848,10 +850,41 @@ void XMPPClient::handleRosterItemRemove(TagHelper item)
 }
 
 /**
+* Проверить корректность запроса RosterSet
+*/
+bool XMPPClient::checkRosterSet(Stanza stanza)
+{
+	bool status = true;
+	TagHelper query = stanza["query"];
+	TagHelper item = query->firstChild("item");
+	while ( item )
+	{
+		string jid = item->getAttribute("jid");
+		if ( ! verifyJID(jid) || ! JID(jid).resource().empty() )
+		{
+			status = false;
+			break;
+		}
+		item = query->nextChild("item", item);
+	}
+	
+	return status;
+}
+
+/**
 * Обновить ростер
 */
 void XMPPClient::handleRosterSet(Stanza stanza)
 {
+	if ( ! checkRosterSet(stanza) )
+	{
+		Stanza error = Stanza::iqError(stanza, "not-allowed", "cancel");
+		error->setAttribute("from", vhost->hostname());
+		sendStanza(error);
+		delete error;
+		return;
+	}
+	
 	TagHelper query = stanza["query"];
 	TagHelper item = query->firstChild("item");
 	while ( item )

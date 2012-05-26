@@ -12,7 +12,20 @@
 */
 std::string getUniqueId();
 
-bool verifyUsername(std::string username);
+/**
+* Проверить корректность имени пользователя
+*/
+bool verifyUsername(const std::string &username);
+
+/**
+* Проверить корректность имени хоста
+*/
+bool verifyHostname(const std::string &hostname);
+
+/**
+* Проверить корректность JID
+*/
+bool verifyJID(const std::string &jid);
 
 // Скопировано из Lana, авось пригодится
 std::string mawarPrintInteger(unsigned long int number);

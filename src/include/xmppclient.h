@@ -242,6 +242,11 @@ public:
 	void handleRosterItemRemove(TagHelper item);
 	
 	/**
+	* Проверить корректность запроса RosterSet
+	*/
+	bool checkRosterSet(Stanza stanza);
+	
+	/**
 	* Обновить ростер
 	*/
 	void handleRosterSet(Stanza stanza);
