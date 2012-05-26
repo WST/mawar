@@ -139,6 +139,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void handleIQVCardTemp(Stanza stanza);
 		
 		/**
+		* XEP-0077: In-Band Registration
+		*/
+		void handleIQRegister(Stanza stanza);
+		
+		/**
 		* XEP-0092: Software Version
 		*/
 		void handleIQVersion(Stanza stanza);
@@ -327,13 +332,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void rosterPush(const std::string &username, Stanza stanza);
 		
 		/**
-		* XEP-0077: In-Band Registration
-		*
-		* Регистрация пользователей
-		*/
-		void handleRegisterIq(XMPPClient *client, Stanza stanza);
-		
-		/**
 		* Проверить является указаный JID (bare) администратором хоста
 		*/
 		bool isAdmin(std::string barejid);
@@ -351,7 +349,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		/**
 		* Удалить пользователя
 		*/
-		bool removeUser(const std::string &username, const std::string &password);
+		bool removeUser(const std::string &username);
 		
 		/**
 		* Добавить расширение

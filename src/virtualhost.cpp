@@ -559,10 +559,12 @@ bool VirtualHost::addUser(const std::string &username, const std::string &passwo
 /**
 * Удалить пользователя
 */
-bool VirtualHost::removeUser(const std::string &username, const std::string &password)
+bool VirtualHost::removeUser(const std::string &username)
 {
-	// TODO
-	return false;
+	DB::result r = db.query("DELETE FROM users WHERE user_login = %s", db.quote(username).c_str());
+	if ( r ) r.free();
+	// TODO: удалять мусор из других таблиц
+	return true;
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
@@ -669,7 +671,7 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 	
 	if ( xmlns == "jabber:iq:register" )
 	{
-		handleRegisterIq(0, stanza);
+		handleIQRegister(stanza);
 		return;
 	}
 
@@ -922,7 +924,7 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 				feature->setAttribute("var", "http://jabber.org/protocol/commands");
 				query->insertChildElement(feature);
 			
-				if( registration_allowed )
+				if( registration_allowed || isAdmin(stanza.from().bare()) )
 				{
 					feature = new ATXmlTag("feature");
 					feature->setAttribute("var", "jabber:iq:register");
@@ -1458,6 +1460,114 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 }
 
 /**
+* XEP-0077: In-Band Registration
+*/
+void VirtualHost::handleIQRegister(Stanza stanza)
+{
+	printf("vhost[%s] handleRegisterIq: %s\n", hostname().c_str(), stanza->asString().c_str());
+	
+	if ( ! registration_allowed && ! isAdmin(stanza.from().bare()) )
+	{
+		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+		error->setAttribute("from", hostname());
+		server->routeStanza(error);
+		delete error;
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "get" )
+	{
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("to", stanza.from().full());
+		iq->setAttribute("from", hostname());
+		iq->setAttribute("type", "result");
+		iq->setAttribute("id", stanza->getAttribute("id"));
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:register");
+			query["instructions"] = "Choose a username and password for use with this service";
+			query["username"];
+			query["password"];
+		server->routeStanza(iq);
+		delete iq;
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "set" )
+	{
+		ATXmlTag *remove = stanza->find("query/remove");
+		if( remove )
+		{
+			JID from = stanza.from();
+			if ( from.hostname() != hostname() )
+			{
+				handleIQForbidden(stanza);
+				return;
+			}
+			
+			if ( removeUser(from.username()) )
+			{
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("from", hostname());
+				iq->setAttribute("type", "result");
+				iq->setAttribute("id", stanza->getAttribute("id"));
+				server->routeStanza(iq);
+				delete iq;
+				return;
+			}
+			else
+			{
+				Stanza error = Stanza::iqError(stanza, "service-unavailable", "wait");
+				error->setAttribute("from", hostname());
+				server->routeStanza(error);
+				delete error;
+				return;
+			}
+		}
+		
+		string username = stanza["query"]["username"]->getCharacterData();
+		string password = stanza["query"]["password"]->getCharacterData();
+		
+		if ( ! verifyUsername(username) || password.empty() )
+		{
+			Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+			server->routeStanza(error);
+			delete error;
+			return;
+		}
+		
+		if ( userExists(username) )
+		{
+			Stanza error = Stanza::iqError(stanza, "conflict", "cancel");
+			server->routeStanza(error);
+			delete error;
+			return;
+		}
+		
+		if ( addUser(username, password) )
+		{
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("type", "result");
+			iq->setAttribute("from", hostname());
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("id", stanza->getAttribute("id"));
+			server->routeStanza(iq);
+			delete iq;
+			return;
+		}
+		else
+		{
+			Stanza error = Stanza::iqError(stanza, "service-unavailable", "wait");
+			server->routeStanza(error);
+			delete error;
+			return;
+		}
+	}
+	
+	handleIQUnknown(stanza);
+}
+
+/**
 * XEP-0092: Software Version
 */
 void VirtualHost::handleIQVersion(Stanza stanza)
@@ -1885,126 +1995,6 @@ void VirtualHost::rosterPush(const std::string &username, Stanza stanza)
 			}
 		}
 	mutex.unlock();
-}
-
-/**
-* XEP-0077: In-Band Registration
-*
-* Регистрация пользователей
-* Вызывается из XMPPClient::onIqStanza() и VirtualHost::handleVHostIq()
-* во втором случае client = 0
-* 
-* TODO нужна ревизия, во-первых, нужно разбить эту портянку на несколько
-* небольших функций, во-вторых, желательно вынести в отдельный модуль.
-* На данный момент вынести в отдельный модуль не представляется возможным.
-* Проблема в том, что если клиент ещё неавторизован, то в станзе-запросе
-* поле from неполное и невозможно найти автора запроса без вспомогательного
-* XMPPClient
-*/
-void VirtualHost::handleRegisterIq(XMPPClient *client, Stanza stanza) {
-	printf("vhost[%s, %d] handleRegisterIq: %s\n", hostname().c_str(), (client ? client->getFd() : 0), stanza->asString().c_str());
-	if(!registration_allowed) {
-		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
-		error->setAttribute("from", hostname());
-		if(client) {
-			client->sendStanza(error);
-		} else {
-			error->setAttribute("to", stanza.to().full());
-			server->routeStanza(error);
-		}
-		delete error;
-		return;
-	}
-	if(stanza.type() == "get") {
-		// Запрос регистрационной формы
-		Stanza iq = new ATXmlTag("iq");
-		iq->setAttribute("from", name);
-		iq->setAttribute("type", "result");
-		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-		TagHelper query = iq["query"];
-		query->setDefaultNameSpaceAttribute("jabber:iq:register");
-		ATXmlTag *instructions = new ATXmlTag("instructions");
-		instructions->insertCharacterData("Choose a username and password for use with this service.");
-		ATXmlTag *username = new ATXmlTag("username");
-		ATXmlTag *password = new ATXmlTag("password");
-		query->insertChildElement(instructions);
-		query->insertChildElement(username);
-		query->insertChildElement(password);
-		
-		if(client) {
-			client->sendStanza(iq);
-		} else {
-			iq->setAttribute("to", stanza.from().full());
-			server->routeStanza(iq);
-		}
-		delete iq;
-	}
-	else { // set
-		// Клиент прислал регистрационную информацию
-		ATXmlTag *username = stanza->find("query/username");
-		ATXmlTag *password = stanza->find("query/password");
-		ATXmlTag *remove = stanza->find("query/remove");
-		if(remove != 0 && client != 0) {
-			// Запрошено удаление учётной записи
-			db.query("DELETE FROM users WHERE user_login = %s", db.quote(client->jid().username()).c_str());
-			// TODO: удалять мусор из других таблиц
-			Stanza iq = new ATXmlTag("iq");
-			iq->setAttribute("type", "result");
-			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-			if(client) {
-				client->sendStanza(iq);
-			} else {
-				iq->setAttribute("to", stanza.from().full());
-				server->routeStanza(iq);
-			}
-			delete iq;
-			return;
-		}
-		if(username != 0 && password != 0) {
-			// Запрошена регистрация
-			
-			DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login = %s", db.quote(username->getCharacterData()).c_str());
-			bool exists = r["cnt"] == "1";
-			r.free();
-			
-			if(!exists) {
-				// Новый пользователь
-				if(!verifyUsername(username->getCharacterData()) || password->getCharacterData().empty()) {
-					Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
-					if(client) {
-						client->sendStanza(error);
-					} else {
-						error->setAttribute("to", stanza.from().full());
-						server->routeStanza(error);
-					}
-					delete error;
-					return;
-				}
-				db.query("INSERT INTO users (user_login, user_password) VALUES (%s, %s)", db.quote(username->getCharacterData()).c_str(), db.quote(password->getCharacterData()).c_str());
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("type", "result");
-				if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-				if(client) {
-					client->sendStanza(iq);
-				} else {
-					iq->setAttribute("to", stanza.from().full());
-					server->routeStanza(iq);
-				}
-				delete iq;
-			} else {
-				// Пользователь с таким именем уже существует
-				Stanza error = Stanza::iqError(stanza, "conflict", "cancel");
-				if(client) {
-					client->sendStanza(error);
-				} else {
-					error->setAttribute("to", stanza.from().full());
-					server->routeStanza(error);
-				}
-				delete error;
-				return;
-			}
-		}
-	}
 }
 
 bool VirtualHost::isAdmin(std::string barejid) {
