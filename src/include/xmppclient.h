@@ -260,6 +260,16 @@ public:
 	* RFC 3921 (7.) Roster Managment
 	*/
 	void handleRosterIq(Stanza stanza);
+	
+	/**
+	* XEP-0077: In-Band Registration
+	* 
+	* c2s-версия: регистрация происходит как правило до полноценной
+	* авторизации клиента, соответственно vhost не может адресовать
+	* такого клиента, поэтому приходиться сделать две отдельные
+	* версии регистрации: одну для c2s, другую для s2s
+	*/
+	void handleIQRegister(Stanza stanza);
 };
 
 #endif // MAWAR_XMPPCLIENT_H

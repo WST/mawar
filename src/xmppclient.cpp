@@ -226,10 +226,13 @@ void XMPPClient::onIqStanza(Stanza stanza)
 	Stanza body = stanza->firstChild();
 	std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
 	
-	if ( xmlns == "jabber:iq:register" )
+	if ( ! connected )
 	{
-		vhost->handleRegisterIq(this, stanza);
-		return;
+		if ( xmlns == "jabber:iq:register" )
+		{
+			handleIQRegister(stanza);
+			return;
+		}
 	}
 	
 	if ( ! authorized )
@@ -933,6 +936,88 @@ void XMPPClient::handleRosterIq(Stanza stanza)
 	}
 	
 	return;
+}
+
+/**
+* XEP-0077: In-Band Registration
+* 
+* c2s-версия: регистрация происходит как правило до полноценной
+* авторизации клиента, соответственно vhost не может адресовать
+* такого клиента, поэтому приходиться сделать две отдельные
+* версии регистрации: одну для c2s, другую для s2s
+*/
+void XMPPClient::handleIQRegister(Stanza stanza)
+{
+	printf("XMPPClient[%d]::handleIQRegister: %s\n", fd, stanza->asString().c_str());
+	
+	if ( ! vhost->registration_allowed )
+	{
+		Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+		error->setAttribute("from", vhost->hostname());
+		sendStanza(error);
+		delete error;
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "get" )
+	{
+		Stanza iq = new ATXmlTag("iq");
+		iq->setAttribute("from", vhost->hostname());
+		iq->setAttribute("type", "result");
+		iq->setAttribute("id", stanza->getAttribute("id"));
+		TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:register");
+			query["instructions"] = "Choose a username and password for use with this service";
+			query["username"];
+			query["password"];
+		sendStanza(iq);
+		delete iq;
+		return;
+	}
+	
+	if ( stanza->getAttribute("type") == "set" )
+	{
+		string username = stanza["query"]["username"]->getCharacterData();
+		string password = stanza["query"]["password"]->getCharacterData();
+		
+		if ( ! verifyUsername(username) || password.empty() )
+		{
+			Stanza error = Stanza::iqError(stanza, "forbidden", "cancel");
+			sendStanza(error);
+			delete error;
+			return;
+		}
+		
+		if ( vhost->userExists(username) )
+		{
+			Stanza error = Stanza::iqError(stanza, "conflict", "cancel");
+			sendStanza(error);
+			delete error;
+			return;
+		}
+		
+		if ( vhost->addUser(username, password) )
+		{
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("type", "result");
+			iq->setAttribute("from", vhost->hostname());
+			iq->setAttribute("id", stanza->getAttribute("id"));
+			sendStanza(iq);
+			delete iq;
+			return;
+		}
+		else
+		{
+			Stanza error = Stanza::iqError(stanza, "service-unavailable", "wait");
+			sendStanza(error);
+			delete error;
+			return;
+		}
+	}
+	
+	Stanza error = Stanza::iqError(stanza, "service-unavailable", "cancel");
+	sendStanza(error);
+	delete error;
 }
 
 /**

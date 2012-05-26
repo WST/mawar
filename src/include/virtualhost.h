@@ -53,6 +53,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		} state;
 		
 		/**
+		* Разрешена ли регистрация
+		* TRUE - разрешена
+		* FALSE - запрещена (только админ может регистрировать)
+		*/
+		bool registration_allowed;
+		
+		/**
 		* Конструктор
 		* @param srv ссылка на сервер
 		* @param aName имя хоста
@@ -358,9 +365,19 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		bool isAdmin(std::string barejid);
 		
 		/**
-		* Проверить есть зарегистрированный клиентс указанными ником
+		* Проверить есть зарегистрированный клиент с указанными ником
 		*/
-		bool userExists(std::string username);
+		bool userExists(const std::string &username);
+		
+		/**
+		* Добавить пользователя
+		*/
+		bool addUser(const std::string &username, const std::string &password);
+		
+		/**
+		* Удалить пользователя
+		*/
+		bool removeUser(const std::string &username, const std::string &password);
 		
 		/**
 		* Добавить расширение
@@ -384,8 +401,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		
 		typedef std::map<std::string, nanosoft::ptr<XMPPExtension> > extlist_t;
 		extlist_t ext;
-		
-		bool registration_allowed; // разрешена ли регистрация
 		
 		bind_conflict_t bind_conflict; // политика разрешения конфликта ресурсов
 		unsigned long int onliners_number; // число подключённых пользователей

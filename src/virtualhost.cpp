@@ -534,12 +534,35 @@ void VirtualHost::broadcast(Stanza stanza, const std::string &login)
 	mutex.unlock();
 }
 
-bool VirtualHost::userExists(std::string username) {
+/**
+* Проверить есть зарегистрированный клиентс указанными ником
+*/
+bool VirtualHost::userExists(const std::string &username)
+{
 	bool retval;
 	DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login=%s", db.quote(username).c_str());
 	retval = atoi(r["cnt"].c_str()) == 1;
 	r.free();
 	return retval;
+}
+
+/**
+* Добавить пользователя
+*/
+bool VirtualHost::addUser(const std::string &username, const std::string &password)
+{
+	DB::result r = db.query("INSERT INTO users (user_login, user_password) VALUES (%s, %s)", db.quote(username).c_str(), db.quote(password).c_str());
+	if ( r ) r.free();
+	return true;
+}
+
+/**
+* Удалить пользователя
+*/
+bool VirtualHost::removeUser(const std::string &username, const std::string &password)
+{
+	// TODO
+	return false;
 }
 
 void VirtualHost::saveOfflineMessage(Stanza stanza) {
