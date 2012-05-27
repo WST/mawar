@@ -124,6 +124,37 @@ public:
 	void discoverGroupItems(Stanza stanza);
 	
 	/**
+	* Обработка Ad-Hoc комманд
+	*
+	* XEP-0050: Ad-Hoc Commands
+	*/
+	void handleIQAdHocCommand(Stanza stanza);
+	
+	/**
+	* Обработка Ad-Hoc комманд для сервера
+	*/
+	void handleServerCommand(Stanza stanza);
+	
+	/**
+	* Обработка Ad-Hoc комманд для группы
+	*/
+	void handleGroupCommand(Stanza stanza);
+
+	/**
+	* Обработка Ad-Hoc комманды 'subscribe'
+	* 
+	* Подписаться на группу рассылок
+	*/
+	void handleGroupSubscribe(Stanza stanza);
+	
+	/**
+	* Обработка Ad-Hoc комманды 'unsubscribe'
+	* 
+	* Отписаться от группы рассылок
+	*/
+	void handleGroupUnsubscribe(Stanza stanza);
+	
+	/**
 	* Обработка запрещенной IQ-станзы (недостаточно прав)
 	*/
 	void handleIQForbidden(Stanza stanza);
