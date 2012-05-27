@@ -4,6 +4,8 @@
 #include <attagparser.h>
 #include <config.h>
 
+#include <stdio.h>
+
 using namespace std;
 
 ConfigFile::ConfigFile(const std::string &filename): config_filename(filename), config_tag(0) {
@@ -16,6 +18,7 @@ void ConfigFile::reload() {
 	
 	if(!config_tag) {
 		// ошибка!
+		fprintf(stderr, "ConfigFile parse error\n");
 		exit(100);
 	}
 	

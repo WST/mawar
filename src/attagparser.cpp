@@ -56,9 +56,19 @@ ATXmlTag * ATTagParser::parseStream(nanosoft::stream &s)
 	while ( 1 )
 	{
 		int r = s.read(buf, sizeof(buf));
-		if ( r > 0 ) parseXML(buf, r, false);
-		else if ( r == 0 ) return fetchResult();
-		else
+		
+		if ( r < 0 )
+		{
+			ATTagBuilder::reset();
+			return 0;
+		}
+		
+		if ( r == 0 )
+		{
+			return fetchResult();
+		}
+		
+		if ( ! parseXML(buf, r, false) )
 		{
 			ATTagBuilder::reset();
 			return 0;
@@ -74,8 +84,11 @@ ATXmlTag * ATTagParser::parseStream(nanosoft::stream &s)
 ATXmlTag * ATTagParser::parseString(const std::string &xml)
 {
 	depth = 0;
-	parseXML(xml.c_str(), xml.length(), true);
-	return fetchResult();
+	if ( parseXML(xml.c_str(), xml.length(), true) )
+	{
+		return fetchResult();
+	}
+	return 0;
 }
 
 
@@ -110,7 +123,7 @@ void ATTagParser::onEndElement(const std::string &name)
 */
 void ATTagParser::onParseError(const char *message)
 {
-	std::cerr << message << std::endl;
+	std::cerr << "ATTagParser::onParseError: "<< message << std::endl;
 }
 
 /**

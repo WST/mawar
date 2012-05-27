@@ -2,7 +2,7 @@
 #include <tagbuilder.h>
 #include <xml_tag.h>
 
-ATTagBuilder::ATTagBuilder() {
+ATTagBuilder::ATTagBuilder(): presult(0) {
 
 }
 
