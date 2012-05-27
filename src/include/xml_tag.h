@@ -156,6 +156,26 @@ class ATXmlTag
 		*/
 		void clear();
 		
+		/**
+		* Вернуть число выделенных (активных) тегов
+		*/
+		static unsigned getTagsCount() { return tags_created - tags_destroyed; }
+		
+		/**
+		* Вернуть максимальное число тегов
+		*/
+		static unsigned getTagsMaxCount() { return tags_max_count; }
+		
+		/**
+		* Вернуть число созданных тегов (с момента запуска)
+		*/
+		static unsigned getTagsCreated() { return tags_created; }
+		
+		/**
+		* Вернуть число удаленных тегов (с момента запуска)
+		*/
+		static unsigned getTagsDestroyed() { return tags_destroyed; }
+		
 	private:
 		std::string tag_name;
 		std::string tag_cdata;
@@ -165,6 +185,33 @@ class ATXmlTag
 		nodes_list_t childnodes;
 		ATXmlTag *parent;
 		std::string prefix;
+		
+		// ------- Статистика ------- //
+		
+		/**
+		* Текущее число выделенных тегов
+		*/
+		static unsigned tags_created;
+		
+		/**
+		* Текущее число освобожденных тегов
+		*/
+		static unsigned tags_destroyed;
+		
+		/**
+		* Максимальное число выделенных тегов
+		*/
+		static unsigned tags_max_count;
+		
+		/**
+		* Вызывается при создании тега
+		*/
+		static void onTagCreate();
+		
+		/**
+		* Вызывается при удалении тега
+		*/
+		static void onTagDestroy();
 };
 
 #endif

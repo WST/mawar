@@ -39,6 +39,46 @@ protected:
 	int depth;
 	
 	/**
+	* Чисто тегов выделенно перед обработкой станзы
+	*/
+	static unsigned tags_created_before_stanza;
+	
+	/**
+	* Число тегов уничтожено перед обработкой станзы
+	*/
+	static unsigned tags_destroyed_before_stanza;
+	
+	/**
+	* Число тегов выделеных для обработки станзы
+	*/
+	static unsigned tags_created_for_stanza;
+	
+	/**
+	* Число тегов удаленных при обработки станзы
+	*/
+	static unsigned tags_destroyed_for_stanza;
+	
+	/**
+	* Максимальное число тегов выделенных для обработки 1 станзы
+	*/
+	static unsigned tags_max_created_for_stanza;
+	
+	/**
+	* Число утеряных тегов при обработке станзы
+	*/
+	static unsigned tags_leak_for_stanza;
+	
+	/**
+	* Всего утеряных тегов
+	*/
+	static unsigned tags_leak;
+	
+	/**
+	* Число обработанных станз
+	*/
+	static unsigned stanza_count;
+	
+	/**
 	* Вернуть маску ожидаемых событий
 	*/
 	virtual uint32_t getEventsMask();
@@ -62,6 +102,16 @@ protected:
 	* Обработчик ошибок парсера
 	*/
 	virtual void onParseError(const char *message);
+	
+	/**
+	* Вызывается после получения, но до обработки станзы
+	*/
+	void onBeforeStanza();
+	
+	/**
+	* Вызывается после завершение обработки станзы
+	*/
+	void onAfterStanza();
 public:
 	/**
 	* Конструктор потока
@@ -72,6 +122,21 @@ public:
 	* Деструктор потока
 	*/
 	~XMPPStream();
+	
+	/**
+	* Число обработанных станз
+	*/
+	static unsigned getStanzaCount() { return stanza_count; }
+	
+	/**
+	* Вернуть число утеряных тегов
+	*/
+	static unsigned getTagsLeak() { return tags_leak; }
+	
+	/**
+	* Вернуть максимальное число тегов созданных для обработки 1 станзы
+	*/
+	static unsigned getMaxTagsPerStanza() { return tags_max_created_for_stanza; }
 	
 	/**
 	* Событие готовности к записи

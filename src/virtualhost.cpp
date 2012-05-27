@@ -1079,6 +1079,24 @@ void VirtualHost::handleIQStats(Stanza stanza)
 			query->insertChildElement(stat);
 			
 		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/stanzas");
+			stat->setAttribute("value", mawarPrintInteger(XMPPStream::getStanzaCount()));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/max-tags-per-stanza");
+			stat->setAttribute("value", mawarPrintInteger(XMPPStream::getMaxTagsPerStanza()));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
+			stat->setAttribute("name", "queries/tags-leak");
+			stat->setAttribute("value", mawarPrintInteger(XMPPStream::getTagsLeak()));
+			stat->setAttribute("units", "queries");
+			query->insertChildElement(stat);
+		
+		stat = new ATXmlTag("stat");
 			stat->setAttribute("name", "queries/vcard");
 			stat->setAttribute("value", mawarPrintInteger(vcard_queries));
 			stat->setAttribute("units", "queries");

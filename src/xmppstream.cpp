@@ -17,6 +17,46 @@ using namespace std;
 using namespace nanosoft;
 
 /**
+* Чисто тегов выделенно перед обработкой станзы
+*/
+unsigned XMPPStream::tags_created_before_stanza = 0;
+
+/**
+* Число тегов уничтожено перед обработкой станзы
+*/
+unsigned XMPPStream::tags_destroyed_before_stanza = 0;
+
+/**
+* Число тегов выделеных для обработки станзы
+*/
+unsigned XMPPStream::tags_created_for_stanza = 0;
+
+/**
+* Число тегов удаленных при обработки станзы
+*/
+unsigned XMPPStream::tags_destroyed_for_stanza = 0;
+
+/**
+* Максимальное число тегов выделенных для обработки 1 станзы
+*/
+unsigned XMPPStream::tags_max_created_for_stanza = 0;
+
+/**
+* Число утеряных тегов при обработке станзы
+*/
+unsigned XMPPStream::tags_leak_for_stanza = 0;
+
+/**
+* Всего утеряных тегов
+*/
+unsigned XMPPStream::tags_leak = 0;
+
+/**
+* Число обработанных станз
+*/
+unsigned XMPPStream::stanza_count = 0;
+
+/**
 * Конструктор потока
 */
 XMPPStream::XMPPStream(XMPPServer *srv, int sock):
@@ -80,6 +120,7 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 		onStartStream(name, attributes);
 		break;
 	case 2: // начало станзы
+		onBeforeStanza();
 		builder.startElement(name, attributes, depth);
 	break;
 	default: // добавить тег в станзу
@@ -108,9 +149,10 @@ void XMPPStream::onEndElement(const std::string &name)
 	case 2: {
 		builder.endElement(name);
 		Stanza s = builder.fetchResult();
-		//fprintf(stdout, "[XMPPStream: %d] onStanza(\033[22;31m%s\033[0m)\n", fd, s->asString().c_str());
+		fprintf(stdout, "[XMPPStream: %d] onStanza(\033[22;31m%s\033[0m)\n", fd, s->asString().c_str());
 		onStanza(s);
 		delete s; // Внимание — станза удаляется здесь
+		onAfterStanza();
 		break;
 	}
 	default:
@@ -127,6 +169,41 @@ void XMPPStream::onParseError(const char *message)
 	printf("[XMPPStream: %d] parse error: %s\n", fd, message);
 	// TODO something...
 	server->daemon->removeObject(this);
+}
+
+/**
+* Вызывается после получения, но до обработки станзы
+*/
+void XMPPStream::onBeforeStanza()
+{
+	tags_created_before_stanza = ATXmlTag::getTagsCreated();
+	tags_destroyed_before_stanza = ATXmlTag::getTagsDestroyed();
+	
+	printf("onBeforeStanza: tag_count: %d, max_count: %d\n", ATXmlTag::getTagsCount(), ATXmlTag::getTagsMaxCount());
+}
+
+/**
+* Вызывается после завершение обработки станзы
+*/
+void XMPPStream::onAfterStanza()
+{
+	tags_created_for_stanza = ATXmlTag::getTagsCreated() - tags_created_before_stanza;
+	tags_destroyed_for_stanza = ATXmlTag::getTagsDestroyed() - tags_destroyed_before_stanza;
+	
+	if ( tags_created_for_stanza > tags_max_created_for_stanza )
+	{
+		tags_max_created_for_stanza = tags_created_for_stanza;
+	}
+	
+	tags_leak_for_stanza = tags_created_for_stanza - tags_destroyed_for_stanza;
+	tags_leak += tags_leak_for_stanza;
+	stanza_count++;
+	
+	printf("onAfterStanza: tags_created: %d, tags_destroyed: %d, tags_leak: %d\n",
+		tags_created_for_stanza,
+		tags_destroyed_for_stanza,
+		tags_leak_for_stanza
+	);
 }
 
 /**

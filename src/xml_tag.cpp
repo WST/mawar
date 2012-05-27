@@ -7,7 +7,23 @@
 using namespace std;
 using namespace nanosoft;
 
+/**
+* Текущее число выделенных тегов
+*/
+unsigned ATXmlTag::tags_created = 0;
+
+/**
+* Текущее число освобожденных тегов
+*/
+unsigned ATXmlTag::tags_destroyed = 0;
+
+/**
+* Максимальное число выделенных тегов
+*/
+unsigned ATXmlTag::tags_max_count;
+
 ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth) {
+	onTagCreate();
 	tag_cdata = "";
 	parent = p;
 	tag_depth = depth;
@@ -23,6 +39,7 @@ ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, u
 }
 
 ATXmlTag::ATXmlTag(std::string name) {
+	onTagCreate();
 	tag_cdata = "";
 	parent = 0;
 	tag_depth = 0;
@@ -30,7 +47,27 @@ ATXmlTag::ATXmlTag(std::string name) {
 }
 
 ATXmlTag::~ATXmlTag() {
+	onTagDestroy();
 	clear();
+}
+
+/**
+* Вызывается при создании тега
+*/
+void ATXmlTag::onTagCreate()
+{
+	tags_created++;
+	
+	unsigned count = getTagsCount();
+	if ( count > tags_max_count ) tags_max_count = count;
+}
+
+/**
+* Вызывается при удалении тега
+*/
+void ATXmlTag::onTagDestroy()
+{
+	tags_destroyed++;
 }
 
 ATXmlTag *ATXmlTag::getParent() {
