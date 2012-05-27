@@ -1154,40 +1154,80 @@ void VirtualHost::handleIQStats(Stanza stanza)
 */
 void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 {
-	mawarWarning("Served incoming private storage request");
-	
 	if ( stanza->getAttribute("type") == "get" )
 	{
-		Stanza iq = new ATXmlTag("iq");
-		iq->setAttribute("from", name);
-		iq->setAttribute("to", stanza.from().full());
-		iq->setAttribute("type", "result");
-		iq->setAttribute("id", stanza->getAttribute("id", ""));
-		TagHelper query = iq["query"];
-		query->setDefaultNameSpaceAttribute("jabber:iq:private");
-		
 		TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
-		DB::result r = db.query("SELECT block_data FROM private_storage WHERE username = %s AND block_xmlns = %s", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str());
-		if(!r.eof()){
-			ATXmlTag *res = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
-			iq["query"]->insertChildElement(res);
+		if ( block )
+		{
+			ATXmlTag *data = 0;
+			
+			DB::result r = db.query(
+				"SELECT block_data FROM private_storage "
+				"WHERE username = %s AND block_xmlns = %s",
+				db.quote(stanza.from().username()).c_str(),
+				db.quote(block->getAttribute("xmlns")).c_str());
+			if ( r )
+			{
+				if( ! r.eof() )
+				{
+					data = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
+				}
+				r.free();
+			}
+			
+			if ( data )
+			{
+				Stanza iq = new ATXmlTag("iq");
+				iq->setAttribute("from", hostname());
+				iq->setAttribute("to", stanza.from().full());
+				iq->setAttribute("type", "result");
+				iq->setAttribute("id", stanza->getAttribute("id"));
+				TagHelper query = iq["query"];
+					query->setDefaultNameSpaceAttribute("jabber:iq:private");
+					iq["query"]->insertChildElement(data);
+				server->routeStanza(iq);
+				delete iq;
+				return;
+			}
+			else
+			{
+				Stanza error = Stanza::iqError(stanza, "item-not-found", "cancel");
+				error->setAttribute("from", hostname());
+				server->routeStanza(error);
+				delete error;
+				return;
+			}
 		}
-		getClientByJid(stanza.from())->sendStanza(iq);
-		r.free();
+		
+		Stanza error = Stanza::iqError(stanza, "bad-request", "modify");
+		error->setAttribute("from", hostname());
+		server->routeStanza(error);
+		delete error;
 		return;
 	}
-	else if ( stanza->getAttribute("type") == "set" )
+	
+	if ( stanza->getAttribute("type") == "set" )
 	{
 		TagHelper block = stanza["query"]->firstChild();
-		db.query("REPLACE INTO private_storage (username, block_xmlns, block_data) VALUES (%s, %s, %s)", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
-		Stanza iq = new ATXmlTag("iq");
-		iq->setAttribute("from", name);
-		iq->setAttribute("to", stanza.from().full());
-		iq->setAttribute("type", "result");
-		if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
-		TagHelper query = iq["query"];
-		query->setDefaultNameSpaceAttribute("jabber:iq:private");
-		getClientByJid(stanza.from())->sendStanza(iq);
+		if ( block )
+		{
+			db.query("REPLACE INTO private_storage (username, block_xmlns, block_data) VALUES (%s, %s, %s)", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", hostname());
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			iq->setAttribute("id", stanza->getAttribute("id"));
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:private");
+			server->routeStanza(iq);
+			delete iq;
+			return;
+		}
+		
+		Stanza error = Stanza::iqError(stanza, "bad-request", "modify");
+		error->setAttribute("from", hostname());
+		server->routeStanza(error);
+		delete error;
 		return;
 	}
 	
