@@ -5,6 +5,7 @@
 #include <xmppdomain.h>
 #include <configfile.h>
 #include <stanza.h>
+#include <adhoccommand.h>
 #include <jid.h>
 #include <nanosoft/mutex.h>
 #include <db.h>
@@ -128,31 +129,31 @@ public:
 	*
 	* XEP-0050: Ad-Hoc Commands
 	*/
-	void handleIQAdHocCommand(Stanza stanza);
+	void handleIQAdHocCommand(AdHocCommand cmd);
 	
 	/**
 	* Обработка Ad-Hoc комманд для сервера
 	*/
-	void handleServerCommand(Stanza stanza);
+	void handleServerCommand(AdHocCommand cmd);
 	
 	/**
 	* Обработка Ad-Hoc комманд для группы
 	*/
-	void handleGroupCommand(Stanza stanza);
+	void handleGroupCommand(AdHocCommand cmd);
 
 	/**
 	* Обработка Ad-Hoc комманды 'subscribe'
 	* 
 	* Подписаться на группу рассылок
 	*/
-	void handleGroupSubscribe(Stanza stanza);
+	void handleGroupSubscribe(AdHocCommand cmd);
 	
 	/**
 	* Обработка Ad-Hoc комманды 'unsubscribe'
 	* 
 	* Отписаться от группы рассылок
 	*/
-	void handleGroupUnsubscribe(Stanza stanza);
+	void handleGroupUnsubscribe(AdHocCommand cmd);
 	
 	/**
 	* Обработка запрещенной IQ-станзы (недостаточно прав)

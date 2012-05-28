@@ -429,50 +429,50 @@ void XMPPGroups::discoverGroupItems(Stanza stanza)
 *
 * XEP-0050: Ad-Hoc Commands
 */
-void XMPPGroups::handleIQAdHocCommand(Stanza stanza)
+void XMPPGroups::handleIQAdHocCommand(AdHocCommand cmd)
 {
-	if ( stanza.to().username().empty() )
+	if ( cmd.to().username().empty() )
 	{
-		handleServerCommand(stanza);
+		handleServerCommand(cmd);
 		return;
 	}
 	else
 	{
-		handleGroupCommand(stanza);
+		handleGroupCommand(cmd);
 		return;
 	}
 	
-	handleIQUnknown(stanza);
+	handleIQUnknown(cmd);
 }
 
 /**
 * Обработка Ad-Hoc комманд для сервера
 */
-void XMPPGroups::handleServerCommand(Stanza stanza)
+void XMPPGroups::handleServerCommand(AdHocCommand cmd)
 {
-	printf("handle server[%s] command: %s\n", stanza.to().hostname().c_str(), stanza->asString().c_str());
-	handleIQUnknown(stanza);
+	printf("handle server[%s] command: %s\n", cmd.to().hostname().c_str(), cmd->asString().c_str());
+	handleIQUnknown(cmd);
 }
 
 /**
 * Обработка Ad-Hoc комманд для группы
 */
-void XMPPGroups::handleGroupCommand(Stanza stanza)
+void XMPPGroups::handleGroupCommand(AdHocCommand cmd)
 {
-	string command = stanza["command"]->getAttribute("node");
+	string command = cmd["command"]->getAttribute("node");
 	
 	if ( command == "subscribe" )
 	{
-		handleGroupSubscribe(stanza);
+		handleGroupSubscribe(cmd);
 		return;
 	}
 	
 	if ( command == "unsubscribe" )
 	{
-		handleGroupUnsubscribe(stanza);
+		handleGroupUnsubscribe(cmd);
 	}
 	
-	handleIQUnknown(stanza);
+	handleIQUnknown(cmd);
 }
 
 /**
@@ -480,51 +480,41 @@ void XMPPGroups::handleGroupCommand(Stanza stanza)
 * 
 * Подписаться на группу рассылок
 */
-void XMPPGroups::handleGroupSubscribe(Stanza stanza)
+void XMPPGroups::handleGroupSubscribe(AdHocCommand cmd)
 {
-	string user = stanza.from().bare();
-	string group = stanza.to().bare();
+	string user = cmd.from().bare();
+	string group = cmd.to().bare();
 	printf("subscribe user[%s] to group[%s]\n", user.c_str(), group.c_str());
 	
-	Stanza reply = new ATXmlTag("iq");
-	reply->setAttribute("from", stanza.to().full());
-	reply->setAttribute("to", stanza.from().full());
-	reply->setAttribute("id", stanza->getAttribute("id"));
-	reply->setAttribute("type", "result");
-	Stanza command = reply["command"];
-	command->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
-	command->setAttribute("node", "subscribe");
+	AdHocCommand reply = AdHocCommand::reply(cmd);
 	
-	Stanza xdata = stanza["command"]->firstChild("x");
-	if ( xdata )
+	if ( cmd.isCancel() )
 	{
-		command->setAttribute("status", "completed");
-		command["note"]->setAttribute("type", "info");
-		command["note"] = "You are subcribed to " + group;
-		xdata = command["x"];
-			xdata->setDefaultNameSpaceAttribute("jabber:x:data");
-			xdata->setAttribute("type", "result");
-			xdata["title"] = "Subscribe to the group [" + group + "]";
-			xdata["instructions"] = "You are subscribed to the group \"" + group + "\"!";
+		reply.setStatus("canceled");
 		server->routeStanza(reply);
 		delete reply;
 		return;
 	}
 	
-	command->setAttribute("status", "executing");
-	command["actions"]->setAttribute("execute", "next");
-	command["actions"]["submit"];
-	xdata = command["x"];
-		xdata->setDefaultNameSpaceAttribute("jabber:x:data");
-		xdata->setAttribute("type", "form");
-		xdata["title"] = "Subscribe to the group [" + group + "]";
-		xdata["instructions"] = "Do you want to subscribe to the group \"" + group + "\"?";
-		
-		ATXmlTag *field = new ATXmlTag("field");
-		field->setAttribute("type", "text-single");
-		field->setAttribute("var", "username");
-		field->insertCharacterData("Choose username");
-		xdata += field;
+	if ( cmd.isSubmit() )
+	{
+		printf("subscribe user[%s] to group[%s] with resource[%s]\n", user.c_str(), group.c_str(), cmd.getFieldValue("username").c_str());
+		reply.setStatus("completed");
+		reply.setNote("You are subcribed to " + group);
+		reply.setTitle("Subscribe to the group [" + group + "]");
+		reply.setInstructions("You are subscribed to the group \"" + group + "\"!");
+		server->routeStanza(reply);
+		delete reply;
+		return;
+	}
+	
+	reply.setStatus("executing");
+	reply["command"]["actions"]->setAttribute("execute", "next");
+	reply["command"]["actions"]["submit"];
+	reply.setType("form");
+	reply.setTitle("Subscribe to the group [" + group + "]");
+	reply.setInstructions("Do you want to subscribe to the group \"" + group + "\"?");
+	reply.setField("username", "text-single", "Choose username");
 	
 	server->routeStanza(reply);
 	delete reply;
@@ -535,45 +525,39 @@ void XMPPGroups::handleGroupSubscribe(Stanza stanza)
 * 
 * Отписаться от группы рассылок
 */
-void XMPPGroups::handleGroupUnsubscribe(Stanza stanza)
+void XMPPGroups::handleGroupUnsubscribe(AdHocCommand cmd)
 {
-	string user = stanza.from().bare();
-	string group = stanza.to().bare();
+	string user = cmd.from().bare();
+	string group = cmd.to().bare();
 	printf("unsubscribe user[%s] to group[%s]\n", user.c_str(), group.c_str());
 	
-	Stanza reply = new ATXmlTag("iq");
-	reply->setAttribute("from", stanza.to().full());
-	reply->setAttribute("to", stanza.from().full());
-	reply->setAttribute("id", stanza->getAttribute("id"));
-	reply->setAttribute("type", "result");
-	Stanza command = reply["command"];
-	command->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
-	command->setAttribute("node", "unsubscribe");
+	AdHocCommand reply = AdHocCommand::reply(cmd);
 	
-	Stanza xdata = stanza["command"]->firstChild("x");
-	if ( xdata )
+	if ( cmd.isCancel() )
 	{
-		command->setAttribute("status", "completed");
-		command["note"]->setAttribute("type", "info");
-		command["note"] = "You are unsubcribed from " + group;
-		xdata = command["x"];
-			xdata->setDefaultNameSpaceAttribute("jabber:x:data");
-			xdata->setAttribute("type", "result");
-			xdata["title"] = "Subscribe to the group [" + group + "]";
-			xdata["instructions"] = "You are unsubscribed from the group \"" + group + "\"!";
+		reply.setStatus("canceled");
 		server->routeStanza(reply);
 		delete reply;
 		return;
 	}
 	
-	command->setAttribute("status", "executing");
-	command["actions"]->setAttribute("execute", "next");
-	command["actions"]["submit"];
-	xdata = command["x"];
-		xdata->setDefaultNameSpaceAttribute("jabber:x:data");
-		xdata->setAttribute("type", "form");
-		xdata["title"] = "Subscribe to the group [" + group + "]";
-		xdata["instructions"] = "Do you want to unsubscribe from the group \"" + group + "\"?";
+	if ( cmd.isSubmit() )
+	{
+		reply.setStatus("completed");
+		reply.setNote("You are unsubcribed from " + group);
+		reply.setTitle("Subscribe to the group [" + group + "]");
+		reply.setInstructions("You are unsubscribed from the group \"" + group + "\"!");
+		server->routeStanza(reply);
+		delete reply;
+		return;
+	}
+	
+	reply.setStatus("executing");
+	reply["command"]["actions"]->setAttribute("execute", "next");
+	reply["command"]["actions"]["submit"];
+	reply.setType("form");
+	reply.setTitle("Subscribe to the group [" + group + "]");
+	reply.setInstructions("Do you want to unsubscribe from the group \"" + group + "\"?");
 	
 	server->routeStanza(reply);
 	delete reply;

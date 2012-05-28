@@ -68,6 +68,7 @@ MAWAR_OBJECTS+=taghelper.o
 MAWAR_OBJECTS+=attagparser.o
 MAWAR_OBJECTS+=tagbuilder.o
 MAWAR_OBJECTS+=stanza.o
+MAWAR_OBJECTS+=adhoccommand.o
 MAWAR_OBJECTS+=jid.o
 MAWAR_OBJECTS+=configfile.o
 MAWAR_OBJECTS+=xmppdomain.o
@@ -148,6 +149,9 @@ tagbuilder.o: $(srcdir)/tagbuilder.cpp $(srcdir)/include/tagbuilder.h
 stanza.o: $(srcdir)/stanza.cpp $(srcdir)/include/stanza.h
 	$(CXX) -c $(srcdir)/stanza.cpp -o stanza.o
 
+adhoccommand.o: $(srcdir)/adhoccommand.cpp $(srcdir)/include/adhoccommand.h $(srcdir)/include/taghelper.h $(srcdir)/include/stanza.h
+	$(CXX) -c $(srcdir)/adhoccommand.cpp -o adhoccommand.o
+
 jid.o: $(srcdir)/jid.cpp $(srcdir)/include/jid.h
 	$(CXX) -c $(srcdir)/jid.cpp -o jid.o
 
@@ -184,7 +188,7 @@ xmppextensioninput.o: $(srcdir)/xmppextensioninput.cpp $(srcdir)/include/xmppext
 xmppextensionoutput.o: $(srcdir)/xmppextensionoutput.cpp $(srcdir)/include/xmppextensionoutput.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
 	$(CXX) -c $(srcdir)/xmppextensionoutput.cpp -o xmppextensionoutput.o
 
-xmppgroups.o: $(srcdir)/xmppgroups.cpp $(srcdir)/include/xmppgroups.h $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h
+xmppgroups.o: $(srcdir)/xmppgroups.cpp $(srcdir)/include/xmppgroups.h $(srcdir)/include/xmppdomain.h $(srcdir)/include/xmppserver.h $(srcdir)/include/xmppstream.h $(srcdir)/include/adhoccommand.h
 	$(CXX) -c $(srcdir)/xmppgroups.cpp -o xmppgroups.o
 
 #geoip.o: $(srcdir)/geoip.cpp $(srcdir)/include/geoip.h
