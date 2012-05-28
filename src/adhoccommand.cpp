@@ -200,6 +200,25 @@ void AdHocCommand::setInstructions(const std::string &text)
 }
 
 /**
+* Включить/отключить кнопку
+*/
+void AdHocCommand::setButtonEnable(const char *name, bool enable)
+{
+	if ( enable )
+	{
+		(*this)["command"]["actions"][name];
+	}
+	else
+	{
+		TagHelper actions = (*this)["command"]->firstChild("actions");
+		if ( actions )
+		{
+			actions->removeChild(name);
+		}
+	}
+}
+
+/**
 * Вернуть примечание
 */
 std::string AdHocCommand::getNote()

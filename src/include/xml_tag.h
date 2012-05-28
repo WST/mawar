@@ -152,6 +152,12 @@ class ATXmlTag
 		bool hasChild(ATXmlTag *tag);
 		
 		/**
+		* Удалить потомка с указанным именем
+		*/
+		void removeChild(const char *name);
+		void removeChild(const std::string &name);
+		
+		/**
 		* Удалить всех потомков
 		*/
 		void clear();

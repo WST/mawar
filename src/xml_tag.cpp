@@ -438,6 +438,42 @@ bool ATXmlTag::hasChild(ATXmlTag *tag)
 }
 
 /**
+* Удалить потомка с указанным именем
+*/
+void ATXmlTag::removeChild(const char *name)
+{
+	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
+	{
+		ATXmlNode *node = *iter;
+		if ( node->type == TTag && node->tag->name() == name )
+		{
+			childnodes.erase(iter);
+			children.remove(node->tag);
+			delete node->tag;
+			delete node;
+		}
+	}
+}
+
+/**
+* Удалить потомка с указанным именем
+*/
+void ATXmlTag::removeChild(const std::string &name)
+{
+	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
+	{
+		ATXmlNode *node = *iter;
+		if ( node->type == TTag && node->tag->name() == name )
+		{
+			childnodes.erase(iter);
+			children.remove(node->tag);
+			delete node->tag;
+			delete node;
+		}
+	}
+}
+
+/**
 * Удалить всех потомков
 */
 void ATXmlTag::clear()

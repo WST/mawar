@@ -115,6 +115,16 @@ public:
 	void setInstructions(const std::string &text);
 	
 	/**
+	* Включить/отключить кнопку
+	* 
+	* Допустимые значения name:
+	*   prev - кнопка "назад"
+	*   next - кнопка "далее"
+	*   complete - кнопка "завешить"
+	*/
+	void setButtonEnable(const char *name, bool enable = true);
+	
+	/**
 	* Вернуть примечание
 	*/
 	std::string getNote();

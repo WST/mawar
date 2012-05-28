@@ -509,8 +509,7 @@ void XMPPGroups::handleGroupSubscribe(AdHocCommand cmd)
 	}
 	
 	reply.setStatus("executing");
-	reply["command"]["actions"]->setAttribute("execute", "next");
-	reply["command"]["actions"]["submit"];
+	reply.setButtonEnable("complete");
 	reply.setType("form");
 	reply.setTitle("Subscribe to the group [" + group + "]");
 	reply.setInstructions("Do you want to subscribe to the group \"" + group + "\"?");
@@ -553,8 +552,7 @@ void XMPPGroups::handleGroupUnsubscribe(AdHocCommand cmd)
 	}
 	
 	reply.setStatus("executing");
-	reply["command"]["actions"]->setAttribute("execute", "next");
-	reply["command"]["actions"]["submit"];
+	reply.setButtonEnable("complete");
 	reply.setType("form");
 	reply.setTitle("Subscribe to the group [" + group + "]");
 	reply.setInstructions("Do you want to unsubscribe from the group \"" + group + "\"?");
