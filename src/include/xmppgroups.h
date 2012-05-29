@@ -93,6 +93,11 @@ public:
 	void handleGroupPresence(Stanza stanza);
 	
 	/**
+	* Обработка станзы presence-probe для группы
+	*/
+	void handleGroupPresenceProbe(Stanza stanza);
+	
+	/**
 	* Обработка станзы presence-subscribe для группы
 	*/
 	void handleGroupPresenceSubscribe(Stanza stanza);

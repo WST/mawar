@@ -197,11 +197,29 @@ void XMPPGroups::handleGroupPresence(Stanza stanza)
 {
 	string type = stanza->getAttribute("type");
 	
+	if ( type == "probe" )
+	{
+		handleGroupPresenceProbe(stanza);
+		return;
+	}
+	
 	if ( type == "subscribe" )
 	{
 		handleGroupPresenceSubscribe(stanza);
 		return;
 	}
+}
+
+/**
+* Обработка станзы presence-probe для группы
+*/
+void XMPPGroups::handleGroupPresenceProbe(Stanza stanza)
+{
+	Stanza presence = new ATXmlTag("presence");
+	presence->setAttribute("from", stanza.to().bare() + "/online");
+	presence->setAttribute("to", stanza.from().bare());
+	server->routeStanza(presence);
+	delete presence;
 }
 
 /**
@@ -216,6 +234,7 @@ void XMPPGroups::handleGroupPresenceSubscribe(Stanza stanza)
 	server->routeStanza(presence);
 	
 	presence->removeAttribute("type");
+	presence->setAttribute("from", stanza.to().bare() + "/online");
 	server->routeStanza(presence);
 	delete presence;
 }
@@ -646,6 +665,20 @@ void XMPPGroups::handleGroupSubscribe(AdHocCommand cmd)
 			reply.setTitle("Subscribe to the group [" + group + "]");
 			reply.setInstructions("Do you want to subscribe to the group \"" + group + "\"?");
 			reply.setField("error", "fixed", "Nickname cannot be empty");
+			reply.setField("username", "text-single", "Choose username");
+			server->routeStanza(reply);
+			delete reply;
+			return;
+		}
+		
+		if ( nick == "online" )
+		{
+			reply.setStatus("executing");
+			reply.setButtonEnable("complete");
+			reply.setType("form");
+			reply.setTitle("Subscribe to the group [" + group + "]");
+			reply.setInstructions("Do you want to subscribe to the group \"" + group + "\"?");
+			reply.setField("error", "fixed", ("Nickname " + nick + " already busy, choose other...").c_str());
 			reply.setField("username", "text-single", "Choose username");
 			server->routeStanza(reply);
 			delete reply;
