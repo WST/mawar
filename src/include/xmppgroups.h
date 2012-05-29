@@ -108,6 +108,21 @@ public:
 	void handleMessage(Stanza stanza);
 	
 	/**
+	* Обработка message-станзы для сервера
+	*/
+	void handleServerMessage(Stanza stanza);
+	
+	/**
+	* Обработка message-станзы для группы
+	*/
+	void handleGroupMessage(Stanza stanza);
+	
+	/**
+	* Обработка message-станзы для конкретного абонента группы
+	*/
+	void handlePrivateMessage(Stanza stanza);
+	
+	/**
 	* Обработка IQ-станзы
 	*/
 	void handleIQ(Stanza stanza);

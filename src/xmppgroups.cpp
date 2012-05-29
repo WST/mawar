@@ -244,6 +244,95 @@ void XMPPGroups::handleGroupPresenceSubscribe(Stanza stanza)
 */
 void XMPPGroups::handleMessage(Stanza stanza)
 {
+	if ( stanza.to().username().empty() )
+	{
+		handleServerMessage(stanza);
+		return;
+	}
+	else
+	{
+		string resource = stanza.to().resource();
+		if ( resource.empty() || resource == "online" )
+		{
+			handleGroupMessage(stanza);
+			return;
+		}
+		else
+		{
+			handlePrivateMessage(stanza);
+			return;
+		}
+	}
+}
+
+/**
+* Обработка message-станзы для сервера
+*/
+void XMPPGroups::handleServerMessage(Stanza stanza)
+{
+}
+
+/**
+* Обработка message-станзы для группы
+*/
+void XMPPGroups::handleGroupMessage(Stanza stanza)
+{
+	TagHelper body = stanza->firstChild("body");
+	if ( body )
+	{
+		string group = stanza.to().bare();
+		string user = stanza.from().bare();
+		
+		TagHelper s_user = findSubscribeByJID(group, user);
+		if ( ! s_user ) return;
+		
+		stanza->setAttribute("from", group + "/" + s_user->getAttribute("nickname"));
+		
+		DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_jid <> %s", db.quote(group).c_str(), db.quote(user).c_str());
+		if ( r )
+		{
+			for(; ! r.eof(); r.next())
+			{
+				stanza->setAttribute("to", r["contact_jid"]);
+				server->routeStanza(stanza);
+			}
+			r.free();
+		}
+		
+		delete s_user;
+	}
+}
+
+/**
+* Обработка message-станзы для конкретного абонента группы
+*/
+void XMPPGroups::handlePrivateMessage(Stanza stanza)
+{
+	TagHelper body = stanza->firstChild("body");
+	if ( body )
+	{
+		string group = stanza.to().bare();
+		string user = stanza.from().bare();
+		string to = stanza.to().resource();
+		
+		TagHelper s_user = findSubscribeByJID(group, user);
+		if ( ! s_user ) return;
+		
+		stanza->setAttribute("from", group + "/" + s_user->getAttribute("nickname"));
+		
+		DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_name = %s", db.quote(group).c_str(), db.quote(to).c_str());
+		if ( r )
+		{
+			for(; ! r.eof(); r.next())
+			{
+				stanza->setAttribute("to", r["contact_jid"]);
+				server->routeStanza(stanza);
+			}
+			r.free();
+		}
+		
+		delete s_user;
+	}
 }
 
 /**
