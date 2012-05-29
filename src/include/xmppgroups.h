@@ -46,6 +46,26 @@ public:
 	~XMPPGroups();
 	
 	/**
+	* Найти подписку по JID
+	*/
+	ATXmlTag* findSubscribeByJID(const std::string &group, const std::string &jid);
+	
+	/**
+	* Найти подписку по Nickname
+	*/
+	ATXmlTag* findSubscribeByNick(const std::string &group, const std::string &nickname);
+	
+	/**
+	* Пописать абонента на группу
+	*/
+	void subscribeUser(const std::string &group, const std::string &jid, const std::string &nickname);
+	
+	/**
+	* Отписать абонента от группы
+	*/
+	void unsubscribeUser(const std::string &group, const std::string &jid);
+	
+	/**
 	* Роутер входящих станз (thread-safe)
 	*
 	* @note Данный метод вызывается из глобального маршрутизатора станз XMPPServer::routeStanza()
@@ -61,6 +81,21 @@ public:
 	* Обработка presence-станзы
 	*/
 	void handlePresence(Stanza stanza);
+	
+	/**
+	* Обработка presence-станзы для сервера
+	*/
+	void handleServerPresence(Stanza stanza);
+	
+	/**
+	* Обработка presence-станзы для группы
+	*/
+	void handleGroupPresence(Stanza stanza);
+	
+	/**
+	* Обработка станзы presence-subscribe для группы
+	*/
+	void handleGroupPresenceSubscribe(Stanza stanza);
 	
 	/**
 	* Обработка message-станзы

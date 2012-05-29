@@ -56,6 +56,81 @@ XMPPGroups::~XMPPGroups()
 }
 
 /**
+* Найти подписку по JID
+*/
+ATXmlTag* XMPPGroups::findSubscribeByJID(const std::string &group, const std::string &jid)
+{
+	ATXmlTag *item = 0;
+	DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_jid = %s LIMIT 1",
+		db.quote(group).c_str(), db.quote(jid).c_str()
+	);
+	if ( r )
+	{
+		if ( ! r.eof() )
+		{
+			item = new ATXmlTag("user");
+			item->setAttribute("group", r["group_name"]);
+			item->setAttribute("jid", r["contact_jid"]);
+			item->setAttribute("nickname", r["contact_name"]);
+			item->setAttribute("owner", r["contact_owner"] == "1" ? "yes" : "no");
+		}
+		r.free();
+	}
+	
+	return item;
+}
+
+/**
+* Найти подписку по Nickname
+*/
+ATXmlTag* XMPPGroups::findSubscribeByNick(const std::string &group, const std::string &nickname)
+{
+	ATXmlTag *item = 0;
+	DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_name = %s LIMIT 1",
+		db.quote(group).c_str(), db.quote(nickname).c_str()
+	);
+	if ( r )
+	{
+		if ( ! r.eof() )
+		{
+			item = new ATXmlTag("user");
+			item->setAttribute("group", r["group_name"]);
+			item->setAttribute("jid", r["contact_jid"]);
+			item->setAttribute("nickname", r["contact_name"]);
+			item->setAttribute("owner", r["contact_owner"] == "1" ? "yes" : "no");
+		}
+		r.free();
+	}
+	
+	return item;
+}
+
+/**
+* Пописать абонента на группу
+*/
+void XMPPGroups::subscribeUser(const std::string &group, const std::string &jid, const std::string &nickname)
+{
+	DB::result r = db.query("INSERT INTO group_subscribers (group_name, contact_name, contact_jid) VALUES (%s, %s, %s)", db.quote(group).c_str(), db.quote(nickname).c_str(), db.quote(jid).c_str());
+	if ( r ) r.free();
+	
+	Stanza presence = new ATXmlTag("presence");
+	presence->setAttribute("to", jid);
+	presence->setAttribute("from", group);
+	presence->setAttribute("type", "subscribe");
+	server->routeStanza(presence);
+	delete presence;
+}
+
+/**
+* Отписать абонента от группы
+*/
+void XMPPGroups::unsubscribeUser(const std::string &group, const std::string &jid)
+{
+	DB::result r = db.query("DELETE FROM group_subscribers WHERE group_name = %s AND contact_jid = %s", db.quote(group).c_str(), db.quote(jid).c_str());
+	if ( r ) r.free();
+}
+
+/**
 * Роутер входящих станз (thread-safe)
 *
 * @note Данный метод вызывается из глобального маршрутизатора станз XMPPServer::routeStanza()
@@ -93,6 +168,56 @@ bool XMPPGroups::routeStanza(Stanza stanza)
 */
 void XMPPGroups::handlePresence(Stanza stanza)
 {
+	if ( stanza.to().username().empty() )
+	{
+		handleServerPresence(stanza);
+		return;
+	}
+	else
+	{
+		if ( stanza.to().resource().empty() )
+		{
+			handleGroupPresence(stanza);
+			return;
+		}
+	}
+}
+
+/**
+* Обработка presence-станзы для сервера
+*/
+void XMPPGroups::handleServerPresence(Stanza stanza)
+{
+}
+
+/**
+* Обработка presence-станзы для группы
+*/
+void XMPPGroups::handleGroupPresence(Stanza stanza)
+{
+	string type = stanza->getAttribute("type");
+	
+	if ( type == "subscribe" )
+	{
+		handleGroupPresenceSubscribe(stanza);
+		return;
+	}
+}
+
+/**
+* Обработка станзы presence-subscribe для группы
+*/
+void XMPPGroups::handleGroupPresenceSubscribe(Stanza stanza)
+{
+	Stanza presence = new ATXmlTag("presence");
+	presence->setAttribute("from", stanza.to().bare());
+	presence->setAttribute("to", stanza.from().bare());
+	presence->setAttribute("type", "subscribed");
+	server->routeStanza(presence);
+	
+	presence->removeAttribute("type");
+	server->routeStanza(presence);
+	delete presence;
 }
 
 /**
@@ -496,9 +621,56 @@ void XMPPGroups::handleGroupSubscribe(AdHocCommand cmd)
 		return;
 	}
 	
+	TagHelper s_user = findSubscribeByJID(group, user);
+	if ( s_user )
+	{
+		string note = "You are already subcribed to " + group + " with nickname " + s_user->getAttribute("contact_name");
+		reply.setStatus("completed");
+		reply.setNote(note);
+		reply.setTitle("Subscribe to the group [" + group + "]");
+		reply.setInstructions(note);
+		server->routeStanza(reply);
+		delete reply;
+		delete s_user;
+		return;
+	}
+	
 	if ( cmd.isSubmit() )
 	{
+		string nick = cmd.getFieldValue("username");
+		if ( nick.empty() )
+		{
+			reply.setStatus("executing");
+			reply.setButtonEnable("complete");
+			reply.setType("form");
+			reply.setTitle("Subscribe to the group [" + group + "]");
+			reply.setInstructions("Do you want to subscribe to the group \"" + group + "\"?");
+			reply.setField("error", "fixed", "Nickname cannot be empty");
+			reply.setField("username", "text-single", "Choose username");
+			server->routeStanza(reply);
+			delete reply;
+			return;
+		}
+		
+		TagHelper s_nick = findSubscribeByNick(group, nick);
+		if ( s_nick )
+		{
+			reply.setStatus("executing");
+			reply.setButtonEnable("complete");
+			reply.setType("form");
+			reply.setTitle("Subscribe to the group [" + group + "]");
+			reply.setInstructions("Do you want to subscribe to the group \"" + group + "\"?");
+			reply.setField("error", "fixed", ("Nickname " + nick + " already busy, choose other...").c_str());
+			reply.setField("username", "text-single", "Choose username");
+			server->routeStanza(reply);
+			delete reply;
+			delete s_nick;
+			return;
+		}
 		printf("subscribe user[%s] to group[%s] with resource[%s]\n", user.c_str(), group.c_str(), cmd.getFieldValue("username").c_str());
+		
+		subscribeUser(group, user, nick);
+		
 		reply.setStatus("completed");
 		reply.setNote("You are subcribed to " + group);
 		reply.setTitle("Subscribe to the group [" + group + "]");
@@ -540,8 +712,24 @@ void XMPPGroups::handleGroupUnsubscribe(AdHocCommand cmd)
 		return;
 	}
 	
+	TagHelper s_user = findSubscribeByJID(group, user);
+	if ( ! s_user )
+	{
+		string note = "You are not subcribed to " + group;
+		reply.setStatus("completed");
+		reply.setNote(note);
+		reply.setTitle("Subscribe to the group [" + group + "]");
+		reply.setInstructions(note);
+		server->routeStanza(reply);
+		delete reply;
+		return;
+	}
+	delete s_user;
+	
 	if ( cmd.isSubmit() )
 	{
+		unsubscribeUser(group, user);
+		
 		reply.setStatus("completed");
 		reply.setNote("You are unsubcribed from " + group);
 		reply.setTitle("Subscribe to the group [" + group + "]");
