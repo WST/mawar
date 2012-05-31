@@ -55,34 +55,32 @@ void XMPPServerInput::onEndStream()
 */
 void XMPPServerInput::onStanza(Stanza stanza)
 {
+	// Шаг 1. проверка: "to" должен быть нашим хостом
+	string to = stanza.to().hostname();
+	if ( ! server->isOurHost(to) )
+	{
+		Stanza stanza = Stanza::streamError("improper-addressing");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 2. проверка: "from" должен быть НЕ нашим хостом
+	string from = stanza.from().hostname();
+	if ( server->isOurHost(from) )
+	{
+		Stanza stanza = Stanza::streamError("improper-addressing");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
 	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
 	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
 	else
 	{
-		// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
-		string to = stanza.to().hostname();
-		XMPPDomain *host = server->getHostByName(to);
-		if ( ! dynamic_cast<VirtualHost*>(host) )
-		{
-			Stanza stanza = Stanza::streamError("improper-addressing");
-			sendStanza(stanza);
-			delete stanza;
-			terminate();
-			return;
-		}
-		
-		// Шаг 2. проверка: "from"
-		// TODO
-		string from = stanza.from().hostname();
-		if ( dynamic_cast<VirtualHost*>(server->getHostByName(from)) )
-		{
-			Stanza stanza = Stanza::streamError("improper-addressing");
-			sendStanza(stanza);
-			delete stanza;
-			terminate();
-			return;
-		}
-		
 		vhostkey_t key(from, to);
 		
 		mutex.lock();
@@ -107,31 +105,11 @@ void XMPPServerInput::onStanza(Stanza stanza)
 void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 {
 	printf("%s s2s-input(%d): db:verify from %s to %s\n", logtime().c_str(), fd, stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
-	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
+	
 	string to = stanza.to().hostname();
-	XMPPDomain *host = server->getHostByName(to);
-	if ( ! dynamic_cast<VirtualHost*>(host) )
-	{
-		Stanza stanza = Stanza::streamError("host-unknown");
-		sendStanza(stanza);
-		delete stanza;
-		terminate();
-		return;
-	}
-	
-	// Шаг 2. проверка: "from"
-	// TODO
 	string from = stanza.from().hostname();
-	XMPPDomain *domain = server->getHostByName(from);
-	if ( dynamic_cast<VirtualHost*>(domain) )
-	{
-		Stanza stanza = Stanza::streamError("invalid-from");
-		sendStanza(stanza);
-		delete stanza;
-		terminate();
-		return;
-	}
 	
+	XMPPDomain *domain = server->getHostByName(from);
 	XMPPServerOutput *so = dynamic_cast<XMPPServerOutput*>(domain);
 	if ( ! so )
 	{
@@ -142,7 +120,6 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 		return;
 	}
 	
-	// Шаг 3. проверка ключа
 	if ( stanza->getCharacterData() == sha1(to + ":" + from + ":" + so->key) )
 	{
 		Stanza result = new ATXmlTag("db:verify");
@@ -172,43 +149,9 @@ void XMPPServerInput::onDBResultStanza(Stanza stanza)
 {
 	printf("%s s2s-input(%d): db:result from %s to %s\n", logtime().c_str(), fd, stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
 	
-	// Шаг 1. проверка: "to" должен быть нашим виртуальным хостом
 	string to = stanza.to().hostname();
-	XMPPDomain *host = server->getHostByName(to);
-	if ( ! dynamic_cast<VirtualHost*>(host) )
-	{
-		Stanza stanza = Stanza::streamError("host-unknown");
-		sendStanza(stanza);
-		delete stanza;
-		terminate();
-		return;
-	}
-	
-	// Шаг 2. проверка "from"
-	//
-	// RFC 3920 не запрещает делать повторные коннекты (8.3.4).
-	//
-	// До завершения авторизации нужно поддерживать старое соединение,
-	// пока не авторизуется новое. Но можно блокировать повторные
-	// коннекты с ошибкой <not-authorized />, что мы и делаем.
-	//
-	// NOTE: В любом случае, логично блокировать попытки представиться
-	// нашим хостом - мы сами к себе никогда не коннектимся.
-	// Так что, если будете открывать повторные коннекты, то не забудьте
-	// блокировать попытки коннекта к самим себе.
-	// (c) shade
 	string from = stanza.from().hostname();
-	host = server->getHostByName(from);
-	if ( dynamic_cast<VirtualHost*>(host) )
-	{
-		Stanza stanza = Stanza::streamError("not-authorized");
-		sendStanza(stanza);
-		delete stanza;
-		terminate();
-		return;
-	}
 	
-	// Шаг 3. шлем запрос на проверку ключа
 	vhostkey_t key(from, to);
 	
 	vhost_t *vhost;

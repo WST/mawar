@@ -93,6 +93,15 @@ XMPPDomain* XMPPServer::getHostByName(const std::string &name)
 }
 
 /**
+* Проверить является ли указанный хост нашим
+*/
+bool XMPPServer::isOurHost(const std::string &hostname)
+{
+	XMPPDomain *domain = getHostByName(hostname);
+	return domain && ! dynamic_cast<XMPPServerOutput*>(domain);
+}
+
+/**
 * Добавить домен (thread-safe)
 */
 void XMPPServer::addDomain(XMPPDomain *domain)

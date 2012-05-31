@@ -91,6 +91,11 @@ public:
 	XMPPDomain* getHostByName(const std::string &name);
 	
 	/**
+	* Проверить является ли указанный хост нашим
+	*/
+	bool isOurHost(const std::string &hostname);
+	
+	/**
 	* Добавить домен (thread-safe)
 	*/
 	void addDomain(XMPPDomain *domain);

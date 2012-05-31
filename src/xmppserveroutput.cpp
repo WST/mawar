@@ -13,6 +13,8 @@
 #include <attagparser.h>
 #include <string>
 
+using namespace std;
+
 /**
 * Конструктор s2s-домена
 */
@@ -232,6 +234,28 @@ void XMPPServerOutput::onEndStream()
 */
 void XMPPServerOutput::onStanza(Stanza stanza)
 {
+	// Шаг 1. проверка: "to" должен быть нашим хостом
+	string to = stanza.to().hostname();
+	if ( ! XMPPStream::server->isOurHost(to) )
+	{
+		Stanza stanza = Stanza::streamError("improper-addressing");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
+	// Шаг 2. проверка: "from" должен быть НЕ нашим хостом
+	string from = stanza.from().hostname();
+	if ( XMPPStream::server->isOurHost(from) )
+	{
+		Stanza stanza = Stanza::streamError("improper-addressing");
+		sendStanza(stanza);
+		delete stanza;
+		terminate();
+		return;
+	}
+	
 	if ( stanza->name() == "verify" ) onDBVerifyStanza(stanza);
 	else if ( stanza->name() == "result" ) onDBResultStanza(stanza);
 	else
@@ -264,29 +288,8 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 		return;
 	}
 	
-	// Шаг 2. проверка: "to" должен быть нашим виртуальным хостом
 	std::string to = stanza.to().hostname();
-	XMPPDomain *host = XMPPDomain::server->getHostByName(to);
-	if ( ! dynamic_cast<VirtualHost*>(host) )
-	{
-		Stanza stanza = Stanza::streamError("host-unknown");
-		sendStanza(stanza);
-		delete stanza;
-		terminate();
-		return;
-	}
-	
-	// Шаг 3. проверка: "from" должен совпадать с тем, что нам дали
-	// TODO
 	std::string from = stanza.from().hostname();
-	if ( dynamic_cast<VirtualHost*>(XMPPDomain::server->getHostByName(from)) )
-	{
-		Stanza stanza = Stanza::streamError("invalid-from");
-		sendStanza(stanza);
-		delete stanza;
-		terminate();
-		return;
-	}
 	
 	if ( stanza->getAttribute("type") == "valid" || stanza->getAttribute("type") == "invalid" )
 	{
