@@ -286,6 +286,8 @@ void XMPPGroups::handleGroupMessage(Stanza stanza)
 		TagHelper s_user = findSubscribeByJID(group, user);
 		if ( ! s_user ) return;
 		
+		body += "\n\nFrom: " + user;
+		
 		stanza->setAttribute("from", group + "/" + s_user->getAttribute("nickname"));
 		
 		DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_jid <> %s", db.quote(group).c_str(), db.quote(user).c_str());
@@ -317,6 +319,8 @@ void XMPPGroups::handlePrivateMessage(Stanza stanza)
 		
 		TagHelper s_user = findSubscribeByJID(group, user);
 		if ( ! s_user ) return;
+		
+		body += "\n\nFrom: " + user;
 		
 		stanza->setAttribute("from", group + "/" + s_user->getAttribute("nickname"));
 		
