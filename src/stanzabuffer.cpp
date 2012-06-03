@@ -367,6 +367,11 @@ bool StanzaBuffer::put(int fd, const char *data, size_t len)
 	// проверяем размер, зачем делать лишние движения если len = 0?
 	if ( len == 0 ) return true;
 	
+#ifdef DUMP_IO
+	std::string io_dump(data, len);
+	fprintf(stdout, "DUMP WRITE[%d]: \033[22;34m%s\033[0m\n", fd, io_dump.c_str());
+#endif
+	
 	// находим описание файлового буфера
 	fd_info_t *fb = &fds[fd];
 	
@@ -403,6 +408,11 @@ bool StanzaBuffer::putRaw(int fd, const char *data, size_t len)
 	
 	// проверяем размер, зачем делать лишние движения если len = 0?
 	if ( len == 0 ) return true;
+	
+#ifdef DUMP_IO
+	std::string io_dump(data, len);
+	fprintf(stdout, "DUMP WRITE[%d]: \033[22;34m%s\033[0m\n", fd, io_dump.c_str());
+#endif
 	
 	// находим описание файлового буфера
 	fd_info_t *fb = &fds[fd];
@@ -450,11 +460,6 @@ bool StanzaBuffer::push(int fd)
 			// попробовать записать
 			ssize_t r = write(fd, fb->first->data + fb->offset, rest);
 			if ( r <= 0 ) break;
-			
-#ifdef DUMP_IO
-			std::string s(fb->first->data + fb->offset, r);
-			fprintf(stdout, "[StanzaBuffer: %d] write: \033[22;34m%s\033[0m\n", fd, s.c_str());
-#endif
 			
 			fb->size -= r;
 			fb->offset += r;

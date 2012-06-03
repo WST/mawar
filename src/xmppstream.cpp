@@ -120,7 +120,6 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 		onStartStream(name, attributes);
 		break;
 	case 2: // начало станзы
-		onBeforeStanza();
 		builder.startElement(name, attributes, depth);
 	break;
 	default: // добавить тег в станзу
@@ -148,11 +147,16 @@ void XMPPStream::onEndElement(const std::string &name)
 		break;
 	case 2: {
 		builder.endElement(name);
-		Stanza s = builder.fetchResult();
-		fprintf(stdout, "[XMPPStream: %d] onStanza(\033[22;31m%s\033[0m)\n", fd, s->asString().c_str());
-		onStanza(s);
-		delete s; // Внимание — станза удаляется здесь
+		Stanza stanza = builder.fetchResult();
+		
+#ifdef DUMP_IO
+		fprintf(stdout, "DUMP STANZA[%d]: \033[22;31m%s\033[0m\n", fd, stanza->asString().c_str());
+#endif
+		
+		onBeforeStanza();
+		onStanza(stanza);
 		onAfterStanza();
+		delete stanza; // Внимание — станза удаляется здесь
 		break;
 	}
 	default:
