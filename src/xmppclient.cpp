@@ -2,10 +2,12 @@
 #include <xmppstream.h>
 #include <xmppserver.h>
 #include <virtualhost.h>
+#include <stanzabuffer.h>
 #include <functions.h>
 #include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
+#include <config.h>
 
 // for debug only
 #include <string>
@@ -19,10 +21,11 @@ using namespace nanosoft;
 * Конструктор потока
 */
 XMPPClient::XMPPClient(XMPPServer *srv, int sock):
-	XMPPStream(srv, sock), vhost(0),
+	XMPPStream(srv, sock), vhost(0), compression(false),
 	authorized(false), connected(false), available(false), use_roster(false)
 {
 	lock();
+	memset(&zin, 0, sizeof(zin));
 }
 
 /**
@@ -120,6 +123,12 @@ void XMPPClient::onStanza(Stanza stanza)
 		onResponseStanza(stanza);
 		return;
 	}
+	
+	if ( name == "compress" )
+	{
+		handleCompress(stanza);
+		return;
+	}
 }
 
 /**
@@ -185,6 +194,43 @@ void XMPPClient::onResponseStanza(Stanza stanza)
 		onSASLStep(base64_decode(stanza));
 		return;
 	}
+}
+
+/**
+* Обработчик запроса компрессии
+*/
+void XMPPClient::handleCompress(Stanza stanza)
+{
+	if ( stanza["method"]->getCharacterData() != "zlib" )
+	{
+		Stanza failure = new ATXmlTag("failure");
+		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
+		failure["unsupported-method"];
+		sendStanza(failure);
+		delete failure;
+		return;
+	}
+	
+	if ( ! server->buffer->setCompression(fd, true) )
+	{
+		Stanza failure = new ATXmlTag("failure");
+		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
+		failure["setup-failed"];
+		sendStanza(failure);
+		delete failure;
+		return;
+	}
+	
+	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
+	XMLParser::setCompression(true);
+	resetParser();
+	resetWriter();
+	
+	compression = true;
+	Stanza compressed = new ATXmlTag("compressed");
+	compressed->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
+	sendStanzaRaw(compressed);
+	delete compressed;
 }
 
 /**
@@ -1061,6 +1107,10 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
+		
+		stanza = features["compression"];
+		stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");
+		stanza["method"] = "zlib";
 	}
 	else
 	{

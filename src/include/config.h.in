@@ -65,3 +65,8 @@
 * Пользователь по умолчанию от имени которого будет работать демон
 */
 #define CONFIG_USERNAME "nobody"
+
+/**
+* Уровень компрессии в zlib
+*/
+#define CONFIG_ZLIB_LEVEL 6

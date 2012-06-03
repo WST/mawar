@@ -223,3 +223,17 @@ bool XMPPStream::sendStanza(Stanza stanza)
 	else onError("[XMPPStream: %d] sendStanza() fault");
 }
 
+/**
+* Отправить станзу как есть без обработки (сжатия, шифрования и т.п.)
+*/
+void XMPPStream::sendStanzaRaw(Stanza stanza)
+{
+	string data = stanza->asString();
+	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
+	if ( server->buffer->putRaw(fd, data.c_str(), data.length()) )
+	{
+		want_write = true;
+		server->daemon->modifyObject(this);
+	}
+	else onError("[XMPPStream: %d] sendStanza() fault");
+}

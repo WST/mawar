@@ -6,12 +6,19 @@
 #include <xml_types.h>
 #include <stanza.h>
 #include <presence.h>
+#include "zlib.h"
 
 /**
 * Класс XMPP-поток (c2s)
 */
 class XMPPClient: public XMPPStream
 {
+private:
+	/**
+	* Контекст компрессора zlib
+	*/
+	z_stream zin;
+	
 protected:
 	/**
 	* Виртуальный хост
@@ -63,6 +70,21 @@ public:
 	*/
 	bool use_roster;
 	
+	/**
+	* Флаг компрессии
+	* XEP-0138: Stream Compression
+	*
+	* TRUE - компрессия включена
+	* FALSE - компрессия отключена
+	*/
+	bool compression;
+	
+	/**
+	* Клиент авторизовался
+	* 
+	* TRUE - клиент авторизовался
+	* FALSE - клиент не авторизовался
+	*/
 	bool authorized;
 	
 	/**
@@ -144,6 +166,11 @@ public:
 	* Обработчик авторизации: ответ клиента
 	*/
 	virtual void onResponseStanza(Stanza stanza);
+	
+	/**
+	* Обработчик запроса компрессии
+	*/
+	void handleCompress(Stanza stanza);
 	
 	/**
 	* Устаревший обработчик iq roster

@@ -4,6 +4,7 @@
 #include <config.h>
 #include <sys/types.h>
 #include <nanosoft/mutex.h>
+#include "zlib.h"
 
 /**
 * Буфер станз
@@ -36,6 +37,19 @@ private:
 		* Мьютекс для сихронизации файлового буфера
 		*/
 		nanosoft::Mutex mutex;
+		
+		/**
+		* Контекст компрессора zlib
+		*/
+		z_stream strm;
+		
+		/**
+		* Флаг компрессии zlib
+		*
+		* TRUE - компрессия включена
+		* FALSE - компрессия отключена
+		*/
+		bool compression;
 		
 		/**
 		* Размер буферизованных данных (в байтах)
@@ -115,14 +129,40 @@ private:
 	void freeBlocks(block_t *top);
 	
 	/**
+	* Включить компрессию
+	*/
+	bool enableCompression(int fd, fd_info_t *fb);
+	
+	/**
+	* Отключить компрессию
+	*/
+	bool disableCompression(int fd, fd_info_t *fb);
+	
+	/**
 	* Добавить данные в буфер (thread-unsafe)
 	*
+	* Если включена компрессия, то сначала сжать данные
+	*
+	* @param fd файловый дескриптор
 	* @param fb указатель на описание файлового буфера
 	* @param data указатель на данные
 	* @param len размер данных
 	* @return TRUE данные приняты, FALSE данные не приняты - нет места
 	*/
 	bool put(int fd, fd_info_t *fb, const char *data, size_t len);
+	
+	/**
+	* Добавить данные в буфер (thread-unsafe)
+	*
+	* Записать данные как есть без какой-либо обработки
+	*
+	* @param fd файловый дескриптор
+	* @param fb указатель на описание файлового буфера
+	* @param data указатель на данные
+	* @param len размер данных
+	* @return TRUE данные приняты, FALSE данные не приняты - нет места
+	*/
+	bool putRaw(int fd, fd_info_t *fb, const char *data, size_t len);
 public:
 	/**
 	* Конструктор буфера
@@ -170,6 +210,21 @@ public:
 	bool setQuota(int fd, size_t quota);
 	
 	/**
+	* Вернуть флаг компрессии
+	* @param fd файловый дескриптор
+	* @return TRUE - компрессия включена, FALSE - компрессия отключена
+	*/
+	bool getCompression(int fd);
+	
+	/**
+	* Включить/отключить компрессию
+	* @param fd файловый дескриптор
+	* @param state TRUE - включить компрессию, FALSE - отключить компрессию
+	* @return TRUE - операция успешна, FALSE - операция прошла с ошибкой
+	*/
+	bool setCompression(int fd, bool state);
+	
+	/**
 	* Добавить данные в буфер (thread-safe)
 	*
 	* @param fd файловый дескриптор в который надо записать
@@ -178,6 +233,19 @@ public:
 	* @return TRUE данные приняты, FALSE данные не приняты - нет места
 	*/
 	bool put(int fd, const char *data, size_t len);
+	
+	/**
+	* Добавить данные в буфер как есть (thread-safe)
+	*
+	* Данные добавляются в буфер как есть без какой-либо
+	* обработки типа сжатия и шифрования
+	*
+	* @param fd файловый дескриптор в который надо записать
+	* @param data указатель на данные
+	* @param len размер данных
+	* @return TRUE данные приняты, FALSE данные не приняты - нет места
+	*/
+	bool putRaw(int fd, const char *data, size_t len);
 	
 	/**
 	* Записать данные из буфера в файл/сокет

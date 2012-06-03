@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "config.h"
+
 #ifdef DUMP_IO
 #include <string>
 #endif
@@ -105,6 +107,43 @@ void StanzaBuffer::freeBlocks(block_t *top)
 }
 
 /**
+* Включить компрессию
+*/
+bool StanzaBuffer::enableCompression(int fd, fd_info_t *fb)
+{
+	if ( ! fb->compression )
+	{
+		z_stream *strm = &(fb->strm);
+		memset(strm, 0, sizeof(fb->strm));
+		int status = deflateInit(strm, CONFIG_ZLIB_LEVEL);
+		if ( status != Z_OK )
+		{
+			(void)deflateEnd(strm);
+			return false;
+		}
+		
+		fb->compression = true;
+	}
+	return true;
+}
+
+/**
+* Отключить компрессию
+*/
+bool StanzaBuffer::disableCompression(int fd, fd_info_t *fb)
+{
+	if ( fb->compression )
+	{
+		z_stream *strm = &(fb->strm);
+		(void)deflateEnd(strm);
+		
+		fb->compression = false;
+	}
+	
+	return true;
+}
+
+/**
 * Вернуть размер буферизованных данных
 * @param fd файловый дескриптор
 * @return размер буферизованных данных
@@ -141,14 +180,95 @@ bool StanzaBuffer::setQuota(int fd, size_t quota)
 }
 
 /**
+* Вернуть флаг компрессии
+* @param fd файловый дескриптор
+* @return TRUE - компрессия включена, FALSE - компрессия отключена
+*/
+bool StanzaBuffer::getCompression(int fd)
+{
+	return ( fd >= 0 && fd < fd_max ) ? fds[fd].compression : false;
+}
+
+/**
+* Включить/отключить компрессию
+* @param fd файловый дескриптор
+* @param state TRUE - включить компрессию, FALSE - отключить компрессию
+* @return TRUE - операция успешна, FALSE - операция прошла с ошибкой
+*/
+bool StanzaBuffer::setCompression(int fd, bool state)
+{
+	if ( fd >= 0 && fd < fd_max )
+	{
+		if ( state ) return enableCompression(fd, &fds[fd]);
+		return disableCompression(fd, &fds[fd]);
+	}
+	
+	return false;
+}
+
+/**
 * Добавить данные в буфер (thread-unsafe)
 *
-* @param fd указатель на описание файлового буфера
+* Если включена компрессия, то сначала сжать данные
+*
+* @param fd файловый дескриптор
+* @param fb указатель на описание файлового буфера
 * @param data указатель на данные
 * @param len размер данных
 * @return TRUE данные приняты, FALSE данные не приняты - нет места
 */
 bool StanzaBuffer::put(int fd, fd_info_t *fb, const char *data, size_t len)
+{
+	char buf[STANZABUFFER_BLOCKSIZE];
+	
+	if ( fb->compression )
+	{
+		size_t out_len = 0;
+		z_stream *strm = &(fb->strm);
+		
+		strm->next_in = (unsigned char*)data;
+		strm->avail_in = len;
+		
+		
+		while ( strm->avail_out == 0 )
+		{
+			strm->next_out = (unsigned char*)buf;
+			strm->avail_out = sizeof(buf);
+			
+			deflate(strm, Z_PARTIAL_FLUSH);
+			
+			size_t have = sizeof(buf) - strm->avail_out;
+			out_len += have;
+			
+			if ( ! putRaw(fd, fb, buf, have) ) return false;
+			
+		}
+		
+		strm->avail_out = 0;
+		
+		float ratio = static_cast<float>(len) / out_len;
+		printf("compression ratio: %d / %d = %.2f\n", len, out_len, ratio);
+		
+		return true;
+	}
+	else
+	{
+		return putRaw(fd, fb, data, len);
+	}
+}
+
+/**
+* Добавить данные в буфер (thread-unsafe)
+*
+* Записать данные как есть без какой-либо обработки
+*
+* @param fd файловый дескриптор
+* @param fb указатель на описание файлового буфера
+* @param data указатель на данные
+* @param len размер данных
+* @return TRUE данные приняты, FALSE данные не приняты - нет места
+*/
+bool StanzaBuffer::putRaw(int fd, fd_info_t *fb, const char *data, size_t len)
 {
 	if ( fb->quota != 0 && (fb->size + len) > fb->quota )
 	{
@@ -252,31 +372,44 @@ bool StanzaBuffer::put(int fd, const char *data, size_t len)
 	
 	if ( fb->mutex.lock() )
 	{
-		// если буфер пуст, то сначала попробовать записать без буферизации,
-		// а всё, что не запишется поместить в буфер
-		/* плохо... часть станзы запишется, а для остатка не хватит места
-		   в буфере, что плохо, ибо нарушает структуру XML, поэтому желательно
-		   либо принимать блок целиком, либо не принимать вообще - так хоть
-		   не будет обрушать s2s-соединения
-		if ( fb->size == 0 )
-		{
-			ssize_t r = write(fd, data, len);
-			if ( r > 0 )
-			{
-				data += r;
-				len -= r;
-				
-				// все записалось?
-				if ( len == 0 )
-				{
-					mutex.unlock();
-					return true;
-				}
-			}
-		}*/
-		
-		// остатки добавляем в конец буфера
 		bool r = put(fd, fb, data, len);
+		fb->mutex.unlock();
+		return r;
+	}
+	
+	return false;
+}
+
+/**
+* Добавить данные в буфер как есть (thread-safe)
+*
+* Данные добавляются в буфер как есть без какой-либо
+* обработки типа сжатия и шифрования
+*
+* @param fd файловый дескриптор в который надо записать
+* @param data указатель на данные
+* @param len размер данных
+* @return TRUE данные приняты, FALSE данные не приняты - нет места
+*/
+bool StanzaBuffer::putRaw(int fd, const char *data, size_t len)
+{
+	// проверяем корректность файлового дескриптора
+	if ( fd < 0 || fd >= fd_max )
+	{
+		// плохой дескриптор
+		fprintf(stderr, "StanzaBuffer[%d]: wrong descriptor\n", fd);
+		return false;
+	}
+	
+	// проверяем размер, зачем делать лишние движения если len = 0?
+	if ( len == 0 ) return true;
+	
+	// находим описание файлового буфера
+	fd_info_t *fb = &fds[fd];
+	
+	if ( fb->mutex.lock() )
+	{
+		bool r = putRaw(fd, fb, data, len);
 		fb->mutex.unlock();
 		return r;
 	}
@@ -364,6 +497,7 @@ void StanzaBuffer::cleanup(int fd)
 	}
 	
 	fd_info_t *p = &fds[fd];
+	disableCompression(fd, p);
 	freeBlocks(p->first);
 	p->size = 0;
 	p->offset = 0;
