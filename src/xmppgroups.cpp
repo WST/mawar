@@ -197,6 +197,18 @@ void XMPPGroups::handleGroupPresence(Stanza stanza)
 {
 	string type = stanza->getAttribute("type");
 	
+	if ( type == "" )
+	{
+		handleGroupPresenceAvailable(stanza);
+		return;
+	}
+	
+	if ( type == "unavailable" )
+	{
+		handleGroupPresenceUnavailable(stanza);
+		return;
+	}
+	
 	if ( type == "probe" )
 	{
 		handleGroupPresenceProbe(stanza);
@@ -208,6 +220,60 @@ void XMPPGroups::handleGroupPresence(Stanza stanza)
 		handleGroupPresenceSubscribe(stanza);
 		return;
 	}
+}
+
+/**
+* Обработка станзы presence-available для группы
+*/
+void XMPPGroups::handleGroupPresenceAvailable(Stanza stanza)
+{
+	string group = stanza.to().bare();
+	string user = stanza.from().bare();
+	
+	TagHelper s_user = findSubscribeByJID(group, user);
+	if ( ! s_user ) return;
+	
+	stanza->setAttribute("from", group + "/" + s_user->getAttribute("nickname"));
+	
+	DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_jid <> %s", db.quote(group).c_str(), db.quote(user).c_str());
+	if ( r )
+	{
+		for(; ! r.eof(); r.next())
+		{
+			stanza->setAttribute("to", r["contact_jid"]);
+			server->routeStanza(stanza);
+		}
+		r.free();
+	}
+	
+	delete s_user;
+}
+
+/**
+* Обработка станзы presence-unavailable для группы
+*/
+void XMPPGroups::handleGroupPresenceUnavailable(Stanza stanza)
+{
+	string group = stanza.to().bare();
+	string user = stanza.from().bare();
+	
+	TagHelper s_user = findSubscribeByJID(group, user);
+	if ( ! s_user ) return;
+	
+	stanza->setAttribute("from", group + "/" + s_user->getAttribute("nickname"));
+	
+	DB::result r = db.query("SELECT * FROM group_subscribers WHERE group_name = %s AND contact_jid <> %s", db.quote(group).c_str(), db.quote(user).c_str());
+	if ( r )
+	{
+		for(; ! r.eof(); r.next())
+		{
+			stanza->setAttribute("to", r["contact_jid"]);
+			server->routeStanza(stanza);
+		}
+		r.free();
+	}
+	
+	delete s_user;
 }
 
 /**
