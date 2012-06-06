@@ -1108,9 +1108,12 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		
-		stanza = features["compression"];
-		stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");
-		stanza["method"] = "zlib";
+		if ( ! compression )
+		{
+			stanza = features["compression"];
+			stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");
+			stanza["method"] = "zlib";
+		}
 	}
 	else
 	{
