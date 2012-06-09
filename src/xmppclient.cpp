@@ -2,7 +2,6 @@
 #include <xmppstream.h>
 #include <xmppserver.h>
 #include <virtualhost.h>
-#include <stanzabuffer.h>
 #include <functions.h>
 #include <db.h>
 #include <tagbuilder.h>
@@ -211,7 +210,7 @@ void XMPPClient::handleCompress(Stanza stanza)
 		return;
 	}
 	
-	if ( ! server->buffer->setCompression(fd, true) )
+	if ( ! server->daemon->setCompression(fd, true) )
 	{
 		Stanza failure = new ATXmlTag("failure");
 		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
@@ -1108,7 +1107,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		
-		if ( ! compression )
+		if ( ! compression && server->daemon->canCompression(fd) )
 		{
 			stanza = features["compression"];
 			stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");

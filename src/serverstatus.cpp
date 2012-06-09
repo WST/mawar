@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <serverstatus.h>
 #include <xmppserver.h>
-#include <stanzabuffer.h>
 
 /**
 * Конструктор сервера статистики
@@ -29,7 +28,7 @@ void ServerStatus::handleStatus(FILE *status)
 	fprintf(status, "maward status\n");
 	fprintf(status, "workers:  %d\n", server->daemon->getWorkerCount()+1);
 	fprintf(status, "sockets:  %d / %d\n", server->daemon->getObjectCount(), server->daemon->getObjectLimit());
-	fprintf(status, "outbuf:   %d / %d\n", server->buffer->getFreeSize(), server->buffer->getBufferSize());
+	fprintf(status, "outbuf:   %d / %d\n", server->daemon->getFreeSize(), server->daemon->getBufferSize());
 }
 
 /**

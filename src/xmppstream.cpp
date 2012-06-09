@@ -1,12 +1,10 @@
 
 #include <xmppstream.h>
 #include <xmppserver.h>
-#include <stanzabuffer.h>
 #include <virtualhost.h>
 #include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
-#include <stanzabuffer.h>
 
 // for debug only
 #include <string>
@@ -70,7 +68,7 @@ XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 */
 XMPPStream::~XMPPStream()
 {
-	server->buffer->cleanup(fd);
+	server->daemon->cleanup(fd);
 }
 
 /**
@@ -88,7 +86,7 @@ uint32_t XMPPStream::getEventsMask()
 */
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
-	if ( server->buffer->put(fd, data, len) )
+	if ( server->daemon->put(fd, data, len) )
 	{
 		want_write = true;
 		server->daemon->modifyObject(this);
@@ -105,7 +103,7 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 void XMPPStream::onWrite()
 {
 	//cerr << "not implemented XMPPStream::onWrite()" << endl;
-	want_write = ! server->buffer->push(fd);
+	want_write = ! server->daemon->push(fd);
 }
 
 /**
@@ -219,7 +217,7 @@ bool XMPPStream::sendStanza(Stanza stanza)
 {
 	string data = stanza->asString();
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
-	if ( server->buffer->put(fd, data.c_str(), data.length()) )
+	if ( server->daemon->put(fd, data.c_str(), data.length()) )
 	{
 		want_write = true;
 		server->daemon->modifyObject(this);
@@ -234,7 +232,7 @@ void XMPPStream::sendStanzaRaw(Stanza stanza)
 {
 	string data = stanza->asString();
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
-	if ( server->buffer->putRaw(fd, data.c_str(), data.length()) )
+	if ( server->daemon->putRaw(fd, data.c_str(), data.length()) )
 	{
 		want_write = true;
 		server->daemon->modifyObject(this);

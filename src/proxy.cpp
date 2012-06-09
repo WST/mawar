@@ -67,7 +67,7 @@ int main()
 	fprintf(stdlog, "%s [proxyd] started\n", logtime().c_str(), nanosoft::stderror());
 	
 	// демон управляющий воркерами вводом-выводом
-	NetDaemon daemon(1000);
+	NetDaemon daemon(1000, 128);
 	
 	// устанавливаем скорректированное число воркеров
 	daemon.setWorkerCount(3 - 1);

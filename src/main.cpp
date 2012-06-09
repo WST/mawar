@@ -26,7 +26,6 @@
 #include <xep0114listener.h>
 #include <s2slistener.h>
 #include <serverstatus.h>
-#include <stanzabuffer.h>
 #include <functions.h>
 
 #define PATH_PID (PATH_VAR "/run/maward.pid")
@@ -164,8 +163,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	printf("files limit: %d\n", rl.rlim_cur);
-	NetDaemon daemon(rl.rlim_cur);
-	StanzaBuffer buf(rl.rlim_cur, config->getOutputBuffers());
+	NetDaemon daemon(rl.rlim_cur, config->getOutputBuffers());
 	
 	// устанавливаем скорректированное число воркеров
 	daemon.setWorkerCount(config->workers() - 1);
@@ -173,7 +171,6 @@ int main(int argc, const char **argv)
 	// XMPP-сервер
 	server = new XMPPServer(&daemon);
 	server->config = config;
-	server->buffer = &buf;
 	
 	// подключемся к c2s-порту из конфига
 	server->bind(config->c2s());
