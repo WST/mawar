@@ -136,14 +136,6 @@ public:
 	static unsigned getMaxTagsPerStanza() { return tags_max_created_for_stanza; }
 	
 	/**
-	* Событие готовности к записи
-	*
-	* Вызывается, когда в поток готов принять
-	* данные для записи без блокировки
-	*/
-	virtual void onWrite();
-	
-	/**
 	* Обработчик открытия тега
 	*/
 	virtual void onStartElement(const std::string &name, const attributtes_t &attributes);

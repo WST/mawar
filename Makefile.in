@@ -62,7 +62,7 @@ MYSQL_LIBS = @MYSQL_LIBS@
 MAWAR_OBJECTS=xmppserver.o
 MAWAR_OBJECTS+=xmppstream.o
 MAWAR_OBJECTS+=xmppclient.o
-MAWAR_OBJECTS+=myconsole.o
+#MAWAR_OBJECTS+=myconsole.o
 MAWAR_OBJECTS+=xml_tag.o
 MAWAR_OBJECTS+=taghelper.o
 MAWAR_OBJECTS+=attagparser.o
@@ -94,7 +94,7 @@ PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 MAWAR_TESTS=test-01 test-02
 
 .PHONY: all install
-all: maward proxyd
+all: maward
 
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS) libns_core.a libns_netd.a libns_xml.a libns_sasl.a
 	$(CXX) $(srcdir)/main.cpp  $(PATHS) $(MAWAR_OBJECTS) $(LDFLAGS) -lns_core -lns_netd -lns_xml -lns_sasl $(MYSQL_LIBS) $(LIBS) -o maward

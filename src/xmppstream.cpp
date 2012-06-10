@@ -93,18 +93,6 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 }
 
 /**
-* Событие готовности к записи
-*
-* Вызывается, когда в поток готов принять
-* данные для записи без блокировки
-*/
-void XMPPStream::onWrite()
-{
-	//cerr << "not implemented XMPPStream::onWrite()" << endl;
-	server->daemon->push(getFd());
-}
-
-/**
 * Обработчик открытия тега
 */
 void XMPPStream::onStartElement(const std::string &name, const attributtes_t &attributes)
@@ -215,11 +203,10 @@ bool XMPPStream::sendStanza(Stanza stanza)
 {
 	string data = stanza->asString();
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
-	if ( server->daemon->put(getFd(), data.c_str(), data.length()) )
+	if ( ! put(data.c_str(), data.length()) )
 	{
-		server->daemon->modifyObject(this);
+		onError("[XMPPStream: %d] sendStanza() fault");
 	}
-	else onError("[XMPPStream: %d] sendStanza() fault");
 }
 
 /**
