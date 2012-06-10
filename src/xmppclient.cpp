@@ -200,7 +200,7 @@ void XMPPClient::onResponseStanza(Stanza stanza)
 */
 void XMPPClient::handleCompress(Stanza stanza)
 {
-	if ( stanza["method"]->getCharacterData() != "zlib" )
+	if ( ! canCompression( stanza["method"]->getCharacterData().c_str() ) )
 	{
 		Stanza failure = new ATXmlTag("failure");
 		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
@@ -210,7 +210,7 @@ void XMPPClient::handleCompress(Stanza stanza)
 		return;
 	}
 	
-	if ( ! server->daemon->setCompression(getFd(), true) )
+	if ( ! AsyncStream::enableCompression(stanza["method"]->getCharacterData().c_str()) )
 	{
 		Stanza failure = new ATXmlTag("failure");
 		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
@@ -1107,11 +1107,19 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		
-		if ( ! compression && server->daemon->canCompression(getFd()) )
+		if ( canCompression() && ! isCompressionEnable() )
 		{
 			stanza = features["compression"];
 			stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");
-			stanza["method"] = "zlib";
+			const compression_method_t *methods = getCompressionMethods();
+			
+			while ( *methods )
+			{
+				ATXmlTag *method = new ATXmlTag("method");
+				method->insertCharacterData(*methods);
+				stanza += method;
+				methods++;
+			}
 		}
 	}
 	else
