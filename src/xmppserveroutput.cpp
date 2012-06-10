@@ -44,49 +44,38 @@ XMPPServerOutput::~XMPPServerOutput()
 }
 
 /**
-* Событие готовности к записи
-*
-* Вызывается, когда в поток готов принять
-* данные для записи без блокировки
+* Обработчик готовности подключения
 */
-void XMPPServerOutput::onWrite()
+void XMPPServerOutput::onConnect()
 {
 	mutex.lock();
-	if ( state == CONNECTING )
+	printf("%s s2s-output(%s): connected\n", logtime().c_str(), hostname().c_str());
+	
+	// поздоровайся с дядей
+	initXML();
+	startElement("stream:stream");
+	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
+	setAttribute("xmlns", "jabber:server");
+	setAttribute("xmlns:db", "jabber:server:dialback");
+	setAttribute("xml:lang", "en");
+	flush();
+	
+	for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
 	{
-		printf("%s s2s-output(%s): connected\n", logtime().c_str(), hostname().c_str());
-		want_write = false;
-		state = CONNECTED;
+		vhost_t *vhost = iter->second;
 		
-		// поздоровайся с дядей
-		initXML();
-		startElement("stream:stream");
-		setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
-		setAttribute("xmlns", "jabber:server");
-		setAttribute("xmlns:db", "jabber:server:dialback");
-		setAttribute("xml:lang", "en");
-		flush();
+		sendDBRequest(iter->first, hostname());
 		
-		for(vhosts_t::iterator iter = vhosts.begin(); iter != vhosts.end(); ++iter)
+		printf("%s s2s-output(%s): flush connected to %s\n", logtime().c_str(), hostname().c_str(), iter->first.c_str());
+		for(buffer_t::iterator bi = vhost->connbuffer.begin(); bi != vhost->connbuffer.end(); bi++)
 		{
-			vhost_t *vhost = iter->second;
-			
-			sendDBRequest(iter->first, hostname());
-			
-			printf("%s s2s-output(%s): flush connected to %s\n", logtime().c_str(), hostname().c_str(), iter->first.c_str());
-			for(buffer_t::iterator bi = vhost->connbuffer.begin(); bi != vhost->connbuffer.end(); bi++)
-			{
-				Stanza stanza = parse_xml_string(*bi);
-				sendStanza(stanza);
-				delete stanza;
-			}
+			Stanza stanza = parse_xml_string(*bi);
+			sendStanza(stanza);
+			delete stanza;
 		}
-		
-		mutex.unlock();
-		return;
 	}
+	
 	mutex.unlock();
-	XMPPStream::onWrite();
 }
 
 /**
@@ -120,8 +109,9 @@ void XMPPServerOutput::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *r
 		
 		if ( ::connect(p->getFd(), (struct sockaddr *)&target, sizeof( struct sockaddr )) == 0 || errno == EINPROGRESS || errno == EALREADY )
 		{
-			p->want_write = true;
+			p->state = CONNECTED;
 			p->XMPPDomain::server->daemon->addObject(p);
+			p->onConnect();
 			return;
 		}
 		

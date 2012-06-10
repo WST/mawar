@@ -59,7 +59,7 @@ unsigned XMPPStream::stanza_count = 0;
 */
 XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 	AsyncXMLStream(sock), XMLWriter(1024),
-	server(srv), depth(0), want_write(0)
+	server(srv), depth(0)
 {
 }
 
@@ -77,7 +77,6 @@ XMPPStream::~XMPPStream()
 uint32_t XMPPStream::getEventsMask()
 {
 	uint32_t mask = EPOLLIN | EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR | EPOLLPRI;
-	if ( want_write ) mask |= EPOLLOUT;
 	return mask;
 }
 
@@ -88,7 +87,6 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 {
 	if ( server->daemon->put(getFd(), data, len) )
 	{
-		want_write = true;
 		server->daemon->modifyObject(this);
 	}
 	else onError("write buffer fault");
@@ -103,7 +101,7 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 void XMPPStream::onWrite()
 {
 	//cerr << "not implemented XMPPStream::onWrite()" << endl;
-	want_write = ! server->daemon->push(getFd());
+	server->daemon->push(getFd());
 }
 
 /**
@@ -219,7 +217,6 @@ bool XMPPStream::sendStanza(Stanza stanza)
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
 	if ( server->daemon->put(getFd(), data.c_str(), data.length()) )
 	{
-		want_write = true;
 		server->daemon->modifyObject(this);
 	}
 	else onError("[XMPPStream: %d] sendStanza() fault");
@@ -234,7 +231,6 @@ void XMPPStream::sendStanzaRaw(Stanza stanza)
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
 	if ( server->daemon->putRaw(getFd(), data.c_str(), data.length()) )
 	{
-		want_write = true;
 		server->daemon->modifyObject(this);
 	}
 	else onError("[XMPPStream: %d] sendStanza() fault");
