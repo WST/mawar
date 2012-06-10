@@ -210,7 +210,7 @@ void XMPPClient::handleCompress(Stanza stanza)
 		return;
 	}
 	
-	if ( ! AsyncStream::enableCompression(stanza["method"]->getCharacterData().c_str()) )
+	if ( ! enableCompression(stanza["method"]->getCharacterData().c_str()) )
 	{
 		Stanza failure = new ATXmlTag("failure");
 		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
@@ -219,9 +219,8 @@ void XMPPClient::handleCompress(Stanza stanza)
 		delete failure;
 		return;
 	}
-	
+	printf("reset parser & writer\n");
 	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
-	XMLParser::setCompression(true);
 	resetParser();
 	resetWriter();
 	

@@ -85,11 +85,10 @@ uint32_t XMPPStream::getEventsMask()
 */
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
-	if ( server->daemon->put(getFd(), data, len) )
+	if ( ! put(data, len) )
 	{
-		server->daemon->modifyObject(this);
+		onError("write buffer fault");
 	}
-	else onError("write buffer fault");
 }
 
 /**
@@ -216,7 +215,7 @@ void XMPPStream::sendStanzaRaw(Stanza stanza)
 {
 	string data = stanza->asString();
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
-	if ( server->daemon->putRaw(getFd(), data.c_str(), data.length()) )
+	if ( server->daemon->put(getFd(), data.c_str(), data.length()) )
 	{
 		server->daemon->modifyObject(this);
 	}
