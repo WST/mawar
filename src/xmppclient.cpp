@@ -210,25 +210,21 @@ void XMPPClient::handleCompress(Stanza stanza)
 		return;
 	}
 	
-	if ( ! enableCompression(stanza["method"]->getCharacterData().c_str()) )
-	{
-		Stanza failure = new ATXmlTag("failure");
-		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
-		failure["setup-failed"];
-		sendStanza(failure);
-		delete failure;
-		return;
-	}
-	printf("reset parser & writer\n");
-	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
-	resetParser();
-	resetWriter();
-	
 	compression = true;
 	Stanza compressed = new ATXmlTag("compressed");
 	compressed->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
-	sendStanzaRaw(compressed);
+	sendStanza(compressed);
 	delete compressed;
+	
+	if ( ! enableCompression(stanza["method"]->getCharacterData().c_str()) )
+	{
+		terminate();
+		return;
+	}
+	
+	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
+	resetParser();
+	resetWriter();
 }
 
 /**

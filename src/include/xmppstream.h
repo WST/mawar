@@ -161,11 +161,6 @@ public:
 	* @return TRUE - станза отправлена (или буферизована для отправки), FALSE что-то не получилось
 	*/
 	bool sendStanza(Stanza stanza);
-	
-	/**
-	* Отправить станзу как есть без обработки (сжатия, шифрования и т.п.)
-	*/
-	void sendStanzaRaw(Stanza stanza);
 };
 
 #endif // MAWAR_XMPPSTREAM_H
