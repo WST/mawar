@@ -16,7 +16,7 @@ XEP0114Listener::XEP0114Listener(XMPPServer *srv): server(srv)
 */
 XEP0114Listener::~XEP0114Listener()
 {
-	fprintf(stderr, "#%d: [XEP0114Listener: %d] deleting\n", getWorkerId(), getFd());
+	fprintf(stderr, "XEP0114Listener[%d]: deleting\n", getFd());
 }
 
 #include <xmppclient.h>
@@ -43,6 +43,6 @@ void XEP0114Listener::onAccept()
 */
 void XEP0114Listener::onTerminate()
 {
-	fprintf(stderr, "#%d: [XEP0114Listener: %d] onTerminate\n", getWorkerId(), getFd());
+	fprintf(stderr, "XEP0114Listener[%d]: onTerminate\n", getFd());
 	server->daemon->removeObject(this);
 }

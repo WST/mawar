@@ -25,7 +25,7 @@ XMPPProxy::XMPPProxy(NetDaemon *d, const char *ip, int port):
 */
 XMPPProxy::~XMPPProxy()
 {
-	fprintf(stderr, "#%d: [XMPPProxy: %d] deleting\n", getWorkerId(), getFd());
+	fprintf(stderr, "XMPPProxy[%d]: deleting\n", getFd());
 }
 
 /**
@@ -64,7 +64,7 @@ void XMPPProxy::onAccept()
 */
 void XMPPProxy::onTerminate()
 {
-	fprintf(stderr, "#%d: [XMPPProxy: %d] onTerminate\n", getWorkerId(), getFd());
+	fprintf(stderr, "XMPPProxy[%d]: onTerminate\n", getFd());
 	daemon->removeObject(this);
 }
 
@@ -73,7 +73,7 @@ void XMPPProxy::onTerminate()
 */
 void XMPPProxy::onSigTerm()
 {
-	fprintf(stderr, "#%d: [XMPPProxy: %d] SIGTERM\n", getWorkerId(), getFd());
+	fprintf(stderr, "XMPPProxy[%d]: SIGTERM\n", getFd());
 	daemon->terminate();
 }
 
@@ -82,7 +82,6 @@ void XMPPProxy::onSigTerm()
 */
 void XMPPProxy::onSigHup()
 {
-	//fprintf(stderr, "#%d: [XMPPServer: %d] SIGUP not implemented yet\n", getWorkerId(), fd);
 }
 
 /**

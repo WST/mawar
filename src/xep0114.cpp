@@ -44,7 +44,7 @@ XEP0114::~XEP0114()
 */
 void XEP0114::onTerminate()
 {
-	fprintf(stderr, "#%d: [XEP0114: %d] onTerminate\n", getWorkerId(), getFd());
+	fprintf(stderr, "XEP0114[%d]: onTerminate\n", getFd());
 	
 	mutex.lock();
 		endElement("stream:stream");
@@ -60,7 +60,7 @@ void XEP0114::onTerminate()
 */
 void XEP0114::onStanza(Stanza stanza)
 {
-	fprintf(stdout, "#%d stanza: %s\n", getWorkerId(), stanza->name().c_str());
+	fprintf(stdout, "XEP0114[%d]: onStanza: %s\n", getFd(), stanza->name().c_str());
 	if ( state == init )
 	{
 		Stanza reply;
@@ -95,7 +95,7 @@ void XEP0114::onStanza(Stanza stanza)
 */
 void XEP0114::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	fprintf(stderr, "#%d new stream to %s\n", getWorkerId(), attributes.find("to")->second.c_str());
+	fprintf(stderr, "XEP0114[%d]: new stream to %s\n", getFd(), attributes.find("to")->second.c_str());
 	
 	attributes_t::const_iterator to = attributes.find("to");
 	XMPPDomain::name = to != attributes.end() ? to->second : string();
@@ -142,7 +142,7 @@ void XEP0114::onStartStream(const std::string &name, const attributes_t &attribu
 */
 void XEP0114::onEndStream()
 {
-	fprintf(stderr, "#%d: [XEP0114: %d] end of stream\n", getWorkerId(), getFd());
+	fprintf(stderr, "XEP0114[%d]: end of stream\n", getFd());
 	terminate();
 }
 

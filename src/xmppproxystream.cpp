@@ -212,7 +212,7 @@ void XMPPProxyStream::onWrite()
 */
 void XMPPProxyStream::onPeerDown()
 {
-	printf("#%d: [XMPPProxyStream: %d] peer down\n", getWorkerId(), getFd());
+	printf("XMPPProxyStream[%d]: peer down\n", getFd());
 	::shutdown(pair->getFd(), SHUT_WR);
 	pair = 0;
 	proxy->daemon->removeObject(this);
@@ -226,7 +226,7 @@ void XMPPProxyStream::onPeerDown()
 */
 void XMPPProxyStream::onShutdown()
 {
-	printf("#%d: [XMPPProxyStream: %d] shutdown\n", getWorkerId(), getFd());
+	printf("XMPPProxyStream[%d]: shutdown\n", getFd());
 	::shutdown(pair->getFd(), SHUT_RDWR);
 	proxy->daemon->removeObject(this);
 	pair = 0;
@@ -240,7 +240,7 @@ void XMPPProxyStream::onShutdown()
 */
 void XMPPProxyStream::onTerminate()
 {
-	printf("#%d: [XMPPProxyStream: %d] onTerminate\n", getWorkerId(), getFd());
+	printf("XMPPProxyStream[%d]: onTerminate\n", getFd());
 	::shutdown(getFd(), SHUT_RDWR);
 	::shutdown(pair->getFd(), SHUT_RDWR);
 }

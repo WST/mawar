@@ -1067,7 +1067,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 {
 	attributes_t::const_iterator it = attributes.find("to");
 	string tohost = (it != attributes.end()) ? it->second : string();
-	printf("#%d: [XMPPClient: %d] new stream to %s\n", getWorkerId(), getFd(), tohost.c_str());
+	printf("XMPPClient[%d]: new stream to %s\n", getFd(), tohost.c_str());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
@@ -1132,7 +1132,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 */
 void XMPPClient::onEndStream()
 {
-	printf("#%d: [XMPPClient: %d] end of stream\n", getWorkerId(), getFd());
+	printf("XMPPClient[%d] end of stream\n", getFd());
 	terminate();
 }
 

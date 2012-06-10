@@ -20,7 +20,7 @@ S2SListener::S2SListener(XMPPServer *srv)
 */
 S2SListener::~S2SListener()
 {
-	fprintf(stderr, "#%d: [S2SListener: %d] deleting\n", getWorkerId(), getFd());
+	fprintf(stderr, "S2SListener[%d]: deleting\n", getFd());
 }
 
 /**
@@ -76,6 +76,6 @@ void S2SListener::removeInput(XMPPServerInput *input)
 */
 void S2SListener::onTerminate()
 {
-	fprintf(stderr, "#%d: [S2SListener: %d] onTerminate\n", getWorkerId(), getFd());
+	fprintf(stderr, "S2SListener[%d]: onTerminate\n", getFd());
 	server->daemon->removeObject(this);
 }
