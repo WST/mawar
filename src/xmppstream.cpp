@@ -68,7 +68,7 @@ XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 */
 XMPPStream::~XMPPStream()
 {
-	server->daemon->cleanup(fd);
+	server->daemon->cleanup(getFd());
 }
 
 /**
@@ -86,7 +86,7 @@ uint32_t XMPPStream::getEventsMask()
 */
 void XMPPStream::onWriteXML(const char *data, size_t len)
 {
-	if ( server->daemon->put(fd, data, len) )
+	if ( server->daemon->put(getFd(), data, len) )
 	{
 		want_write = true;
 		server->daemon->modifyObject(this);
@@ -103,7 +103,7 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 void XMPPStream::onWrite()
 {
 	//cerr << "not implemented XMPPStream::onWrite()" << endl;
-	want_write = ! server->daemon->push(fd);
+	want_write = ! server->daemon->push(getFd());
 }
 
 /**
@@ -148,7 +148,7 @@ void XMPPStream::onEndElement(const std::string &name)
 		Stanza stanza = builder.fetchResult();
 		
 #ifdef DUMP_IO
-		fprintf(stdout, "DUMP STANZA[%d]: \033[22;31m%s\033[0m\n", fd, stanza->asString().c_str());
+		fprintf(stdout, "DUMP STANZA[%d]: \033[22;31m%s\033[0m\n", getFd(), stanza->asString().c_str());
 #endif
 		
 		onBeforeStanza();
@@ -168,7 +168,7 @@ void XMPPStream::onEndElement(const std::string &name)
 */
 void XMPPStream::onParseError(const char *message)
 {
-	printf("[XMPPStream: %d] parse error: %s\n", fd, message);
+	printf("[XMPPStream: %d] parse error: %s\n", getFd(), message);
 	// TODO something...
 	server->daemon->removeObject(this);
 }
@@ -217,7 +217,7 @@ bool XMPPStream::sendStanza(Stanza stanza)
 {
 	string data = stanza->asString();
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
-	if ( server->daemon->put(fd, data.c_str(), data.length()) )
+	if ( server->daemon->put(getFd(), data.c_str(), data.length()) )
 	{
 		want_write = true;
 		server->daemon->modifyObject(this);
@@ -232,7 +232,7 @@ void XMPPStream::sendStanzaRaw(Stanza stanza)
 {
 	string data = stanza->asString();
 	//fprintf(stdout, "[XMPPStream: %d] sendStanza(\033[22;34m%s\033[0m)\n", fd, data.c_str());
-	if ( server->daemon->putRaw(fd, data.c_str(), data.length()) )
+	if ( server->daemon->putRaw(getFd(), data.c_str(), data.length()) )
 	{
 		want_write = true;
 		server->daemon->modifyObject(this);

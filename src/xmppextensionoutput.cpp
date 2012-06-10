@@ -23,7 +23,7 @@ XMPPExtensionOutput::~XMPPExtensionOutput()
 
 void XMPPExtensionOutput::init()
 {
-	printf("XMPPExtensionOutput(%d)\n", fd);
+	printf("XMPPExtensionOutput(%d)\n", getFd());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
@@ -40,7 +40,7 @@ void XMPPExtensionOutput::init()
 */
 void XMPPExtensionOutput::onError(const char *message)
 {
-	printf("[XMPPExtensionOutput: %d] error %s\n", fd, message);
+	printf("[XMPPExtensionOutput: %d] error %s\n", getFd(), message);
 	extension->terminate();
 }
 
@@ -73,7 +73,7 @@ void XMPPExtensionOutput::onEndStream()
 */
 void XMPPExtensionOutput::onPeerDown()
 {
-	printf("[XMPPExtensionOutput: %d] onPeerDown\n", fd);
+	printf("[XMPPExtensionOutput: %d] onPeerDown\n", getFd());
 	extension->terminate();
 }
 

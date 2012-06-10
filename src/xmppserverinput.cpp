@@ -30,7 +30,7 @@ XMPPServerInput::~XMPPServerInput()
 */
 void XMPPServerInput::onStartStream(const std::string &name, const attributes_t &attributes)
 {
-	printf("%s s2s-input(%d): new stream\n", logtime().c_str(), fd);
+	printf("%s s2s-input(%d): new stream\n", logtime().c_str(), getFd());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
@@ -46,7 +46,7 @@ void XMPPServerInput::onStartStream(const std::string &name, const attributes_t 
 */
 void XMPPServerInput::onEndStream()
 {
-	printf("%s s2s-input(%d): end of stream\n", logtime().c_str(), fd);
+	printf("%s s2s-input(%d): end of stream\n", logtime().c_str(), getFd());
 	terminate();
 }
 
@@ -104,7 +104,7 @@ void XMPPServerInput::onStanza(Stanza stanza)
 */
 void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 {
-	printf("%s s2s-input(%d): db:verify from %s to %s\n", logtime().c_str(), fd, stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
+	printf("%s s2s-input(%d): db:verify from %s to %s\n", logtime().c_str(), getFd(), stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
 	
 	string to = stanza.to().hostname();
 	string from = stanza.from().hostname();
@@ -147,7 +147,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 */
 void XMPPServerInput::onDBResultStanza(Stanza stanza)
 {
-	printf("%s s2s-input(%d): db:result from %s to %s\n", logtime().c_str(), fd, stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
+	printf("%s s2s-input(%d): db:result from %s to %s\n", logtime().c_str(), getFd(), stanza.from().hostname().c_str(), stanza.to().hostname().c_str());
 	
 	string to = stanza.to().hostname();
 	string from = stanza.from().hostname();
@@ -196,7 +196,7 @@ void XMPPServerInput::authorize(const std::string &from, const std::string &to, 
 */
 void XMPPServerInput::onPeerDown()
 {
-	printf("%s s2s-input(%d): peer down\n", logtime().c_str(), fd);
+	printf("%s s2s-input(%d): peer down\n", logtime().c_str(), getFd());
 	terminate();
 }
 
@@ -208,7 +208,7 @@ void XMPPServerInput::onPeerDown()
 */
 void XMPPServerInput::onTerminate()
 {
-	printf("%s s2s-input(%d): terminate\n", logtime().c_str(), fd);
+	printf("%s s2s-input(%d): terminate\n", logtime().c_str(), getFd());
 	
 	mutex.lock();
 		endElement("stream:stream");

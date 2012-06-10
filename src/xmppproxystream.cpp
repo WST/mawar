@@ -65,7 +65,7 @@ bool XMPPProxyStream::accept(int sock, const char *ip, int port)
 	struct sockaddr_in target;
 	
 	// Клиент который к нам приконнектился
-	fd = sock;
+	setFd( sock );
 	
 	// Сервер к которому мы коннектимся
 	int server_socket = ::socket(PF_INET, SOCK_STREAM, 0);
@@ -89,7 +89,7 @@ bool XMPPProxyStream::accept(int sock, const char *ip, int port)
 	
 	// shit!
 	fprintf(stdlog, "%s [proxyd] connect(%s:%d) for %s failed\n", logtime().c_str(), ip, port, remoteIP.c_str());
-	::shutdown(fd, SHUT_RDWR);
+	::shutdown(getFd(), SHUT_RDWR);
 	return false;
 }
 
@@ -111,7 +111,7 @@ uint32_t XMPPProxyStream::getEventsMask()
 void XMPPProxyStream::unblock(int wid, void *data)
 {
 	XMPPProxyStream *stream = static_cast<XMPPProxyStream *>(data);
-	printf("[XMPPProxyStream: %d] unlock stream\n", stream->fd);
+	printf("[XMPPProxyStream: %d] unlock stream\n", stream->getFd());
 	stream->rxsec = 0;
 	stream->proxy->daemon->modifyObject(stream);
 	stream->release();
@@ -156,7 +156,7 @@ void XMPPProxyStream::onRead()
 					rxsec += r;
 					if ( rxsec > rxsec_limit )
 					{
-						printf("[XMPPProxyStream: %d] lock stream, recieved %d bytes per second\n", fd, rxsec);
+						printf("[XMPPProxyStream: %d] lock stream, recieved %d bytes per second\n", getFd(), rxsec);
 						this->lock();
 						proxy->daemon->setTimer(tm+1, unblock, this);
 					}
@@ -212,8 +212,8 @@ void XMPPProxyStream::onWrite()
 */
 void XMPPProxyStream::onPeerDown()
 {
-	printf("#%d: [XMPPProxyStream: %d] peer down\n", getWorkerId(), fd);
-	::shutdown(pair->fd, SHUT_WR);
+	printf("#%d: [XMPPProxyStream: %d] peer down\n", getWorkerId(), getFd());
+	::shutdown(pair->getFd(), SHUT_WR);
 	pair = 0;
 	proxy->daemon->removeObject(this);
 }
@@ -226,8 +226,8 @@ void XMPPProxyStream::onPeerDown()
 */
 void XMPPProxyStream::onShutdown()
 {
-	printf("#%d: [XMPPProxyStream: %d] shutdown\n", getWorkerId(), fd);
-	::shutdown(pair->fd, SHUT_RDWR);
+	printf("#%d: [XMPPProxyStream: %d] shutdown\n", getWorkerId(), getFd());
+	::shutdown(pair->getFd(), SHUT_RDWR);
 	proxy->daemon->removeObject(this);
 	pair = 0;
 }
@@ -240,7 +240,7 @@ void XMPPProxyStream::onShutdown()
 */
 void XMPPProxyStream::onTerminate()
 {
-	printf("#%d: [XMPPProxyStream: %d] onTerminate\n", getWorkerId(), fd);
-	::shutdown(fd, SHUT_RDWR);
-	::shutdown(pair->fd, SHUT_RDWR);
+	printf("#%d: [XMPPProxyStream: %d] onTerminate\n", getWorkerId(), getFd());
+	::shutdown(getFd(), SHUT_RDWR);
+	::shutdown(pair->getFd(), SHUT_RDWR);
 }

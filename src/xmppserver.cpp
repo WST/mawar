@@ -26,7 +26,7 @@ XMPPServer::XMPPServer(NetDaemon *d): daemon(d)
 */
 XMPPServer::~XMPPServer()
 {
-	fprintf(stderr, "#%d: [XMPPServer: %d] deleting\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPServer: %d] deleting\n", getWorkerId(), getFd());
 	
 	// delete domains
 	for(domains_t::iterator iter = domains.begin(); iter != domains.end(); ++iter)
@@ -54,7 +54,7 @@ void XMPPServer::onAccept()
 */
 void XMPPServer::onTerminate()
 {
-	fprintf(stderr, "#%d: [XMPPServer: %d] onTerminate\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPServer: %d] onTerminate\n", getWorkerId(), getFd());
 	daemon->removeObject(this);
 }
 
@@ -63,7 +63,7 @@ void XMPPServer::onTerminate()
 */
 void XMPPServer::onSigTerm()
 {
-	fprintf(stderr, "#%d: [XMPPServer: %d] SIGTERM\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPServer: %d] SIGTERM\n", getWorkerId(), getFd());
 	daemon->terminate();
 }
 

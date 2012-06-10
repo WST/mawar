@@ -44,7 +44,7 @@ XEP0114::~XEP0114()
 */
 void XEP0114::onTerminate()
 {
-	fprintf(stderr, "#%d: [XEP0114: %d] onTerminate\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XEP0114: %d] onTerminate\n", getWorkerId(), getFd());
 	
 	mutex.lock();
 		endElement("stream:stream");
@@ -142,7 +142,7 @@ void XEP0114::onStartStream(const std::string &name, const attributes_t &attribu
 */
 void XEP0114::onEndStream()
 {
-	fprintf(stderr, "#%d: [XEP0114: %d] end of stream\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XEP0114: %d] end of stream\n", getWorkerId(), getFd());
 	terminate();
 }
 

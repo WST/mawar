@@ -27,7 +27,7 @@ XMPPExtensionInput::~XMPPExtensionInput()
 */
 void XMPPExtensionInput::onError(const char *message)
 {
-	printf("[XMPPExtensionInput: %d] ", fd, message);
+	printf("[XMPPExtensionInput: %d] ", getFd(), message);
 	extension->terminate();
 }
 
@@ -61,7 +61,7 @@ void XMPPExtensionInput::onEndStream()
 */
 void XMPPExtensionInput::onPeerDown()
 {
-	printf("[XMPPExtensionOutput: %d] onPeerDown\n", fd);
+	printf("[XMPPExtensionOutput: %d] onPeerDown\n", getFd());
 	extension->terminate();
 }
 

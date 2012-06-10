@@ -43,7 +43,7 @@ XMPPClient::~XMPPClient()
 */
 void XMPPClient::onPeerDown()
 {
-	printf("[XMPPClient: %d] onPeerDown\n", fd);
+	printf("[XMPPClient: %d] onPeerDown\n", getFd());
 	terminate();
 }
 
@@ -210,7 +210,7 @@ void XMPPClient::handleCompress(Stanza stanza)
 		return;
 	}
 	
-	if ( ! server->daemon->setCompression(fd, true) )
+	if ( ! server->daemon->setCompression(getFd(), true) )
 	{
 		Stanza failure = new ATXmlTag("failure");
 		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
@@ -988,7 +988,7 @@ void XMPPClient::handleRosterIq(Stanza stanza)
 */
 void XMPPClient::handleIQRegister(Stanza stanza)
 {
-	printf("XMPPClient[%d]::handleIQRegister: %s\n", fd, stanza->asString().c_str());
+	printf("XMPPClient[%d]::handleIQRegister: %s\n", getFd(), stanza->asString().c_str());
 	
 	if ( ! vhost->registration_allowed )
 	{
@@ -1067,7 +1067,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 {
 	attributes_t::const_iterator it = attributes.find("to");
 	string tohost = (it != attributes.end()) ? it->second : string();
-	printf("#%d: [XMPPClient: %d] new stream to %s\n", getWorkerId(), fd, tohost.c_str());
+	printf("#%d: [XMPPClient: %d] new stream to %s\n", getWorkerId(), getFd(), tohost.c_str());
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
@@ -1107,7 +1107,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		
-		if ( ! compression && server->daemon->canCompression(fd) )
+		if ( ! compression && server->daemon->canCompression(getFd()) )
 		{
 			stanza = features["compression"];
 			stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");
@@ -1132,7 +1132,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 */
 void XMPPClient::onEndStream()
 {
-	printf("#%d: [XMPPClient: %d] end of stream\n", getWorkerId(), fd);
+	printf("#%d: [XMPPClient: %d] end of stream\n", getWorkerId(), getFd());
 	terminate();
 }
 

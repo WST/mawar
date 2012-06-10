@@ -25,7 +25,7 @@ XMPPProxy::XMPPProxy(NetDaemon *d, const char *ip, int port):
 */
 XMPPProxy::~XMPPProxy()
 {
-	fprintf(stderr, "#%d: [XMPPProxy: %d] deleting\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPProxy: %d] deleting\n", getWorkerId(), getFd());
 }
 
 /**
@@ -35,7 +35,7 @@ void XMPPProxy::onAccept()
 {
 	struct sockaddr_in target;
 	socklen_t sl = sizeof( struct sockaddr );
-	int sock = ::accept(fd, (struct sockaddr *)&target, &sl);
+	int sock = ::accept(getFd(), (struct sockaddr *)&target, &sl);
 	
 	if ( sock > 0 )
 	{
@@ -64,7 +64,7 @@ void XMPPProxy::onAccept()
 */
 void XMPPProxy::onTerminate()
 {
-	fprintf(stderr, "#%d: [XMPPProxy: %d] onTerminate\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPProxy: %d] onTerminate\n", getWorkerId(), getFd());
 	daemon->removeObject(this);
 }
 
@@ -73,7 +73,7 @@ void XMPPProxy::onTerminate()
 */
 void XMPPProxy::onSigTerm()
 {
-	fprintf(stderr, "#%d: [XMPPProxy: %d] SIGTERM\n", getWorkerId(), fd);
+	fprintf(stderr, "#%d: [XMPPProxy: %d] SIGTERM\n", getWorkerId(), getFd());
 	daemon->terminate();
 }
 

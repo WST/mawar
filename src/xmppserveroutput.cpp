@@ -103,8 +103,8 @@ void XMPPServerOutput::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *r
 	{
 		
 		p->state = CONNECTING;
-		p->fd = ::socket(PF_INET, SOCK_STREAM, 0);
-		printf("%s s2s-output(%s): connect to %s:%d, sock: %d\n", logtime().c_str(), p->hostname().c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[0], buf, sizeof(buf)), p->port, p->fd);
+		p->setFd( ::socket(PF_INET, SOCK_STREAM, 0) );
+		printf("%s s2s-output(%s): connect to %s:%d, sock: %d\n", logtime().c_str(), p->hostname().c_str(), dns_ntop(AF_INET, &result->dnsa4_addr[0], buf, sizeof(buf)), p->port, p->getFd());
 		
 		target.sin_family = AF_INET;
 		target.sin_port = htons(p->port);
@@ -112,13 +112,13 @@ void XMPPServerOutput::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *r
 		memset(target.sin_zero, 0, 8);
 		
 		// принудительно выставить O_NONBLOCK
-		int flags = fcntl(p->fd, F_GETFL, 0);
+		int flags = fcntl(p->getFd(), F_GETFL, 0);
 		if ( flags >= 0 )
 		{
-			fcntl(p->fd, F_SETFL, flags | O_NONBLOCK);
+			fcntl(p->getFd(), F_SETFL, flags | O_NONBLOCK);
 		}
 		
-		if ( ::connect(p->fd, (struct sockaddr *)&target, sizeof( struct sockaddr )) == 0 || errno == EINPROGRESS || errno == EALREADY )
+		if ( ::connect(p->getFd(), (struct sockaddr *)&target, sizeof( struct sockaddr )) == 0 || errno == EINPROGRESS || errno == EALREADY )
 		{
 			p->want_write = true;
 			p->XMPPDomain::server->daemon->addObject(p);
