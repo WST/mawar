@@ -12,7 +12,12 @@
 #include <nanosoft/object.h>
 #include <nanosoft/gsaslserver.h>
 #include <nanosoft/mutex.h>
+#include <nanosoft/config.h>
 #include <db.h>
+
+#ifdef HAVE_LIBSSL
+#include <openssl/ssl.h>
+#endif // HAVE_LIBSSL
 
 /**
 * Класс виртуального узла
@@ -24,6 +29,13 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* База данных
 		*/
 		DB db;
+		
+#ifdef HAVE_LIBSSL
+		/**
+		* Контекст SSL
+		*/
+		SSL_CTX *ssl;
+#endif // HAVE_LIBSSL
 		
 		/**
 		* Mutex для thread-safe доступа к общим данным
@@ -362,6 +374,11 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		void removeExtension(const char *urn);
 	
 	private:
+		/**
+		* Инциализация TLS
+		*/
+		void initTLS();
+		
 		/**
 		* Обработка IQ-странзы
 		*/

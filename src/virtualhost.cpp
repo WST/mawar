@@ -14,6 +14,11 @@
 #include <functions.h>
 #include <command.h>
 
+#ifdef HAVE_LIBSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif // HAVE_LIBSSL
+
 using namespace std;
 using namespace nanosoft;
 
@@ -95,13 +100,75 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 	start_time = time(0);
 	
 	config = cfg;
+	
+#ifdef HAVE_LIBSSL
+	initTLS();
+#endif // HAVE_LIBSSL
 }
 
 /**
 * Деструктор
 */
-VirtualHost::~VirtualHost() {
+VirtualHost::~VirtualHost()
+{
 }
+
+#ifdef HAVE_LIBSSL
+/**
+* Инциализация TLS
+*/
+void VirtualHost::initTLS()
+{
+	TagHelper cfg = config->firstChild("tls");
+	if ( cfg )
+	{
+		printf("vhost[%s]: \033[22;32mssl config present: %s\033[0m\n", hostname().c_str(), cfg->asString().c_str());
+		string cert = cfg["certificate"]->getCharacterData();
+		string key = cfg["private-key"]->getCharacterData();
+		printf("vhost[%s] certificate: %s\n", hostname().c_str(), cert.c_str());
+		printf("vhost[%s] private-key: %s\n", hostname().c_str(), key.c_str());
+		
+		ssl = SSL_CTX_new(SSLv23_server_method());
+		if ( ! ssl )
+		{
+			printf("vhost[%s]: \033[22;31mSSL init fault\033[0m\n", hostname().c_str());
+			return;
+		}
+		
+		if ( SSL_CTX_use_certificate_file(ssl, cert.c_str(), SSL_FILETYPE_PEM) <= 0 )
+		{
+			printf("vhost[%s]: \033[22;31mSSL certificate load fault\033[0m\n", hostname().c_str());
+			ERR_print_errors_fp(stderr);
+			SSL_CTX_free(ssl);
+			ssl = 0;
+			return;
+		}
+		
+		if ( SSL_CTX_use_PrivateKey_file(ssl, key.c_str(), SSL_FILETYPE_PEM) <= 0 )
+		{
+			printf("vhost[%s]: \033[22;31mSSL private key load fault\033[0m\n", hostname().c_str());
+			ERR_print_errors_fp(stderr);
+			SSL_CTX_free(ssl);
+			ssl = 0;
+			return;
+		}
+		
+		if ( ! SSL_CTX_check_private_key(ssl) )
+		{
+			printf("vhost[%s]: \033[22;31mPrivate key does not match the certificate public key\033[0m\n", hostname().c_str());
+			ERR_print_errors_fp(stderr);
+			SSL_CTX_free(ssl);
+			ssl = 0;
+			return;
+		}
+	}
+	else
+	{
+		printf("vhost[%s]: \033[22;31mno ssl config\033[0m\n", hostname().c_str());
+		ssl = 0;
+	}
+}
+#endif // HAVE_LIBSSL
 
 /**
 * Информационные запросы без атрибута to
