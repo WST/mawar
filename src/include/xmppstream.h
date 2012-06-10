@@ -26,7 +26,6 @@ protected:
 	class XMPPServer *server;
 	
 	bool want_write;
-	bool disable_write;
 	
 	/**
 	* Построитель дерева тегов

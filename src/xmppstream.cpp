@@ -59,7 +59,7 @@ unsigned XMPPStream::stanza_count = 0;
 */
 XMPPStream::XMPPStream(XMPPServer *srv, int sock):
 	AsyncXMLStream(sock), XMLWriter(1024),
-	server(srv), depth(0), want_write(0), disable_write(0)
+	server(srv), depth(0), want_write(0)
 {
 }
 
@@ -77,7 +77,7 @@ XMPPStream::~XMPPStream()
 uint32_t XMPPStream::getEventsMask()
 {
 	uint32_t mask = EPOLLIN | EPOLLRDHUP | EPOLLONESHOT | EPOLLHUP | EPOLLERR | EPOLLPRI;
-	if ( want_write && ! disable_write ) mask |= EPOLLOUT;
+	if ( want_write ) mask |= EPOLLOUT;
 	return mask;
 }
 
