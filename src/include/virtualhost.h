@@ -15,9 +15,9 @@
 #include <nanosoft/config.h>
 #include <db.h>
 
-#ifdef HAVE_LIBSSL
-#include <openssl/ssl.h>
-#endif // HAVE_LIBSSL
+#ifdef HAVE_GNUTLS
+#include <gnutls/gnutls.h>
+#endif // HAVE_GNUTLS
 
 /**
 * Класс виртуального узла
@@ -30,12 +30,10 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*/
 		DB db;
 		
-#ifdef HAVE_LIBSSL
-		/**
-		* Контекст SSL
-		*/
-		SSL_CTX *ssl;
-#endif // HAVE_LIBSSL
+#ifdef HAVE_GNUTLS
+		bool ssl;
+		gnutls_certificate_credentials_t x509_cred;
+#endif // HAVE_GNUTLS
 		
 		/**
 		* Mutex для thread-safe доступа к общим данным
