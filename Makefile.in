@@ -12,7 +12,7 @@ ns_srcinc = $(ns_srcdir)/include
 ns_srcexm = $(ns_srcdir)/examples
 
 
-CPPFLAGS = @CPPFLAGS@ -I./src/include -I/opt/gsasl/include -I$(ns_srcinc)
+CPPFLAGS = @CPPFLAGS@ @LIBGNUTLS_CFLAGS@ -I./src/include -I/opt/gsasl/include -I$(ns_srcinc)
 LDFLAGS = @LDFLAGS@ -L.
 CXXFLAGS = @CXXFLAGS@ $(CPPFLAGS)
 CFLAGS = @CXXFLAGS@ $(CPPFLAGS)
@@ -22,7 +22,7 @@ AR = @AR@
 RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 MKDIR = @MKDIR@
-LIBS = @LIBS@ -lgsasl
+LIBS = @LIBS@ -lgsasl @LIBGNUTLS_LIBS@
 PROXY_LIBS = @LIBS@
 
 prefix = @prefix@
