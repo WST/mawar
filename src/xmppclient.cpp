@@ -1137,7 +1137,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
 		
-		if ( vhost->ssl && canTLS() && ! isTLSEnable() )
+		if ( vhost->canTLS() && canTLS() && ! isTLSEnable() && ! isCompressionEnable() )
 		{
 			stanza = features["starttls"];
 			stanza->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-tls");
@@ -1147,7 +1147,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 			}
 		}
 		
-		if ( canCompression() && ! isCompressionEnable() )
+		if ( canCompression() && ! isCompressionEnable() && ! isTLSEnable() )
 		{
 			stanza = features["compression"];
 			stanza->setDefaultNameSpaceAttribute("http://jabber.org/features/compress");

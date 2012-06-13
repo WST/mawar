@@ -102,6 +102,16 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		~VirtualHost();
 		
 		/**
+		* Проверить поддерживает ли виртуальный хост TLS
+		*/
+		bool canTLS();
+		
+		/**
+		* Проверить требуется ли от клиента TLS
+		*/
+		bool isTLSRequired() { return tls_required; }
+		
+		/**
 		* Обработка message-станзц
 		*/
 		void handleMessage(Stanza stanza);

@@ -642,6 +642,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dump_io
+enable_debug_tls
 with_expat
 with_pthread
 with_nanosoft
@@ -1283,6 +1284,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dump_io        echo I/O messages to stdout
+  --enable-debug_tls      dump GnuTLS debug log
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4046,6 +4048,15 @@ if test "${enable_dump_io+set}" = set; then :
   enableval=$enable_dump_io;
 		CFLAGS="$CFLAGS -DDUMP_IO"
 		CXXFLAGS="$CXXFLAGS -DDUMP_IO"
+
+fi
+
+
+# Check whether --enable-debug_tls was given.
+if test "${enable_debug_tls+set}" = set; then :
+  enableval=$enable_debug_tls;
+		CFLAGS="$CFLAGS -DDEBUG_TLS"
+		CXXFLAGS="$CXXFLAGS -DDEBUG_TLS"
 
 fi
 

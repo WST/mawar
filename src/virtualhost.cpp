@@ -109,6 +109,18 @@ VirtualHost::~VirtualHost()
 {
 }
 
+/**
+* Проверить поддерживает ли виртуальный хост TLS
+*/
+bool VirtualHost::canTLS()
+{
+#ifdef HAVE_GNUTLS
+	return ssl;
+#else
+	return false;
+#endif // HAVE_GNUTLS
+}
+
 #ifdef HAVE_GNUTLS
 /**
 * Инциализация TLS
@@ -119,7 +131,7 @@ void VirtualHost::initTLS()
 	TagHelper cfg = config->firstChild("tls");
 	if ( cfg )
 	{
-		printf("vhost[%s]: \033[22;32mssl config present: %s\033[0m\n", hostname().c_str(), cfg->asString().c_str());
+		printf("vhost[%s]: TLS config present\n", hostname().c_str());
 		string ca = cfg["ca-certificate"]->getCharacterData();
 		string cert = cfg["certificate"]->getCharacterData();
 		string key = cfg["private-key"]->getCharacterData();
