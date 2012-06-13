@@ -171,6 +171,11 @@ public:
 	void handleCompress(Stanza stanza);
 	
 	/**
+	* Обработчик запроса TLS
+	*/
+	void handleStartTLS(Stanza stanza);
+	
+	/**
 	* Устаревший обработчик iq roster
 	*
 	* TODO необходима ревизия, скорее всего надо перенести в VirtualHost

@@ -128,6 +128,12 @@ void XMPPClient::onStanza(Stanza stanza)
 		handleCompress(stanza);
 		return;
 	}
+	
+	if ( name == "starttls" )
+	{
+		handleStartTLS(stanza);
+		return;
+	}
 }
 
 /**
@@ -225,6 +231,35 @@ void XMPPClient::handleCompress(Stanza stanza)
 	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
 	resetParser();
 	resetWriter();
+}
+
+/**
+* Обработчик запроса TLS
+*/
+void XMPPClient::handleStartTLS(Stanza stanza)
+{
+	if ( ! vhost->ssl || ! canTLS() || isTLSEnable() )
+	{
+		// TODO ?
+		return;
+	}
+	
+#ifdef HAVE_GNUTLS
+	Stanza proceed = new ATXmlTag("proceed");
+	proceed->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-tls");
+	sendStanza(proceed);
+	delete proceed;
+	
+	if ( ! enableTLS(&vhost->tls_ctx) )
+	{
+		terminate();
+		return;
+	}
+	
+	depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
+	resetParser();
+	resetWriter();
+#endif // HAVE_GNUTLS
 }
 
 /**
@@ -1101,6 +1136,16 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		
 		stanza = features["register"];
 		stanza->setAttribute("xmlns", "http://jabber.org/features/iq-register");
+		
+		if ( vhost->ssl && canTLS() && ! isTLSEnable() )
+		{
+			stanza = features["starttls"];
+			stanza->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-tls");
+			if ( vhost->tls_required )
+			{
+				stanza["required"];
+			}
+		}
 		
 		if ( canCompression() && ! isCompressionEnable() )
 		{

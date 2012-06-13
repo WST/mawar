@@ -13,6 +13,7 @@
 #include <nanosoft/gsaslserver.h>
 #include <nanosoft/mutex.h>
 #include <nanosoft/config.h>
+#include <nanosoft/asyncstream.h>
 #include <db.h>
 
 #ifdef HAVE_GNUTLS
@@ -30,9 +31,27 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*/
 		DB db;
 		
+		/**
+		* Обязательно ли требуется TLS
+		*
+		* TRUE - требовать от клиента TLS
+		* FALSE - разрешить клиентов без TLS
+		*/
+		bool tls_required;
+		
 #ifdef HAVE_GNUTLS
+		/**
+		* Поддержка SSL
+		*
+		* TRUE - включена
+		* FALSE - отключена (не поддерживается или не сконфигурирована)
+		*/
 		bool ssl;
-		gnutls_certificate_credentials_t x509_cred;
+		
+		/**
+		* Контекст сервера
+		*/
+		AsyncStream::tls_ctx tls_ctx;
 #endif // HAVE_GNUTLS
 		
 		/**

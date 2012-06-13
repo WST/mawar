@@ -25,7 +25,8 @@ using namespace nanosoft;
 */
 VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cfg):
 	XMPPDomain(srv, aName),
-	bind_conflict(bind_override)
+	bind_conflict(bind_override),
+	tls_required(false)
 {
 	ATXmlTag *extensions = cfg->firstChild("extensions");
 	if ( extensions )
@@ -123,24 +124,63 @@ void VirtualHost::initTLS()
 		string cert = cfg["certificate"]->getCharacterData();
 		string key = cfg["private-key"]->getCharacterData();
 		string crl = cfg["crl"]->getCharacterData();
+		tls_required = cfg->firstChild("required") != 0;
 		printf("vhost[%s] ca-certificate: %s\n", hostname().c_str(), ca.c_str());
 		printf("vhost[%s] certificate: %s\n", hostname().c_str(), cert.c_str());
 		printf("vhost[%s] private-key: %s\n", hostname().c_str(), key.c_str());
 		printf("vhost[%s] crl: %s\n", hostname().c_str(), crl.c_str());
+		printf("vhost[%s] tls required: %s\n", hostname().c_str(), (tls_required ? "yes" : "no"));
 		
-		
-		gnutls_certificate_allocate_credentials (&x509_cred);
-		gnutls_certificate_set_x509_trust_file(x509_cred, ca.c_str(), GNUTLS_X509_FMT_PEM);
-		gnutls_certificate_set_x509_crl_file(x509_cred, crl.c_str(), GNUTLS_X509_FMT_PEM);
-		
-		int ret = gnutls_certificate_set_x509_key_file (x509_cred, cert.c_str(), key.c_str(), GNUTLS_X509_FMT_PEM);
+		int ret;
+		gnutls_certificate_allocate_credentials (&tls_ctx.x509_cred);
+		ret = gnutls_certificate_set_x509_trust_file(tls_ctx.x509_cred, ca.c_str(), GNUTLS_X509_FMT_PEM);
 		if ( ret < 0 )
 		{
-			printf("vhost[%s]: \033[22;31mSSL init fault\033[0m\n", hostname().c_str());
+			printf("vhost[%s]: \033[22;31mSSL gnutls_certificate_set_x509_trust_file fault\033[0m\n", hostname().c_str());
 			return;
 		}
 		
+		/*
+		ret = gnutls_certificate_set_x509_crl_file(tls_ctx.x509_cred, crl.c_str(), GNUTLS_X509_FMT_PEM);
+		if ( ret < 0 )
+		{
+			printf("vhost[%s]: \033[22;31mSSL gnutls_certificate_set_x509_crl_file fault\033[0m\n", hostname().c_str());
+			return;
+		}
+		*/
+		
+		ret = gnutls_certificate_set_x509_key_file (tls_ctx.x509_cred, cert.c_str(), key.c_str(), GNUTLS_X509_FMT_PEM);
+		if ( ret < 0 )
+		{
+			printf("vhost[%s]: \033[22;31mSSL gnutls_certificate_set_x509_key_file fault\033[0m\n", hostname().c_str());
+			return;
+		}
+		
+		int bits = gnutls_sec_param_to_pk_bits(GNUTLS_PK_DH, GNUTLS_SEC_PARAM_LOW);
+		printf("gnutls_sec_param_to_pk_bits: %d\n", bits);
+		
+		/* Generate Diffie-Hellman parameters - for use with DHE
+		* kx algorithms. When short bit length is used, it might
+		* be wise to regenerate parameters often.
+		*/
+		printf("gnutls_dh_params_init...\n");
+		//gnutls_dh_params_init (&tls_ctx.dh_params);
+		
+		printf("gnutls_dh_params_generate2...\n");
+		//gnutls_dh_params_generate2 (tls_ctx.dh_params, bits);
+		
+		printf("gnutls_priority_init...\n");
+		ret = gnutls_priority_init(&tls_ctx.priority_cache, "NORMAL", NULL);
+		if ( ret < 0 )
+		{
+			printf("gnutls_priority_init fault\n");
+		}
+		
+		printf("gnutls_certificate_set_dh_params...\n");
+		//gnutls_certificate_set_dh_params (tls_ctx.x509_cred, tls_ctx.dh_params);
+		
 		ssl = true;
+		printf("vhost[%s] TLS init ok\n", hostname().c_str());
 	}
 	else
 	{
