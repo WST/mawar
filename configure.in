@@ -45,6 +45,11 @@ AC_CHECK_LIB(z, main, [], [])
 AC_CHECK_LIB(ssl, main, [], [])
 AC_CHECK_LIB(crypto, main, [], [])
 
+PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 3.0.0])
+
+AC_SUBST([LIBGNUTLS_CFLAGS])
+AC_SUBST([LIBGNUTLS_LIBS])
+
 AC_ARG_WITH(expat, AS_HELP_STRING([--with-expat=PREFIX], [expat XML parser]), [
 		CXXFLAGS="$CXXFLAGS -I$withval/include"
 		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
