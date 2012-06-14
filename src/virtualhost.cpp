@@ -107,6 +107,10 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 */
 VirtualHost::~VirtualHost()
 {
+#ifdef HAVE_GNUTLS
+	gnutls_certificate_free_credentials (tls_ctx.x509_cred);
+	gnutls_priority_deinit (tls_ctx.priority_cache);
+#endif // HAVE_GNUTLS
 }
 
 /**
