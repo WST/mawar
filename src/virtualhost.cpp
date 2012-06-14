@@ -182,7 +182,7 @@ void VirtualHost::initTLS()
 		//gnutls_dh_params_generate2 (tls_ctx.dh_params, bits);
 		
 		printf("gnutls_priority_init...\n");
-		ret = gnutls_priority_init(&tls_ctx.priority_cache, "NORMAL", NULL);
+		ret = gnutls_priority_init(&tls_ctx.priority_cache, "NORMAL:+COMP-DEFLATE", NULL);
 		if ( ret < 0 )
 		{
 			printf("gnutls_priority_init fault\n");
