@@ -5,6 +5,7 @@
 #include <db.h>
 #include <tagbuilder.h>
 #include <nanosoft/base64.h>
+#include <stdlib.h>
 
 // for debug only
 #include <string>
@@ -92,6 +93,28 @@ void XMPPStream::onWriteXML(const char *data, size_t len)
 }
 
 /**
+* Открытие потока
+*/
+void XMPPStream::startStream(const std::string &name, const attributtes_t &attributes)
+{
+	attributes_t::const_iterator it = attributes.find("version");
+	ver_major = 0;
+	ver_minor = 9;
+	if ( it != attributes.end() )
+	{
+		string version = it->second;
+		int pos = version.find(".");
+		if ( pos != -1 )
+		{
+			ver_major = atoi(version.substr(0, pos).c_str());
+			ver_minor = atoi(version.substr(pos + 1).c_str());
+		}
+	}
+	
+	onStartStream(name, attributes);
+}
+
+/**
 * Обработчик открытия тега
 */
 void XMPPStream::onStartElement(const std::string &name, const attributtes_t &attributes)
@@ -100,7 +123,7 @@ void XMPPStream::onStartElement(const std::string &name, const attributtes_t &at
 	switch ( depth )
 	{
 	case 1:
-		onStartStream(name, attributes);
+		startStream(name, attributes);
 		break;
 	case 2: // начало станзы
 		builder.startElement(name, attributes, depth);

@@ -26,6 +26,16 @@ protected:
 	class XMPPServer *server;
 	
 	/**
+	* Версия XMPP заявленая пиром
+	*/
+	int ver_major;
+	
+	/**
+	* Версия XMPP заявленая пиром
+	*/
+	int ver_minor;
+	
+	/**
 	* Построитель дерева тегов
 	*/
 	ATTagBuilder builder;
@@ -84,6 +94,11 @@ protected:
 	* Запись XML
 	*/
 	virtual void onWriteXML(const char *data, size_t len);
+	
+	/**
+	* Открытие потока
+	*/
+	void startStream(const std::string &name, const attributtes_t &attributes);
 	
 	/**
 	* Событие: начало потока

@@ -1096,7 +1096,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 {
 	attributes_t::const_iterator it = attributes.find("to");
 	string tohost = (it != attributes.end()) ? it->second : string();
-	printf("XMPPClient[%d]: new stream to %s\n", getFd(), tohost.c_str());
+	printf("XMPPClient[%d]: new stream to %s version: %d.%d\n", getFd(), tohost.c_str(), ver_major, ver_minor);
 	initXML();
 	startElement("stream:stream");
 	setAttribute("xmlns", "jabber:client");
