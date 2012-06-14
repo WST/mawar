@@ -166,7 +166,7 @@ void XMPPStream::onBeforeStanza()
 	tags_created_before_stanza = ATXmlTag::getTagsCreated();
 	tags_destroyed_before_stanza = ATXmlTag::getTagsDestroyed();
 	
-	printf("onBeforeStanza: tag_count: %d, max_count: %d\n", ATXmlTag::getTagsCount(), ATXmlTag::getTagsMaxCount());
+	//printf("onBeforeStanza: tag_count: %d, max_count: %d\n", ATXmlTag::getTagsCount(), ATXmlTag::getTagsMaxCount());
 }
 
 /**
@@ -185,12 +185,13 @@ void XMPPStream::onAfterStanza()
 	tags_leak_for_stanza = tags_created_for_stanza - tags_destroyed_for_stanza;
 	tags_leak += tags_leak_for_stanza;
 	stanza_count++;
-	
+	/*
 	printf("onAfterStanza: tags_created: %d, tags_destroyed: %d, tags_leak: %d\n",
 		tags_created_for_stanza,
 		tags_destroyed_for_stanza,
 		tags_leak_for_stanza
 	);
+	*/
 }
 
 /**
