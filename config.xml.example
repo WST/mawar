@@ -69,7 +69,7 @@
 				<crl></crl>
 				
 				<!-- Описание приоритета протоколов -->
-				<priority>NORMAL:+COMP-DEFLATE</priority>
+				<priority>NORMAL:+COMP-ALL%SERVER_PRECEDENCE</priority>
 				
 				<!-- Требуется ли TLS -->
 				<required />

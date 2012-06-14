@@ -140,6 +140,7 @@ void VirtualHost::initTLS()
 		string cert = cfg["certificate"]->getCharacterData();
 		string key = cfg["private-key"]->getCharacterData();
 		string crl = cfg["crl"]->getCharacterData();
+		string priority = cfg["priority"]->getCharacterData();
 		tls_required = cfg->firstChild("required") != 0;
 		printf("vhost[%s] ca-certificate: %s\n", hostname().c_str(), ca.c_str());
 		printf("vhost[%s] certificate: %s\n", hostname().c_str(), cert.c_str());
@@ -186,10 +187,27 @@ void VirtualHost::initTLS()
 		//gnutls_dh_params_generate2 (tls_ctx.dh_params, bits);
 		
 		printf("gnutls_priority_init...\n");
-		ret = gnutls_priority_init(&tls_ctx.priority_cache, "NORMAL:+COMP-DEFLATE", NULL);
-		if ( ret < 0 )
+		static const char *default_priority = "NORMAL:+COMP-ALL%SERVER_PRECEDENCE";
+		if ( priority.empty() )
 		{
-			printf("gnutls_priority_init fault\n");
+			ret = gnutls_priority_init(&tls_ctx.priority_cache, default_priority, NULL);
+			if ( ret < 0 )
+			{
+				printf("gnutls_priority_init(%s) fault\n", default_priority);
+			}
+		}
+		else
+		{
+			ret = gnutls_priority_init(&tls_ctx.priority_cache, priority.c_str(), NULL);
+			if ( ret < 0 )
+			{
+				printf("gnutls_priority_init(%s) fault, fallback to default: %s\n", priority.c_str(), default_priority);
+				ret = gnutls_priority_init(&tls_ctx.priority_cache, default_priority, NULL);
+				if ( ret < 0 )
+				{
+					printf("gnutls_priority_init(%s) fault\n", default_priority);
+				}
+			}
 		}
 		
 		printf("gnutls_certificate_set_dh_params...\n");
