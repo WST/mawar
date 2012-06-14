@@ -47,6 +47,34 @@
 		</external>
 		
 		<host name="shamangrad.net">
+			
+			<!-- Включение/отключение регистрации -->
+			<registration enabled="yes" />
+			
+			<!-- Политика поведения при подключении клиента с занятым ресурсом -->
+			<on-bind-conflict>remove-old</on-bind-conflict>
+			
+			<!-- Настройки TLS -->
+			<tls>
+				<!-- Путь к CA-сертификатам -->
+				<ca-certificate>/usr/local/etc/mawar/ca.crt</ca-certificate>
+				
+				<!-- Путь к сертификату сервера -->
+				<certificate>/usr/local/etc/mawar/xmpp-server.crt</certificate>
+				
+				<!-- Путь к ключу для сертификата сервера -->
+				<private-key>/usr/local/etc/mawar/xmpp-server.key</private-key>
+				
+				<!-- Путь к списку отзыва -->
+				<crl></crl>
+				
+				<!-- Описание приоритета протоколов -->
+				<priority>NORMAL:+COMP-DEFLATE</priority>
+				
+				<!-- Требуется ли TLS -->
+				<required />
+			</tls>
+			
 			<storage engine="mysql">
 				<server>localhost</server>
 				<username>mawar</username>
