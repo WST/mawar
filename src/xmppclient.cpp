@@ -24,7 +24,6 @@ XMPPClient::XMPPClient(XMPPServer *srv, int sock):
 	authorized(false), connected(false), available(false), use_roster(false)
 {
 	lock();
-	memset(&zin, 0, sizeof(zin));
 }
 
 /**

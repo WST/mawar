@@ -6,19 +6,12 @@
 #include <xml_types.h>
 #include <stanza.h>
 #include <presence.h>
-#include "zlib.h"
 
 /**
 * Класс XMPP-поток (c2s)
 */
 class XMPPClient: public XMPPStream
 {
-private:
-	/**
-	* Контекст компрессора zlib
-	*/
-	z_stream zin;
-	
 protected:
 	/**
 	* Виртуальный хост
