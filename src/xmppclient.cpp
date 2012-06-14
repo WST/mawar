@@ -5,7 +5,6 @@
 #include <functions.h>
 #include <db.h>
 #include <tagbuilder.h>
-#include <nanosoft/base64.h>
 #include <config.h>
 
 // for debug only
@@ -143,7 +142,7 @@ void XMPPClient::onAuthStanza(Stanza stanza)
 	if ( ! authorized )
 	{
 		sasl = vhost->start("xmpp", vhost->hostname(), stanza->getAttribute("mechanism"));
-		onSASLStep(string());
+		onSASLStep(stanza);
 		return;
 	}
 }
@@ -153,6 +152,7 @@ void XMPPClient::onAuthStanza(Stanza stanza)
 */
 void XMPPClient::onSASLStep(const std::string &input)
 {
+	printf("onSASLStep(%s)\n", input.c_str());
 	string output;
 	Stanza stanza;
 	switch ( vhost->step(sasl, input, output) )
@@ -162,6 +162,7 @@ void XMPPClient::onSASLStep(const std::string &input)
 		user_id = vhost->getUserId(client_jid.username());
 		vhost->GSASLServer::close(sasl);
 		stanza = new ATXmlTag("success");
+		stanza->insertCharacterData(output);
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 		authorized = true;
 		depth = 1; // после выхода из onAuthStanza/onStanza() будет стандартный depth--
@@ -173,7 +174,7 @@ void XMPPClient::onSASLStep(const std::string &input)
 	case SASLServer::next:
 		stanza = new ATXmlTag("challenge");
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-		stanza->insertCharacterData(base64_encode(output));
+		stanza->insertCharacterData(output);
 		sendStanza(stanza);
 		delete stanza;
 		break;
@@ -195,7 +196,7 @@ void XMPPClient::onResponseStanza(Stanza stanza)
 {
 	if ( ! authorized )
 	{
-		onSASLStep(base64_decode(stanza));
+		onSASLStep(stanza);
 		return;
 	}
 }

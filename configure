@@ -568,10 +568,10 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 MYSQL_LIBS
 WITH_MYSQL
-SASL_LIBS
-SASL
 LIBGNUTLS_LIBS
 LIBGNUTLS_CFLAGS
+GSASL_LIBS
+GSASL_CFLAGS
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
@@ -646,9 +646,6 @@ enable_debug_tls
 with_expat
 with_pthread
 with_nanosoft
-with_sasl
-with_gsasl
-with_cyrus_sasl
 with_mysql
 with_udns
 '
@@ -666,6 +663,8 @@ CCC
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
+GSASL_CFLAGS
+GSASL_LIBS
 LIBGNUTLS_CFLAGS
 LIBGNUTLS_LIBS'
 
@@ -1292,10 +1291,6 @@ Optional Packages:
   --with-expat=PREFIX     expat XML parser
   --with-pthread=PREFIX   pthread
   --with-nanosoft=PREFIX  prefix to nanosoft libraries
-  --with-sasl=TYPE        switch SASL library (cyrus, gnu)
-  --with-gsasl=PREFIX     GNU SASL library
-  --with-cyrus-sasl=PREFIX
-                          Cyrus SASL library
   --with-mysql=PREFIX     MySQL client library
   --with-udns=PREFIX      UDNS (DNS Resolver Library)
 
@@ -1314,6 +1309,9 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  GSASL_CFLAGS
+              C compiler flags for GSASL, overriding pkg-config
+  GSASL_LIBS  linker flags for GSASL, overriding pkg-config
   LIBGNUTLS_CFLAGS
               C compiler flags for LIBGNUTLS, overriding pkg-config
   LIBGNUTLS_LIBS
@@ -4262,6 +4260,79 @@ $as_echo "no" >&6; }
 fi
 
 pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSASL" >&5
+$as_echo_n "checking for GSASL... " >&6; }
+
+if test -n "$GSASL_CFLAGS"; then
+    pkg_cv_GSASL_CFLAGS="$GSASL_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libgsasl >= 1.6.1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libgsasl >= 1.6.1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSASL_CFLAGS=`$PKG_CONFIG --cflags "libgsasl >= 1.6.1" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$GSASL_LIBS"; then
+    pkg_cv_GSASL_LIBS="$GSASL_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libgsasl >= 1.6.1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libgsasl >= 1.6.1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSASL_LIBS=`$PKG_CONFIG --libs "libgsasl >= 1.6.1" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        GSASL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "libgsasl >= 1.6.1" 2>&1`
+        else
+	        GSASL_PKG_ERRORS=`$PKG_CONFIG --print-errors "libgsasl >= 1.6.1" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$GSASL_PKG_ERRORS" >&5
+
+	as_fn_error $? "GNU SASL library required" "$LINENO" 5
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	as_fn_error $? "GNU SASL library required" "$LINENO" 5
+else
+	GSASL_CFLAGS=$pkg_cv_GSASL_CFLAGS
+	GSASL_LIBS=$pkg_cv_GSASL_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	$as_echo "#define HAVE_GSASL 1" >>confdefs.h
+
+fi
+
+
+
+
+pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBGNUTLS" >&5
 $as_echo_n "checking for LIBGNUTLS... " >&6; }
 
@@ -4489,148 +4560,6 @@ fi
 #AC_CHECK_LIB(nanosoft, main, [], [AC_ERROR(nanosoft library is required)])
 #AC_CHECK_LIB(netd, main, [], [AC_ERROR(nanosoft netd library is required)])
 #AC_CHECK_LIB(GeoIP, main, [], [AC_ERROR(GeoIP library is required)])
-
-SASL=none
-SASL_LIBS=""
-
-# Check whether --with-sasl was given.
-if test "${with_sasl+set}" = set; then :
-  withval=$with_sasl;
-		SASL=$withval
-		case "$SASL" in
-		gnu)
-			$as_echo "#define WITH_GNU_SASL 1" >>confdefs.h
-
-			SASL_LIBS="-lgsasl"
-			;;
-		cyrus)
-			$as_echo "#define WITH_CYRUS_SASL 1" >>confdefs.h
-
-			SASL_LIBS="-lsasl2"
-			;;
-		*)
-			as_fn_error $? "switch SASL library (cyrus, gnu, none)" "$LINENO" 5
-			;;
-		esac
-
-else
-
-		SASL=gnu
-
-fi
-
-
-
-
-
-# Check whether --with-gsasl was given.
-if test "${with_gsasl+set}" = set; then :
-  withval=$with_gsasl;
-		CPPFLAGS="$CPPFLAGS  -I$withval/include"
-		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lgsasl" >&5
-$as_echo_n "checking for main in -lgsasl... " >&6; }
-if ${ac_cv_lib_gsasl_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgsasl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_gsasl_main=yes
-else
-  ac_cv_lib_gsasl_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gsasl_main" >&5
-$as_echo "$ac_cv_lib_gsasl_main" >&6; }
-if test "x$ac_cv_lib_gsasl_main" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBGSASL 1
-_ACEOF
-
-  LIBS="-lgsasl $LIBS"
-
-else
-
-		if test "$SASL" = "gnu"; then
-			as_fn_error $? "GNU SASL library required" "$LINENO" 5
-		fi
-
-fi
-
-
-
-# Check whether --with-cyrus-sasl was given.
-if test "${with_cyrus_sasl+set}" = set; then :
-  withval=$with_cyrus_sasl;
-		CPPFLAGS="$CPPFLAGS  -I$withval/include"
-		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lsasl2" >&5
-$as_echo_n "checking for main in -lsasl2... " >&6; }
-if ${ac_cv_lib_sasl2_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsasl2  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_sasl2_main=yes
-else
-  ac_cv_lib_sasl2_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_sasl2_main" >&5
-$as_echo "$ac_cv_lib_sasl2_main" >&6; }
-if test "x$ac_cv_lib_sasl2_main" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBSASL2 1
-_ACEOF
-
-  LIBS="-lsasl2 $LIBS"
-
-else
-
-		if test "$SASL" = "cyrus"; then
-			as_fn_error $? "Cyrus SASL library required" "$LINENO" 5
-		fi
-
-fi
-
 
 WITH_MYSQL=yes
 MYSQL_LIBS=""
