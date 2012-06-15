@@ -173,20 +173,6 @@ void VirtualHost::initTLS()
 			return;
 		}
 		
-		int bits = gnutls_sec_param_to_pk_bits(GNUTLS_PK_DH, GNUTLS_SEC_PARAM_LOW);
-		printf("gnutls_sec_param_to_pk_bits: %d\n", bits);
-		
-		/* Generate Diffie-Hellman parameters - for use with DHE
-		* kx algorithms. When short bit length is used, it might
-		* be wise to regenerate parameters often.
-		*/
-		printf("gnutls_dh_params_init...\n");
-		//gnutls_dh_params_init (&tls_ctx.dh_params);
-		
-		printf("gnutls_dh_params_generate2...\n");
-		//gnutls_dh_params_generate2 (tls_ctx.dh_params, bits);
-		
-		printf("gnutls_priority_init...\n");
 		static const char *default_priority = "NORMAL:+COMP-ALL%SERVER_PRECEDENCE";
 		if ( priority.empty() )
 		{
@@ -209,9 +195,6 @@ void VirtualHost::initTLS()
 				}
 			}
 		}
-		
-		printf("gnutls_certificate_set_dh_params...\n");
-		//gnutls_certificate_set_dh_params (tls_ctx.x509_cred, tls_ctx.dh_params);
 		
 		ssl = true;
 		printf("vhost[%s] TLS init ok\n", hostname().c_str());
