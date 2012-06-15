@@ -1129,6 +1129,15 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 		SASLServer::mechanisms_t list = vhost->getMechanisms();
 		for(SASLServer::mechanisms_t::const_iterator pos = list.begin(); pos != list.end(); ++pos)
 		{
+			if ( *pos == "EXTERNAL" ) continue;
+			if ( *pos == "ANONYMOUS" ) continue;
+			if ( ! isTLSEnable() )
+			{
+				if ( *pos == "PLAIN" ) continue;
+				if ( *pos == "LOGIN" ) continue;
+				if ( *pos == "SECURID" ) continue;
+			}
+			
 			Stanza mechanism = new ATXmlTag("mechanism");
 			mechanism->insertCharacterData(*pos);
 			stanza->insertChildElement(mechanism);
