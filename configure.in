@@ -48,7 +48,7 @@ AC_ARG_ENABLE(debug_tls, AS_HELP_STRING([--enable-debug_tls], [dump GnuTLS debug
 AC_CHECK_LIB(stdc++, main)
 AC_CHECK_LIB(z, main, [], [])
 
-PKG_CHECK_MODULES([GSASL], [libgsasl >= 1.6.1], [AC_DEFINE(HAVE_GSASL, 1)], [AC_ERROR(GNU SASL library required)])
+PKG_CHECK_MODULES([GSASL], [libgsasl >= 1.4.0], [AC_DEFINE(HAVE_GSASL, 1)], [AC_ERROR(GNU SASL library required)])
 AC_SUBST([GSASL_CFLAGS])
 AC_SUBST([GSASL_LIBS])
 
