@@ -152,7 +152,6 @@ void XMPPClient::onAuthStanza(Stanza stanza)
 */
 void XMPPClient::onSASLStep(const std::string &input)
 {
-	printf("onSASLStep(%s)\n", input.c_str());
 	string output;
 	Stanza stanza;
 	switch ( vhost->step(sasl, input, output) )
