@@ -61,6 +61,7 @@ AC_ARG_WITH(expat, AS_HELP_STRING([--with-expat=PREFIX], [expat XML parser]), [
 		LDFLAGS="$LDFLAGS -L$withval/lib -Wl,-rpath=$withval/lib"
 	])
 AC_CHECK_LIB(expat, main, [], [AC_ERROR(expat library required)])
+AC_CHECK_LIB(pcre, main, [], [AC_ERROR(PCRE library required)])
 
 AC_ARG_WITH(pthread, AS_HELP_STRING([--with-pthread=PREFIX], [pthread]), [
 		case "$withval" in

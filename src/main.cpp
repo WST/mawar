@@ -27,6 +27,7 @@
 #include <s2slistener.h>
 #include <serverstatus.h>
 #include <functions.h>
+#include <nanosoft/switchlogserver.h>
 
 #define PATH_PID (PATH_VAR "/run/maward.pid")
 #define PATH_STATUS (PATH_VAR "/run/maward.status")
@@ -226,6 +227,33 @@ int main(int argc, const char **argv)
 		status->bind(path.c_str());
 		status->listen(1);
 		daemon.addObject(status);
+	}
+	
+	TagHelper swlog_config = config->getSwitchLogConfig();
+	if ( swlog_config )
+	{
+		printf("switch log config found\n");
+		
+		nanosoft::ptr<SwitchLogServer> swlog = new SwitchLogServer();
+		
+		// Подключаемся к БД
+		TagHelper storage = swlog_config["storage"];
+		string server = storage["server"];
+		if(server.substr(0, 5) == "unix:" ) {
+			if ( ! swlog->db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) )
+			{
+				fprintf(stderr, "[SwitchLogServer] cannot connect to database\n");
+			}
+		} else {
+			if ( ! swlog->db.connect(server, storage["database"], storage["username"], storage["password"]) )
+			{
+				fprintf(stderr, "[SwitchLogServer] cannot connect to database\n");
+			}
+		}
+		
+		swlog->bind( atoi(swlog_config->getAttribute("port", "514").c_str()) );
+		
+		daemon.addObject(swlog);
 	}
 	
 	// консоль управления сервером
