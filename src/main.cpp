@@ -251,7 +251,10 @@ int main(int argc, const char **argv)
 			}
 		}
 		
-		swlog->bind( atoi(swlog_config->getAttribute("port", "514").c_str()) );
+		swlog->bind(
+			swlog_config->getAttribute("bind-address", "0.0.0.0").c_str(),
+			swlog_config->getAttribute("bind-port", "514").c_str()
+		);
 		
 		daemon.addObject(swlog);
 	}
