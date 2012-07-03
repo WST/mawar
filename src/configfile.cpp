@@ -146,9 +146,14 @@ TagHelper ConfigFile::firstExternal()
 /**
 * Вернуть конфиг switchlog
 */
-TagHelper ConfigFile::getSwitchLogConfig()
+TagHelper ConfigFile::getSwitchLogFirst()
 {
 	return config_tag->find("listen/switch-log");
+}
+
+TagHelper ConfigFile::getSwitchLogNext(ATXmlTag *from)
+{
+	return config_tag->findNext("listen/switch-log", from);
 }
 
 /**

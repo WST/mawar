@@ -229,10 +229,11 @@ int main(int argc, const char **argv)
 		daemon.addObject(status);
 	}
 	
-	TagHelper swlog_config = config->getSwitchLogConfig();
-	if ( swlog_config )
+	for(TagHelper swlog_config = config->getSwitchLogFirst(); swlog_config; swlog_config = config->getSwitchLogNext(swlog_config))
 	{
-		printf("switch log config found\n");
+		string addr = swlog_config->getAttribute("bind-address", "0.0.0.0");
+		string port = swlog_config->getAttribute("bind-port", "514");
+		printf("new switch log config found: %s:%s\n", addr.c_str(), port.c_str());
 		
 		nanosoft::ptr<SwitchLogServer> swlog = new SwitchLogServer();
 		
@@ -252,8 +253,8 @@ int main(int argc, const char **argv)
 		}
 		
 		swlog->bind(
-			swlog_config->getAttribute("bind-address", "0.0.0.0").c_str(),
-			swlog_config->getAttribute("bind-port", "514").c_str()
+			addr.c_str(),
+			port.c_str()
 		);
 		
 		daemon.addObject(swlog);

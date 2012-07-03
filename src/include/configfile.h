@@ -60,7 +60,8 @@ class ConfigFile
 		/**
 		* Вернуть конфиг switchlog
 		*/
-		TagHelper getSwitchLogConfig();
+		TagHelper getSwitchLogFirst();
+		TagHelper getSwitchLogNext(ATXmlTag *from);
 		
 		/**
 		* Вернуть следующий виртуальный хост
