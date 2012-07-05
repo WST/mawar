@@ -642,6 +642,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dump_io
+enable_dump_sql
 enable_debug_tls
 with_expat
 with_pthread
@@ -1283,6 +1284,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dump_io        echo I/O messages to stdout
+  --enable-dump_sql       echo SQL queries to stdout
   --enable-debug_tls      dump GnuTLS debug log
 
 Optional Packages:
@@ -4046,6 +4048,15 @@ if test "${enable_dump_io+set}" = set; then :
   enableval=$enable_dump_io;
 		CFLAGS="$CFLAGS -DDUMP_IO"
 		CXXFLAGS="$CXXFLAGS -DDUMP_IO"
+
+fi
+
+
+# Check whether --enable-dump_sql was given.
+if test "${enable_dump_sql+set}" = set; then :
+  enableval=$enable_dump_sql;
+		CFLAGS="$CFLAGS -DDUMP_SQL"
+		CXXFLAGS="$CXXFLAGS -DDUMP_SQL"
 
 fi
 

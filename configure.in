@@ -40,6 +40,11 @@ AC_ARG_ENABLE(dump_io, AS_HELP_STRING([--enable-dump_io], [echo I/O messages to 
 		CXXFLAGS="$CXXFLAGS -DDUMP_IO"
 	])
 
+AC_ARG_ENABLE(dump_sql, AS_HELP_STRING([--enable-dump_sql], [echo SQL queries to stdout]), [
+		CFLAGS="$CFLAGS -DDUMP_SQL"
+		CXXFLAGS="$CXXFLAGS -DDUMP_SQL"
+	])
+
 AC_ARG_ENABLE(debug_tls, AS_HELP_STRING([--enable-debug_tls], [dump GnuTLS debug log]), [
 		CFLAGS="$CFLAGS -DDEBUG_TLS"
 		CXXFLAGS="$CXXFLAGS -DDEBUG_TLS"
