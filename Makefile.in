@@ -85,6 +85,7 @@ MAWAR_OBJECTS+=logs.o
 MAWAR_OBJECTS+=functions.o
 MAWAR_OBJECTS+=form.o
 MAWAR_OBJECTS+=command.o
+MAWAR_OBJECTS+=dcbot.o
 
 PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
 
@@ -210,6 +211,9 @@ form.o: $(srcdir)/form.cpp $(srcdir)/include/form.h
 	
 command.o: $(srcdir)/command.cpp $(srcdir)/include/command.h
 	$(CXX) -c $(srcdir)/command.cpp -o command.o
+
+dcbot.o: $(srcdir)/dcbot.cpp $(srcdir)/include/dcbot.h
+	$(CXX) -c $(srcdir)/dcbot.cpp -o dcbot.o
 
 # CLEAN
 
