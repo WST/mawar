@@ -265,8 +265,9 @@ int main(int argc, const char **argv)
 	//MyConsole console(&daemon, 0);
 	//daemon.addObject(&console);
 	
-	DCBot *ptr = new DCBot();
-	
+	nanosoft::ptr<DCBot> dcbot = new DCBot(server.getObject());
+	dcbot->nick = "DCBot";
+	dcbot->connect("dc.local", 411);
 	
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
