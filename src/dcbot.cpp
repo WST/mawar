@@ -391,7 +391,6 @@ void DCBot::handleGetPassCommand(const char *args, size_t len)
 */
 void DCBot::handleLogedInCommand(const char *args, size_t len)
 {
-	sendCommand("SET", "2 motd %s", "test");
 }
 
 /**
