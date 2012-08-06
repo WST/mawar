@@ -107,9 +107,24 @@ protected:
 	void handleLockCommand(const char *args, size_t len);
 	
 	/**
+	* Выдать команду $Key
+	*/
+	void sendKey(const char *lock, size_t lock_len);
+	
+	/**
 	* Обработчик команды $Hello
 	*/
 	void handleHelloCommand(const char *args, size_t len);
+	
+	/**
+	* Обработчик команды $GetPass
+	*/
+	void handleGetPassCommand(const char *args, size_t len);
+	
+	/**
+	* Обработчик команды $LogedIn
+	*/
+	void handleLogedInCommand(const char *args, size_t len);
 	
 	/**
 	* Обработчик комманды $To
@@ -186,6 +201,16 @@ public:
 	* Послать комманду
 	*/
 	bool sendCommand(const char *command, const char *fmt = 0, ...);
+	
+	/**
+	* Отправить команду установки MOTD (Message Of The Day)
+	*/
+	bool sendMotd(const char *text);
+	
+	/**
+	* Отправить личное сообщение
+	*/
+	bool sendPrivateMessage(const char *to, const char *message);
 	
 	/**
 	* Конвертировать из UTF-8 в CP1251 и записать в сокет

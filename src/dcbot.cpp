@@ -36,7 +36,6 @@ DCBot::~DCBot()
 */
 void DCBot::on_s2s_output_a4(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
 {
-	printf("on_s2s_output_a4\n");
 	DCBot *p = static_cast<DCBot *>(data);
 	
 	if ( result && result->dnsa4_nrr >= 1 )
@@ -279,6 +278,18 @@ void DCBot::findCommand(const char *command, const char *args, size_t args_len)
 		return;
 	}
 	
+	if ( strcmp(command, "GetPass") == 0 )
+	{
+		handleGetPassCommand(args, args_len);
+		return;
+	}
+	
+	if ( strcmp(command, "LogedIn") == 0 )
+	{
+		handleLogedInCommand(args, args_len);
+		return;
+	}
+	
 	if ( strcmp(command, "To:") == 0 )
 	{
 		handleToCommand(args, args_len);
@@ -293,11 +304,64 @@ void DCBot::findCommand(const char *command, const char *args, size_t args_len)
 */
 void DCBot::handleLockCommand(const char *args, size_t len)
 {
-	printf("DCBot: Lock command: %s\n", args);
+	char lock[CHUNK_SIZE];
+	const char *end = args + len;
+	char *plock = lock;
+	while ( args < end && *args != ' ' )
+	{
+		*plock++ = *args++;
+	}
+	*plock = 0;
 	
 	sendCommand("Supports", "NoGetINFO NoHello UserIP2");
-	sendCommand("Key", "?");
+	sendKey(lock, plock - lock);
 	sendCommand("ValidateNick", "%s", nick.c_str());
+}
+
+/**
+* Выдать команду $Key
+*/
+void DCBot::sendKey(const char *lock, size_t len)
+{
+	char key[CHUNK_SIZE];
+	char newkey[CHUNK_SIZE];
+	
+	int i;
+	for(i = 1; i < len; ++i)
+		key[i] = lock[i] ^ lock[i-1];
+	
+	key[0] = lock[0] ^ lock[len-1] ^ lock[len-2] ^ 5;
+	
+	for(i = 0; i < len; ++i)
+		key[i] = ((key[i]<<4) & 0xF0) | ((key[i]>>4) & 0x0F);
+	
+	char *newkey_p = newkey;
+	for(i = 0; i < len; ++i)
+	{
+		switch(key[i])
+		{
+			case 0:
+			case 5:
+			case 36:
+			case 96:
+			case 124:
+			case 126:
+				sprintf(newkey_p, "/%%DCN%03d%%/", key[i]);
+				newkey_p += 10;
+				break;
+			default:
+				*newkey_p = key[i];
+				++newkey_p;
+		}
+	}
+	*newkey_p = '\0';
+	const char *p = newkey;
+	while ( p < newkey_p ) printf("key[%d]: %02X\n", (p - newkey), (*p++) &0xFF);
+	
+	int r = snprintf(key, CHUNK_MAXLEN, "$Key %s", newkey);
+	key[r++] = '|';
+	put(key, r);
+	//sendCommand("Key", "%s", newkey); 
 }
 
 /**
@@ -305,8 +369,6 @@ void DCBot::handleLockCommand(const char *args, size_t len)
 */
 void DCBot::handleHelloCommand(const char *args, size_t len)
 {
-	printf("DCBot: Hello command: %s\n", args);
-	
 	sendCommand("Version", "1,0091");
 	
 	string descr = "test";
@@ -314,6 +376,22 @@ void DCBot::handleHelloCommand(const char *args, size_t len)
 	
 	sendCommand("MyINFO", "$ALL %s %s%s$ $'\x01'$$0$", nick.c_str(), descr.c_str(), tag.c_str());
 	sendCommand("GetNickList");
+}
+
+/**
+* Обработчик команды $GetPass
+*/
+void DCBot::handleGetPassCommand(const char *args, size_t len)
+{
+	sendCommand("MyPass", "test43");
+}
+
+/**
+* Обработчик команды $LogedIn
+*/
+void DCBot::handleLogedInCommand(const char *args, size_t len)
+{
+	sendCommand("SET", "2 motd %s", "test");
 }
 
 /**
@@ -351,9 +429,7 @@ void DCBot::handleToCommand(const char *args, size_t len)
 */
 void DCBot::handlePrivateMessage(const char *from, const char *message, size_t message_len)
 {
-	printf("Private message from '%s': %s\n", from, message);
-	
-	sendCommand("To:", "%s From: %s $<%s> hello! товарищ", from, nick.c_str(), nick.c_str());
+	sendPrivateMessage(from, "hello! товарищ");
 }
 
 /**
@@ -361,7 +437,6 @@ void DCBot::handlePrivateMessage(const char *from, const char *message, size_t m
 */
 void DCBot::handleUnknownCommand(const char *command, const char *args, size_t args_len)
 {
-	printf("DCBot: unknown command: %s %s\n", command, args);
 }
 
 /**
@@ -395,7 +470,6 @@ void DCBot::parseChatMessage(const char *data, size_t len)
 */
 void DCBot::handleChatMessage(const char *login, const char *message, size_t message_len)
 {
-	printf("DC++ chat message from '%s': %s\n", login, message);
 }
 
 /**
@@ -485,7 +559,23 @@ bool DCBot::sendCommand(const char *command, const char *fmt, ...)
 	
 	len = snprintf(cmd_buf, sizeof(cmd_buf)-2, "$%s%s", command, args_buf);
 	cmd_buf[len] = '|';
-    return	putCP1251(cmd_buf, len+1);
+	return putCP1251(cmd_buf, len+1);
+}
+
+/**
+* Отправить команду установки MOTD (Message Of The Day)
+*/
+bool DCBot::sendMotd(const char *text)
+{
+	return sendCommand("SET", "2 motd %s", text);
+}
+
+/**
+* Отправить личное сообщение
+*/
+bool DCBot::sendPrivateMessage(const char *to, const char *message)
+{
+	return sendCommand("To:", "%s From: %s $<%s> %s", to, nick.c_str(), nick.c_str(), message);
 }
 
 /**
