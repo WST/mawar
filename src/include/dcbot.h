@@ -69,7 +69,7 @@ protected:
 	/**
 	* Размер блока
 	*/
-	char chunk_len;
+	size_t chunk_len;
 	
 	/**
 	* Резолвер s2s хоста, запись A (IPv4)
@@ -82,9 +82,14 @@ protected:
 	void onConnect();
 	
 	/**
-	* Обработчик прочитанных данных
+	* Обработчик прочитанных данных (в кодировке cp1251)
 	*/
 	virtual void onRead(const char *data, size_t len);
+	
+	/**
+	* Обработчик прочитанных данных в кодировке UTF-8
+	*/
+	void onReadUTF8(const char *data, size_t len);
 	
 	/**
 	* Парсер комманды
