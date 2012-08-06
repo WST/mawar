@@ -186,6 +186,11 @@ public:
 	* Послать комманду
 	*/
 	bool sendCommand(const char *command, const char *fmt = 0, ...);
+	
+	/**
+	* Конвертировать из UTF-8 в CP1251 и записать в сокет
+	*/
+	bool putCP1251(const char *data, size_t len);
 };
 
 #endif // MAWAR_DCBOT_H

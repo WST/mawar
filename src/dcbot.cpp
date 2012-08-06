@@ -352,6 +352,8 @@ void DCBot::handleToCommand(const char *args, size_t len)
 void DCBot::handlePrivateMessage(const char *from, const char *message, size_t message_len)
 {
 	printf("Private message from '%s': %s\n", from, message);
+	
+	sendCommand("To:", "%s From: %s $<%s> hello! товарищ", from, nick.c_str(), nick.c_str());
 }
 
 /**
@@ -483,5 +485,63 @@ bool DCBot::sendCommand(const char *command, const char *fmt, ...)
 	
 	len = snprintf(cmd_buf, sizeof(cmd_buf)-2, "$%s%s", command, args_buf);
 	cmd_buf[len] = '|';
-	put(cmd_buf, len+1);
+    return	putCP1251(cmd_buf, len+1);
+}
+
+/**
+* Конвертировать из UTF-8 в CP1251 и записать в сокет
+*/
+bool DCBot::putCP1251(const char *data, size_t len)
+{
+	char output[CHUNK_SIZE];
+	const unsigned char *inp = reinterpret_cast<const unsigned char*>(data);
+	const unsigned char *end_in = inp + len;
+    char *outp = output;
+	
+	while ( inp < end_in )
+	{
+		if ( (*inp & 0x80) == 0 )
+		{
+			*outp++ = *inp++;
+		}
+		else
+		{
+			int count = 0;
+			unsigned char mask = 0x80;
+			unsigned char x = *inp++;
+			
+			while ( mask > 0 )
+			{
+				if ( (x & mask) == 0 ) 
+				{
+					break;
+				}
+				mask = mask >> 1;
+				count++;
+			}
+			mask--;
+			
+			int c = x & mask;
+			for(int i = 1; i < count && inp < end_in; i++)
+			{
+				c = (c << 6) | (*inp & 0x3F);
+				inp++;
+			}
+			
+			*outp = '?';
+			for(int i = 0; i < 256; i++)
+			{
+				if ( cp1251_table[i] == c )
+				{
+					*outp = i;
+					break;
+				}	
+				
+			}
+			outp++;
+		}
+		
+	}
+	
+	return put(output, outp-output);
 }
