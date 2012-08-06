@@ -208,6 +208,11 @@ public:
 	bool sendMotd(const char *text);
 	
 	/**
+	* Отправить сообщение в общий чат
+	*/
+	bool sendChatMessage(const char *message);
+	
+	/**
 	* Отправить личное сообщение
 	*/
 	bool sendPrivateMessage(const char *to, const char *message);

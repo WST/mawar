@@ -571,6 +571,17 @@ bool DCBot::sendMotd(const char *text)
 }
 
 /**
+* Отправить сообщение в общий чат
+*/
+bool DCBot::sendChatMessage(const char *message)
+{
+	char chunk[CHUNK_SIZE];
+	int len = snprintf(chunk, CHUNK_MAXLEN, "<%s> %s", nick.c_str(), message);
+	chunk[len++] = '|';
+	return putCP1251(chunk, len);
+}
+
+/**
 * Отправить личное сообщение
 */
 bool DCBot::sendPrivateMessage(const char *to, const char *message)
