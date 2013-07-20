@@ -28,7 +28,6 @@
 #include <serverstatus.h>
 #include <functions.h>
 #include <nanosoft/switchlogserver.h>
-#include <dcbot.h>
 
 #define PATH_PID (PATH_VAR "/run/maward.pid")
 #define PATH_STATUS (PATH_VAR "/run/maward.status")
@@ -264,10 +263,6 @@ int main(int argc, const char **argv)
 	// консоль управления сервером
 	//MyConsole console(&daemon, 0);
 	//daemon.addObject(&console);
-	
-	nanosoft::ptr<DCBot> dcbot = new DCBot(server.getObject());
-	dcbot->nick = "DCBot";
-	dcbot->connect("dc.local", 411);
 	
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
