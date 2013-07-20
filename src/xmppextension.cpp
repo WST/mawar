@@ -94,10 +94,10 @@ bool XMPPExtension::open()
 	}
 }
 
-static void XMPPExtension_resetTimer(int wid, void *data)
+static void XMPPExtension_resetTimer(const timeval &tv, XMPPExtension *ext)
 {
 	printf("restart on timer\n");
-	static_cast<XMPPExtension*>(data)->open();
+	ext->open();
 }
 
 /**
