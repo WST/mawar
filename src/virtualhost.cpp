@@ -1257,49 +1257,34 @@ void VirtualHost::handleIQStats(Stanza stanza)
 */
 void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 {
-	if ( stanza->getAttribute("type") == "get" )
-	{
+	if(stanza->getAttribute("type") == "get") {
 		TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
-		if ( block )
-		{
+		if(block) {
 			ATXmlTag *data = 0;
 			
-			DB::result r = db.query(
-				"SELECT block_data FROM private_storage "
-				"WHERE username = %s AND block_xmlns = %s",
-				db.quote(stanza.from().username()).c_str(),
-				db.quote(block->getAttribute("xmlns")).c_str());
-			if ( r )
-			{
-				if( ! r.eof() )
-				{
+			DB::result r = db.query("SELECT block_data FROM private_storage WHERE username = %s AND block_xmlns = %s", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str());
+			if(r) {
+				if(!r.eof()) {
 					data = parse_xml_string("<?xml version=\"1.0\" ?>\n" + r["block_data"]);
 				}
 				r.free();
 			}
 			
-			if ( data )
-			{
-				Stanza iq = new ATXmlTag("iq");
-				iq->setAttribute("from", hostname());
-				iq->setAttribute("to", stanza.from().full());
-				iq->setAttribute("type", "result");
-				iq->setAttribute("id", stanza->getAttribute("id"));
-				TagHelper query = iq["query"];
-					query->setDefaultNameSpaceAttribute("jabber:iq:private");
-					iq["query"]->insertChildElement(data);
-				server->routeStanza(iq);
-				delete iq;
-				return;
+			Stanza iq = new ATXmlTag("iq");
+			iq->setAttribute("from", hostname());
+			iq->setAttribute("to", stanza.from().full());
+			iq->setAttribute("type", "result");
+			iq->setAttribute("id", stanza->getAttribute("id"));
+			TagHelper query = iq["query"];
+			query->setDefaultNameSpaceAttribute("jabber:iq:private");
+			if(data) {
+				iq["query"]->insertChildElement(data);
+			} else {
+				iq["query"]->insertChildElement(block->clone());
 			}
-			else
-			{
-				Stanza error = Stanza::iqError(stanza, "item-not-found", "cancel");
-				error->setAttribute("from", hostname());
-				server->routeStanza(error);
-				delete error;
-				return;
-			}
+			server->routeStanza(iq);
+			delete iq;
+			return;
 		}
 		
 		Stanza error = Stanza::iqError(stanza, "bad-request", "modify");
