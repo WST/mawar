@@ -363,7 +363,7 @@ void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 	client_presence.status_text = stanza->getChildValue("status", "");
 	client_presence.show = stanza->getChildValue("show", "Available");
 	
-	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
+	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		stanza->setAttribute("to", r["contact_jid"]);
 		server->routeStanza(stanza.to().hostname(), stanza);
@@ -381,7 +381,7 @@ void XMPPClient::handlePresenceProbes()
 	Stanza probe = new XmlTag("presence");
 	probe->setAttribute("type", "probe");
 	probe->setAttribute("from", client_jid.full());
-	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('T', 'B')", vhost->db.quote(client_jid.username()).c_str());
+	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_subscription IN ('T', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		probe->setAttribute("to", r["contact_jid"]);
 		server->routeStanza(probe.to().hostname(), probe);
@@ -438,7 +438,7 @@ void XMPPClient::handleUnavailablePresence(Stanza stanza)
 	
 	stanza->setAttribute("from", client_jid.full());
 	
-	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
+	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_subscription IN ('F', 'B')", vhost->db.quote(client_jid.username()).c_str());
 	for(; ! r.eof(); r.next()) {
 		stanza->setAttribute("to", r["contact_jid"]);
 		server->routeStanza(stanza.to().hostname(), stanza);
@@ -464,7 +464,7 @@ void XMPPClient::handlePresenceSubscribe(Stanza stanza)
 	item->setAttribute("subscription", "none");
 	item->setAttribute("ask", "subscribe");
 	
-	DB::result r = vhost->db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
+	DB::result r = vhost->db.query("SELECT roster.* FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_jid = %s",
 		vhost->db.quote(client_jid.username()).c_str(),
 		vhost->db.quote(to).c_str()
 		);
@@ -496,7 +496,7 @@ void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 	TagHelper item = query["item"];
 	item->setAttribute("jid", to);
 	
-	DB::result r = vhost->db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
+	DB::result r = vhost->db.query("SELECT roster.* FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_jid = %s",
 		vhost->db.quote(client_jid.username()).c_str(),
 		vhost->db.quote(to).c_str()
 		);
@@ -507,15 +507,15 @@ void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 		if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 		
 		const char *subscription = (r["contact_subscription"] == "N" || r["contact_subscription"] == "F") ? "F" : "B";
-		vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+		vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE contact_id = %s",
 			subscription,
-			vhost->db.quote(r["id_contact"]).c_str()
+			vhost->db.quote(r["contact_id"]).c_str()
 		);
 	}
 	else
 	{
 		item->setAttribute("subscription", "from");
-		vhost->db.query("INSERT INTO roster (id_user, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'F', 'N')",
+		vhost->db.query("INSERT INTO roster (user_id, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'F', 'N')",
 			user_id,
 			vhost->db.quote(to).c_str()
 		);
@@ -538,8 +538,8 @@ void XMPPClient::handlePresenceUnsubscribe(Stanza stanza)
 	
 	DB::result r = vhost->db.query(
 		"SELECT roster.* FROM roster"
-		" JOIN users ON roster.id_user = users.id_user"
-		" WHERE user_login = %s AND contact_jid = %s",
+		" JOIN users ON roster.user_id = users.user_id"
+		" WHERE user_username = %s AND contact_jid = %s",
 		vhost->db.quote(client_jid.username()).c_str(),
 		vhost->db.quote(to).c_str()
 		);
@@ -555,9 +555,9 @@ void XMPPClient::handlePresenceUnsubscribe(Stanza stanza)
 		if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 		
 		const char *subscription = (r["contact_subscription"] == "F" || r["contact_subscription"] == "B") ? "F" : "B";
-		vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+		vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE contact_id = %s",
 			subscription,
-			vhost->db.quote(r["id_contact"]).c_str()
+			vhost->db.quote(r["contact_id"]).c_str()
 		);
 		
 		vhost->rosterPush(client_jid.username(), iq);
@@ -579,8 +579,8 @@ void XMPPClient::handlePresenceUnsubscribed(Stanza stanza)
 	
 	DB::result r = vhost->db.query(
 		"SELECT roster.* FROM roster"
-		" JOIN users ON roster.id_user = users.id_user"
-		" WHERE user_login = %s AND contact_jid = %s",
+		" JOIN users ON roster.user_id = users.user_id"
+		" WHERE user_username = %s AND contact_jid = %s",
 		vhost->db.quote(client_jid.username()).c_str(),
 		vhost->db.quote(to).c_str()
 		);
@@ -599,9 +599,9 @@ void XMPPClient::handlePresenceUnsubscribed(Stanza stanza)
 			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 			
 			const char *subscription = (r["contact_subscription"] == "B") ? "T" : "N";
-			vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+			vhost->db.query("UPDATE roster SET contact_subscription = '%s' WHERE contact_id = %s",
 				subscription,
-				vhost->db.quote(r["id_contact"]).c_str()
+				vhost->db.quote(r["contact_id"]).c_str()
 			);
 			
 			vhost->rosterPush(client_jid.username(), iq);
@@ -767,8 +767,8 @@ void XMPPClient::handleRosterGet(Stanza stanza)
 	
 	DB::result r = vhost->db.query(
 		"SELECT roster.* FROM roster"
-		" JOIN users ON roster.id_user = users.id_user"
-		" WHERE users.user_login=%s",
+		" JOIN users ON roster.user_id = users.user_id"
+		" WHERE users.user_username=%s",
 		vhost->db.quote(client_jid.username()).c_str()
 		);
 	
@@ -809,7 +809,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 	string jid_bare = JID(item->getAttribute("jid")).bare();
 	
 	DB::result r = vhost->db.query(
-		"SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+		"SELECT * FROM roster WHERE user_id = %d AND contact_jid = %s",
 		user_id,
 		vhost->db.quote(item->getAttribute("jid")).c_str()
 		);
@@ -817,7 +817,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 	if(r.eof())
 	{
 		// добавить контакт: RFC 3921 (7.4) Adding a Roster Item
-		vhost->db.query("INSERT INTO roster (id_user, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
+		vhost->db.query("INSERT INTO roster (user_id, contact_jid, contact_nick, contact_group, contact_subscription, contact_pending) VALUES (%d, %s, %s, %s, 'N', 'N')",
 			user_id,
 			vhost->db.quote(jid_bare).c_str(), // contact_jid
 			vhost->db.quote(item->getAttribute("name")).c_str(), // contact_nick
@@ -849,9 +849,9 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 		std::string name = item->hasAttribute("name") ? item->getAttribute("name") : r["contact_nick"];
 		std::string group = item->hasChild("group") ? item["group"] : r["contact_group"];
 		std::string contact_jid = r["contact_jid"];
-		int contact_id = atoi(r["id_contact"].c_str());
+		int contact_id = atoi(r["contact_id"].c_str());
 		
-		vhost->db.query("UPDATE roster SET contact_nick = %s, contact_group = %s WHERE id_contact = %d",
+		vhost->db.query("UPDATE roster SET contact_nick = %s, contact_group = %s WHERE contact_id = %d",
 			vhost->db.quote(name).c_str(),
 			vhost->db.quote(group).c_str(),
 			contact_id
@@ -881,7 +881,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 */
 void XMPPClient::handleRosterItemRemove(TagHelper item)
 {
-	DB::result r = vhost->db.query("SELECT * FROM roster WHERE id_user = %d AND contact_jid = %s",
+	DB::result r = vhost->db.query("SELECT * FROM roster WHERE user_id = %d AND contact_jid = %s",
 		user_id,
 		vhost->db.quote(item->getAttribute("jid")).c_str()
 		);
@@ -892,7 +892,7 @@ void XMPPClient::handleRosterItemRemove(TagHelper item)
 		return;
 	}
 	
-	int contact_id = atoi(r["id_contact"].c_str());
+	int contact_id = atoi(r["contact_id"].c_str());
 	r.free();
 	
 	Stanza presence = new XmlTag("presence");
@@ -909,7 +909,7 @@ void XMPPClient::handleRosterItemRemove(TagHelper item)
 	
 	delete presence;
 	
-	vhost->db.query("DELETE FROM roster WHERE id_contact = %d", contact_id);
+	vhost->db.query("DELETE FROM roster WHERE contact_id = %d", contact_id);
 	
 	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("type", "set");

@@ -318,8 +318,8 @@ void VirtualHost::servePresenceProbes(Stanza stanza)
 	JID from = stanza.from();
 	
 	DB::result r = db.query(
-		"SELECT count(*) AS cnt FROM roster JOIN users ON roster.id_user = users.id_user "
-		"WHERE user_login = %s AND contact_jid = %s AND contact_subscription IN ('F', 'B')",
+		"SELECT count(*) AS cnt FROM roster JOIN users ON roster.user_id = users.user_id "
+		"WHERE user_username = %s AND contact_jid = %s AND contact_subscription IN ('F', 'B')",
 			db.quote(to.username()).c_str(), db.quote(from.bare()).c_str());
 	if ( r["cnt"] != "0" )
 	{
@@ -355,7 +355,7 @@ void VirtualHost::servePresenceSubscribe(Stanza stanza)
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
+	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
 		db.quote(from).c_str()
 		);
@@ -376,7 +376,7 @@ void VirtualHost::servePresenceSubscribe(Stanza stanza)
 	}
 	else
 	{ // сохранить запрос в БД
-		db.query("INSERT INTO roster (id_user, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'N', 'P')", getUserId(to), db.quote(from).c_str());
+		db.query("INSERT INTO roster (user_id, contact_jid, contact_subscription, contact_pending) VALUES (%d, %s, 'N', 'P')", getUserId(to), db.quote(from).c_str());
 	}
 	r.free();
 	
@@ -392,7 +392,7 @@ void VirtualHost::servePresenceSubscribed(Stanza stanza)
 	string from = stanza.from().bare();
 	string to = stanza.to().username();
 	
-	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_jid = %s",
+	DB::result r = db.query("SELECT roster.* FROM roster JOIN users ON roster.user_id = users.user_id WHERE user_username = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
 		db.quote(from).c_str()
 		);
@@ -411,9 +411,9 @@ void VirtualHost::servePresenceSubscribed(Stanza stanza)
 			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 			
 			const char *subscription = (r["contact_subscription"] == "N") ? "T" : "B";
-			db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+			db.query("UPDATE roster SET contact_subscription = '%s' WHERE contact_id = %s",
 				subscription,
-				r["id_contact"].c_str()
+				r["contact_id"].c_str()
 				);
 			
 			rosterPush(to, iq);
@@ -457,8 +457,8 @@ void VirtualHost::servePresenceUnsubscribe(Stanza stanza)
 	
 	DB::result r = db.query(
 		"SELECT roster.* FROM roster"
-		" JOIN users ON roster.id_user = users.id_user"
-		" WHERE user_login = %s AND contact_jid = %s",
+		" JOIN users ON roster.user_id = users.user_id"
+		" WHERE user_username = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
 		db.quote(from).c_str()
 		);
@@ -476,9 +476,9 @@ void VirtualHost::servePresenceUnsubscribe(Stanza stanza)
 			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 			
 			const char *subscription = (r["contact_subscription"] == "B") ? "T" : "N";
-			db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+			db.query("UPDATE roster SET contact_subscription = '%s' WHERE contact_id = %s",
 				subscription,
-				r["id_contact"].c_str()
+				r["contact_id"].c_str()
 				);
 			
 			// TODO broadcast only to whom requested roster
@@ -501,8 +501,8 @@ void VirtualHost::servePresenceUnsubscribed(Stanza stanza)
 	
 	DB::result r = db.query(
 		"SELECT roster.* FROM roster"
-		" JOIN users ON roster.id_user = users.id_user"
-		" WHERE user_login = %s AND contact_jid = %s",
+		" JOIN users ON roster.user_id = users.user_id"
+		" WHERE user_username = %s AND contact_jid = %s",
 		db.quote(to).c_str(),
 		db.quote(from).c_str()
 		);
@@ -521,9 +521,9 @@ void VirtualHost::servePresenceUnsubscribed(Stanza stanza)
 			if ( r["contact_group"] != "" ) item["group"] = r["contact_group"];
 			
 			const char *subscription = (r["contact_subscription"] == "B") ? "F" : "N";
-			db.query("UPDATE roster SET contact_subscription = '%s' WHERE id_contact = %s",
+			db.query("UPDATE roster SET contact_subscription = '%s' WHERE contact = %s",
 				subscription,
-				r["id_contact"].c_str()
+				r["contact_id"].c_str()
 				);
 			
 			rosterPush(to, iq);
@@ -633,7 +633,7 @@ void VirtualHost::broadcast(Stanza stanza, const std::string &login)
 bool VirtualHost::userExists(const std::string &username)
 {
 	bool retval;
-	DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_login=%s", db.quote(username).c_str());
+	DB::result r = db.query("SELECT count(*) AS cnt FROM users WHERE user_username=%s", db.quote(username).c_str());
 	retval = atoi(r["cnt"].c_str()) == 1;
 	r.free();
 	return retval;
@@ -644,7 +644,7 @@ bool VirtualHost::userExists(const std::string &username)
 */
 bool VirtualHost::addUser(const std::string &username, const std::string &password)
 {
-	DB::result r = db.query("INSERT INTO users (user_login, user_password) VALUES (%s, %s)", db.quote(username).c_str(), db.quote(password).c_str());
+	DB::result r = db.query("INSERT INTO users (user_username, user_password) VALUES (%s, %s)", db.quote(username).c_str(), db.quote(password).c_str());
 	if ( r ) r.free();
 	return true;
 }
@@ -654,7 +654,7 @@ bool VirtualHost::addUser(const std::string &username, const std::string &passwo
 */
 bool VirtualHost::removeUser(const std::string &username)
 {
-	DB::result r = db.query("DELETE FROM users WHERE user_login = %s", db.quote(username).c_str());
+	DB::result r = db.query("DELETE FROM users WHERE user_username = %s", db.quote(username).c_str());
 	if ( r ) r.free();
 	// TODO: удалять мусор из других таблиц
 	return true;
@@ -1396,7 +1396,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			iq->setAttribute("type", "result");
 			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
 			
-			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = %d", getUserId(stanza.from().username()));
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE user_id = %d", getUserId(stanza.from().username()));
 			if( r.eof() )
 			{
 				// Вернуть пустой vcard
@@ -1425,7 +1425,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 				delete error;
 				return;
 			}
-			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(data).c_str());
+			db.query("REPLACE INTO vcard (user_id, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(data).c_str());
 			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -1457,7 +1457,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 		}
 		else
 		{
-			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE id_user = (SELECT id_user FROM users WHERE user_login = %s)", db.quote(stanza.to().username()).c_str());
+			DB::result r = db.query("SELECT vcard_data FROM vcard WHERE user_id = (SELECT user_id FROM users WHERE user_username = %s)", db.quote(stanza.to().username()).c_str());
 			if( r.eof() )
 			{
 				// Вернуть пустой vcard
@@ -1915,7 +1915,7 @@ void VirtualHost::onOffline(XMPPClient *client)
 */
 std::string VirtualHost::getUserPassword(const std::string &realm, const std::string &login)
 {
-	DB::result r = db.query("SELECT user_password FROM users WHERE user_login = %s", db.quote(login).c_str());
+	DB::result r = db.query("SELECT user_password FROM users WHERE user_username = %s", db.quote(login).c_str());
 	string pwd = r.eof() ? string() : r["user_password"];
 	r.free();
 	return pwd;
@@ -1927,8 +1927,8 @@ std::string VirtualHost::getUserPassword(const std::string &realm, const std::st
 * @return ID пользователя
 */
 int VirtualHost::getUserId(const std::string &login) {
-	DB::result r = db.query("SELECT id_user FROM users WHERE user_login = %s", db.quote(login).c_str());
-	int user_id = r.eof() ? 0 : atoi(r["id_user"].c_str());
+	DB::result r = db.query("SELECT user_id FROM users WHERE user_username = %s", db.quote(login).c_str());
+	int user_id = r.eof() ? 0 : atoi(r["user_id"].c_str());
 	r.free();
 	return user_id;
 }
