@@ -58,12 +58,6 @@ class ConfigFile
 		TagHelper firstExternal();
 		
 		/**
-		* Вернуть конфиг switchlog
-		*/
-		TagHelper getSwitchLogFirst();
-		TagHelper getSwitchLogNext(ATXmlTag *from);
-		
-		/**
 		* Вернуть следующий виртуальный хост
 		*/
 		TagHelper nextExternal(TagHelper from);

@@ -144,19 +144,6 @@ TagHelper ConfigFile::firstExternal()
 }
 
 /**
-* Вернуть конфиг switchlog
-*/
-TagHelper ConfigFile::getSwitchLogFirst()
-{
-	return config_tag->find("listen/switch-log");
-}
-
-TagHelper ConfigFile::getSwitchLogNext(ATXmlTag *from)
-{
-	return config_tag->findNext("listen/switch-log", from);
-}
-
-/**
 * Вернуть следующий виртуальный хост
 */
 TagHelper ConfigFile::nextExternal(TagHelper from)

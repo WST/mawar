@@ -27,7 +27,6 @@
 #include <s2slistener.h>
 #include <serverstatus.h>
 #include <functions.h>
-#include <nanosoft/switchlogserver.h>
 
 #define PATH_PID (PATH_VAR "/run/maward.pid")
 #define PATH_STATUS (PATH_VAR "/run/maward.status")
@@ -227,37 +226,6 @@ int main(int argc, const char **argv)
 		status->bind(path.c_str());
 		status->listen(1);
 		daemon.addObject(status);
-	}
-	
-	for(TagHelper swlog_config = config->getSwitchLogFirst(); swlog_config; swlog_config = config->getSwitchLogNext(swlog_config))
-	{
-		string addr = swlog_config->getAttribute("bind-address", "0.0.0.0");
-		string port = swlog_config->getAttribute("bind-port", "514");
-		printf("new switch log config found: %s:%s\n", addr.c_str(), port.c_str());
-		
-		nanosoft::ptr<SwitchLogServer> swlog = new SwitchLogServer();
-		
-		// Подключаемся к БД
-		TagHelper storage = swlog_config["storage"];
-		string server = storage["server"];
-		if(server.substr(0, 5) == "unix:" ) {
-			if ( ! swlog->db.connectUnix(server.substr(5), storage["database"], storage["username"], storage["password"]) )
-			{
-				fprintf(stderr, "[SwitchLogServer] cannot connect to database\n");
-			}
-		} else {
-			if ( ! swlog->db.connect(server, storage["database"], storage["username"], storage["password"]) )
-			{
-				fprintf(stderr, "[SwitchLogServer] cannot connect to database\n");
-			}
-		}
-		
-		swlog->bind(
-			addr.c_str(),
-			port.c_str()
-		);
-		
-		daemon.addObject(swlog);
 	}
 	
 	// консоль управления сервером
