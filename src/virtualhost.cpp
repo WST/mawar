@@ -1066,30 +1066,6 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 				
 				item = new XmlTag("item");
 					item->setAttribute("jid", name);
-					item->setAttribute("node", "stop-vhost");
-					item->setAttribute("name", "Stop a virtual host");
-					query->insertChildElement(item);
-				
-				item = new XmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "start-vhost");
-					item->setAttribute("name", "Start a virtual host");
-					query->insertChildElement(item);
-				
-				item = new XmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "create-vhost");
-					item->setAttribute("name", "Create a new virtual host");
-					query->insertChildElement(item);
-				
-				item = new XmlTag("item");
-					item->setAttribute("jid", name);
-					item->setAttribute("node", "drop-vhost");
-					item->setAttribute("name", "Delete virtual host");
-					query->insertChildElement(item);
-				
-				item = new XmlTag("item");
-					item->setAttribute("jid", name);
 					item->setAttribute("node", "route-stanza");
 					item->setAttribute("name", "Push stanza to the router");
 					query->insertChildElement(item);
@@ -1352,90 +1328,6 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 		delete cmd;
 		mawarWarning("Stopping daemon by request from administrator");
 		exit(0); // TODO: сделать корректный останов
-		return;
-	}
-	
-	if ( node == "create-vhost" )
-	{
-		if ( cmd->form() )
-		{
-			// Обработчик формы тут
-			Stanza reply = Command::commandDoneStanza(name, stanza);
-			server->routeStanza(reply);
-			delete reply;
-			delete cmd;
-			return;
-		}
-		Command *reply = new Command();
-		reply->setNode(node);
-		reply->setStatus("executing");
-		reply->createForm("form");
-		reply->form()->setTitle("Create a virtual host");
-		reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
-		reply->form()->insertLineEdit("db-hostname", "MySQL server", "", true);
-		reply->form()->insertLineEdit("db-name", "MySQL db", "", true);
-		reply->form()->insertLineEdit("db-user", "MySQL user", "", true);
-		reply->form()->insertLineEdit("db-passwd", "MySQL password", "", true);
-		server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
-		delete reply;
-		delete cmd;
-		
-		return;
-	}
-	
-	if ( node == "drop-vhost" )
-	{
-		if ( cmd->form() )
-		{
-			mawarWarning("Delete virtual host: " + cmd->form()->getFieldValue("vhost-name", ""));
-			Stanza reply = Command::commandDoneStanza(name, stanza);
-			server->routeStanza(reply);
-			delete reply;
-			delete cmd;
-			return;
-		}
-		Command *reply = new Command();
-		reply->setNode(node);
-		reply->setStatus("executing");
-		reply->createForm("form");
-		reply->form()->setTitle("Delete a virtual host");
-		reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
-		server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
-		delete reply;
-		delete cmd;
-		
-		return;
-	} 
-	
-	if ( node == "stop-vhost" || node == "start-vhost" )
-	{
-		if ( cmd->form() )
-		{
-			// Кстати, если что-то в присланных данных неверно, можно сделать проверку типа такой:
-			bool valid = true; // установить флаг верности
-			if ( valid )
-			{
-				// Обработчик формы тут
-				Stanza reply = Command::commandDoneStanza(name, stanza);
-				server->routeStanza(reply);
-				delete reply;
-				delete cmd;
-				return;
-			}
-			// Это приведёт к показу формы заново… Как в веб :)
-			// © WST
-		}
-		
-		Command *reply = new Command();
-		reply->setNode(node);
-		reply->setStatus("executing");
-		reply->createForm("form");
-		reply->form()->setTitle("Start/stop a virtual host");
-		reply->form()->insertLineEdit("vhost-name", "Host name", "", true);
-		server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
-		delete reply;
-		delete cmd;
-		
 		return;
 	}
 	

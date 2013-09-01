@@ -8,7 +8,7 @@
 	<!-- системные ограничения -->
 	<limits>
 		<!-- число воркеров -->
-		<workers>3</workers>
+		<workers>1</workers>
 		
 		<!-- число открытых файлов -->
 		<files>1000</files>
@@ -20,7 +20,7 @@
 	<listen>
 		<c2s>5222</c2s>
 		<xep0114>4000</xep0114>
-		<!-- <status>/home/alex/prj/mawar/trunk/mawar.status</status> -->
+		<status>/tmp/maward.status</status>
 	</listen>
 	
 	<hosts>
@@ -36,7 +36,7 @@
 				<admin jid="admin@localhost" />
 			</admins>
 			<disco>
-				<item jid="support@conference.jsmart.web.id" />
+				<item jid="conference.jsmart.web.id" />
 			</disco>
 			<!-- other settings -->
 		</host>
@@ -45,53 +45,6 @@
 			<secret>123456</secret>
 			<!-- other settings -->
 		</external>
-		
-		<host name="shamangrad.net">
-			
-			<!-- Включение/отключение регистрации -->
-			<registration enabled="yes" />
-			
-			<!-- Политика поведения при подключении клиента с занятым ресурсом -->
-			<on-bind-conflict>remove-old</on-bind-conflict>
-			
-			<!-- Настройки TLS -->
-			<tls>
-				<!-- Путь к CA-сертификатам -->
-				<ca-certificate>/usr/local/etc/mawar/ca.crt</ca-certificate>
-				
-				<!-- Путь к сертификату сервера -->
-				<certificate>/usr/local/etc/mawar/xmpp-server.crt</certificate>
-				
-				<!-- Путь к ключу для сертификата сервера -->
-				<private-key>/usr/local/etc/mawar/xmpp-server.key</private-key>
-				
-				<!-- Путь к списку отзыва -->
-				<crl></crl>
-				
-				<!-- Описание приоритета протоколов -->
-				<priority>NORMAL:+COMP-ALL%SERVER_PRECEDENCE</priority>
-				
-				<!-- Требуется ли TLS -->
-				<required />
-			</tls>
-			
-			<storage engine="mysql">
-				<server>localhost</server>
-				<username>mawar</username>
-				<password>123456</password>
-				<database>mawar_shamangrad</database>
-			</storage>
-			<!-- other settings -->
-		</host>
-		<host name="home.the1st.net.ru">
-			<storage engine="mysql">
-				<server>localhost</server>
-				<username>mawar</username>
-				<password>123456</password>
-				<database>mawar_shamangrad</database>
-			</storage>
-			<!-- other settings -->
-		</host>
 		<!-- other vhosts -->
 	</hosts>
 </maward>
