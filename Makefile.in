@@ -23,7 +23,6 @@ RANLIB = @RANLIB@
 INSTALL = @INSTALL@
 MKDIR = @MKDIR@
 LIBS = @LIBS@ @GSASL_LIBS@ @LIBGNUTLS_LIBS@
-PROXY_LIBS = @LIBS@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -87,18 +86,13 @@ MAWAR_OBJECTS+=form.o
 MAWAR_OBJECTS+=command.o
 MAWAR_OBJECTS+=dcbot.o
 
-PROXY_OBJECTS=xmppproxy.o xmppproxystream.o logs.o
-
-MAWAR_TESTS=test-01 test-02
+MAWAR_TESTS=test-01
 
 .PHONY: all install
 all: maward
 
 maward: $(srcdir)/main.cpp $(MAWAR_OBJECTS) libns_core.a libns_netd.a libns_xml.a libns_sasl.a
 	$(CXX) $(srcdir)/main.cpp  $(PATHS) $(MAWAR_OBJECTS) $(LDFLAGS) -lns_core -lns_netd -lns_xml -lns_sasl $(MYSQL_LIBS) $(LIBS) -o maward
-
-proxyd: $(srcdir)/proxy.cpp $(PROXY_OBJECTS) libns_core.a libns_netd.a
-	$(CXX) $(srcdir)/proxy.cpp $(PROXY_OBJECTS) $(LDFLAGS) -lns_core -lns_netd $(LIBS) -o proxyd
 
 include $(ns_root)/core.mf
 include $(ns_root)/xml.mf
@@ -108,14 +102,9 @@ include $(ns_root)/sasl.mf
 .PHONY: tests
 tests: $(MAWAR_TESTS)
 	./test-01
-	./test-02
 
 test-01: $(srcdir)/tests/test-01.cpp $(MAWAR_OBJECTS)
 	$(CXX) $(srcdir)/tests/test-01.cpp $(MAWAR_OBJECTS) $(LDFLAGS) $(LIBS) -o test-01
-
-test-02: $(srcdir)/tests/test-02.cpp $(PROXY_OBJECTS)
-	$(CXX) $(srcdir)/tests/test-02.cpp $(PROXY_OBJECTS) $(LDFLAGS) $(LIBS) -o test-02
-	touch test1.xml test2.xml
 
 # modules
 
@@ -194,12 +183,6 @@ xmppgroups.o: $(srcdir)/xmppgroups.cpp $(srcdir)/include/xmppgroups.h $(srcdir)/
 serverstatus.o: $(srcdir)/serverstatus.cpp $(srcdir)/include/serverstatus.h $(srcdir)/include/xmppserver.h
 	$(CXX) -c $(srcdir)/serverstatus.cpp -o serverstatus.o
 
-xmppproxy.o: $(srcdir)/xmppproxy.cpp $(srcdir)/include/xmppproxy.h $(srcdir)/include/xmppproxystream.h
-	$(CXX) -c $(srcdir)/xmppproxy.cpp -o xmppproxy.o
-
-xmppproxystream.o: $(srcdir)/xmppproxystream.cpp $(srcdir)/include/xmppproxystream.h
-	$(CXX) -c $(srcdir)/xmppproxystream.cpp -o xmppproxystream.o
-
 logs.o: $(srcdir)/logs.cpp $(srcdir)/include/logs.h
 	$(CXX) -c $(srcdir)/logs.cpp -o logs.o
 
@@ -220,8 +203,8 @@ dcbot.o: $(srcdir)/dcbot.cpp $(srcdir)/include/dcbot.h
 .PHONY: clean distclean
 
 distclean: clean
-	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS) test1.xml test2.xml lib*.a
+	rm -f Makefile *.log  $(config) config.status $(MAWAR_TESTS) test1.xml lib*.a
 
 clean:
-	rm -f *.o maward proxyd
+	rm -f *.o maward
 
