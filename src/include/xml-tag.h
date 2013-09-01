@@ -6,7 +6,7 @@
 #include <string>
 
 // Mawar
-#include <xml_types.h>
+#include <xml-types.h>
 #include <xml-parser.h>
 
 class XmlTag
@@ -121,13 +121,13 @@ class XmlTag
 		* Вернуть первый дочерний узел, какого бы типа он ни был
 		* @return первый дочерний узел или 0 если дочерних узлов нет
 		*/
-		ATXmlNode* firstChildNode();
+		XmlNode* firstChildNode();
 		
 		/**
 		* Вернуть следующий дочерний узел, какого бы типа он ни был
 		* @return найденый узел или 0 если больше дочерних узлов нет
 		*/
-		ATXmlNode* nextChildNode(ATXmlNode *from);
+		XmlNode* nextChildNode(XmlNode *from);
 		
 		/**
 		* Найти первого потомка по указанному пути

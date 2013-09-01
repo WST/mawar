@@ -10,11 +10,6 @@ GeoIPValidator::~GeoIPValidator() {
 }
 
 bool GeoIPValidator::checkGeoIP(const char *ip_addr) {
-	const char* code = GeoIP_country_code_by_addr(geoip, ip_addr);
-	if(code == "RU" || code == "US" || code == "ID") {
-		return true;
-	} else {
-		return false;
-	}
+	return true;
 }
 

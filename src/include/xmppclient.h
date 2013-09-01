@@ -3,7 +3,7 @@
 
 #include <xmppstream.h>
 #include <nanosoft/gsaslserver.h>
-#include <xml_types.h>
+#include <xml-types.h>
 #include <stanza.h>
 #include <presence.h>
 

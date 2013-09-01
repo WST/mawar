@@ -4,7 +4,7 @@
 #include <nanosoft/asyncxmlstream.h>
 #include <nanosoft/xmlwriter.h>
 #include <nanosoft/mutex.h>
-#include <xml_types.h>
+#include <xml-types.h>
 #include <tagbuilder.h>
 #include <xml-tag.h>
 #include <stanza.h>
@@ -38,7 +38,7 @@ protected:
 	/**
 	* Построитель дерева тегов
 	*/
-	ATTagBuilder builder;
+	TagBuilder builder;
 	
 	/**
 	* Глубина обрабатываемого тега

@@ -59,7 +59,7 @@ XmlTag * XmlParser::parseStream(nanosoft::stream &s)
 		
 		if ( r < 0 )
 		{
-			ATTagBuilder::reset();
+			TagBuilder::reset();
 			return 0;
 		}
 		
@@ -70,7 +70,7 @@ XmlTag * XmlParser::parseStream(nanosoft::stream &s)
 		
 		if ( ! parseXML(buf, r, false) )
 		{
-			ATTagBuilder::reset();
+			TagBuilder::reset();
 			return 0;
 		}
 	}

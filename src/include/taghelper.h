@@ -1,7 +1,7 @@
 #ifndef MAWAR_TAGHELPER_H
 #define MAWAR_TAGHELPER_H
 
-#include <xml_types.h>
+#include <xml-types.h>
 #include <xml-tag.h>
 
 /**
@@ -91,6 +91,7 @@ public:
 	const std::string & operator = (const std::string &text) {
 		tag->clear();
 		tag->insertCharacterData(text);
+		return *this;
 	}
 	
 	/**

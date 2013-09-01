@@ -3,7 +3,7 @@
 
 #include <nanosoft/xmlparser.h>
 #include <nanosoft/stream.h>
-#include <xml_types.h>
+#include <xml-types.h>
 #include <xml-tag.h>
 #include <tagbuilder.h>
 
@@ -12,7 +12,7 @@
 *
 * XmlParser парсит файл целиком в один XmlTag
 */
-class XmlParser: protected nanosoft::XMLParser, protected ATTagBuilder
+class XmlParser: protected nanosoft::XMLParser, protected TagBuilder
 {
 public:
 	/**

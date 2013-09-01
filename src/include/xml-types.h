@@ -1,6 +1,6 @@
 
-#ifndef AT_XML_TYPES_H
-#define AT_XML_TYPES_H
+#ifndef MAWAR_XML_TYPES_H
+#define MAWAR_XML_TYPES_H
 
 #include <string>
 #include <vector>
@@ -9,20 +9,20 @@
 
 class XmlTag;
 
-enum ATXmlNodeType { TTag, TCharacterData };
+enum XmlNodeType { TTag, TCharacterData };
 
-class ATXmlNode {
+class XmlNode {
 	public:
-	ATXmlNode(ATXmlNodeType nodetype, XmlTag *t) {
+	XmlNode(XmlNodeType nodetype, XmlTag *t) {
 		type = nodetype;
 		tag = t;
 	}
-	ATXmlNode(ATXmlNodeType nodetype, std::string nodecdata) {
+	XmlNode(XmlNodeType nodetype, std::string nodecdata) {
 		type = nodetype;
 		cdata = nodecdata;
 	}
-	~ATXmlNode() {}
-	ATXmlNodeType type;
+	~XmlNode() {}
+	XmlNodeType type;
 	XmlTag *tag;
 	std::string cdata;
 };
@@ -30,6 +30,6 @@ class ATXmlNode {
 typedef std::map<std::string, std::string> attributes_t;
 typedef std::vector<XmlTag*> tags_stack_t;
 typedef std::list<XmlTag*> tags_list_t;
-typedef std::list<ATXmlNode*> nodes_list_t;
+typedef std::list<XmlNode*> nodes_list_t;
 
 #endif

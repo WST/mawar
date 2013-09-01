@@ -91,7 +91,7 @@ unsigned short int XmlTag::getDepth() {
 }
 
 void XmlTag::insertChildElement(XmlTag *tag) {
-	ATXmlNode *node = new ATXmlNode(TTag, tag);
+	XmlNode *node = new XmlNode(TTag, tag);
 	tag->parent = this;
 	children.push_back(tag);
 	childnodes.push_back(node);
@@ -118,7 +118,7 @@ void XmlTag::setDefaultNameSpaceAttribute(std::string value) {
 }
 
 void XmlTag::insertCharacterData(std::string cdata) {
-	ATXmlNode *node = new ATXmlNode(TCharacterData, cdata);
+	XmlNode *node = new XmlNode(TCharacterData, cdata);
 	childnodes.push_back(node);
 }
 
@@ -326,7 +326,7 @@ XmlTag* XmlTag::nextChild(const std::string &name, XmlTag *from)
 /**
 * Вернуть первый дочерний узел, какого бы типа он ни был
 */
-ATXmlNode* XmlTag::firstChildNode()
+XmlNode* XmlTag::firstChildNode()
 {
 	nodes_list_t::iterator iter = childnodes.begin();
 	return iter != childnodes.end() ? *iter : 0;
@@ -335,7 +335,7 @@ ATXmlNode* XmlTag::firstChildNode()
 /**
 * Вернуть следующий дочерний узел, какого бы типа он ни был
 */
-ATXmlNode* XmlTag::nextChildNode(ATXmlNode* from)
+XmlNode* XmlTag::nextChildNode(XmlNode* from)
 {
 	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
 	{
@@ -444,7 +444,7 @@ void XmlTag::removeChild(const char *name)
 {
 	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
 	{
-		ATXmlNode *node = *iter;
+		XmlNode *node = *iter;
 		if ( node->type == TTag && node->tag->name() == name )
 		{
 			childnodes.erase(iter);
@@ -462,7 +462,7 @@ void XmlTag::removeChild(const std::string &name)
 {
 	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
 	{
-		ATXmlNode *node = *iter;
+		XmlNode *node = *iter;
 		if ( node->type == TTag && node->tag->name() == name )
 		{
 			childnodes.erase(iter);

@@ -1,13 +1,13 @@
 #ifndef MAWAR_TAGBUILDER_H
 #define MAWAR_TAGBUILDER_H
 
-#include <xml_types.h>
+#include <xml-types.h>
 
-class ATTagBuilder
+class TagBuilder
 {
 	public:
-		ATTagBuilder();
-		~ATTagBuilder();
+		TagBuilder();
+		~TagBuilder();
 		void startElement(const std::string &name, const attributes_t &attributes, unsigned short int depth);
 		void endElement(const std::string &name);
 		void characterData(const std::string &cdata);
