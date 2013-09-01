@@ -88,10 +88,9 @@ public:
 	*  - нет ничего проще:
 	*     tag["foo"] = "Hello world!";
 	*/
-	const std::string & operator = (const std::string &text) {
+	void operator = (const std::string &text) {
 		tag->clear();
 		tag->insertCharacterData(text);
-		return *this;
 	}
 	
 	/**
