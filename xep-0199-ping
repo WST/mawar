@@ -1,3 +1,0 @@
-#!/bin/bash
-
-php xep-0199-ping.php

@@ -4,7 +4,6 @@
 #include <xmppserver.h>
 #include <xmppclient.h>
 #include <xmppdomain.h>
-#include <xmppextension.h>
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
@@ -389,16 +388,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* Удалить пользователя
 		*/
 		bool removeUser(const std::string &username);
-		
-		/**
-		* Добавить расширение
-		*/
-		void addExtension(const char *urn, const char *fname);
-		
-		/**
-		* Удалить расширение
-		*/
-		void removeExtension(const char *urn);
 	
 	private:
 		/**
@@ -414,9 +403,6 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		typedef std::map<std::string, XMPPClient *> reslist_t;
 		typedef std::map<std::string, reslist_t> sessions_t;
 		sessions_t onliners; // Онлайнеры
-		
-		typedef std::map<std::string, nanosoft::ptr<XMPPExtension> > extlist_t;
-		extlist_t ext;
 		
 		bind_conflict_t bind_conflict; // политика разрешения конфликта ресурсов
 		unsigned long int onliners_number; // число подключённых пользователей

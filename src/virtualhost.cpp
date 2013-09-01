@@ -1,6 +1,5 @@
 
 #include <virtualhost.h>
-#include <xmppextension.h>
 #include <configfile.h>
 #include <taghelper.h>
 #include <attagparser.h>
@@ -28,15 +27,6 @@ VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cf
 	bind_conflict(bind_override),
 	tls_required(false)
 {
-	ATXmlTag *extensions = cfg->firstChild("extensions");
-	if ( extensions )
-	{
-		for(ATXmlTag *ext = extensions->firstChild(); ext; ext = extensions->nextChild(ext))
-		{
-			addExtension(ext->getAttribute("urn", "").c_str(), ext->getAttribute("fname", "").c_str());
-		}
-	}
-	
 	TagHelper registration = cfg->getChild("registration");
 	registration_allowed = registration->getAttribute("enabled", "no") == "yes";
 	
@@ -757,14 +747,6 @@ void VirtualHost::handleDirectlyIQ(Stanza stanza)
 	// сначала ищем в модулях-расширениях
 	Stanza body = stanza->firstChild();
 	std::string xmlns = body ? body->getAttribute("xmlns", "") : "";
-	
-	// ищем модуль-расширение
-	extlist_t::iterator it = ext.find(xmlns);
-	if ( it != ext.end() )
-	{
-		ext[xmlns]->handleStanza(stanza);
-		return;
-	}
 	
 	if ( xmlns == "urn:ietf:params:xml:ns:xmpp-session" )
 	{
@@ -2148,20 +2130,4 @@ bool VirtualHost::isAdmin(std::string barejid) {
 		return false;
 	}
 	return (bool) config->getChild("admins")->getChildByAttribute("admin", "jid", barejid);
-}
-
-/**
-* Добавить расширение
-*/
-void VirtualHost::addExtension(const char *urn, const char *fname)
-{
-	ext[urn] = new XMPPExtension(server, urn, fname);
-}
-
-/**
-* Удалить расширение
-*/
-void VirtualHost::removeExtension(const char *urn)
-{
-	ext.erase(urn);
 }
