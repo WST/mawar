@@ -1,6 +1,0 @@
-
-REQUIREMENTS
-  1. expat: http://expat.sourceforge.net/
-  2. GNU SASL: http://www.gnu.org/software/gsasl/
-  3. MySQL: http://mysql.com/
-  4. UDNS: http://www.corpit.ru/mjt/udns.html
