@@ -7,13 +7,13 @@
 #include <map>
 #include <list>
 
-class ATXmlTag;
+class XmlTag;
 
 enum ATXmlNodeType { TTag, TCharacterData };
 
 class ATXmlNode {
 	public:
-	ATXmlNode(ATXmlNodeType nodetype, ATXmlTag *t) {
+	ATXmlNode(ATXmlNodeType nodetype, XmlTag *t) {
 		type = nodetype;
 		tag = t;
 	}
@@ -23,13 +23,13 @@ class ATXmlNode {
 	}
 	~ATXmlNode() {}
 	ATXmlNodeType type;
-	ATXmlTag *tag;
+	XmlTag *tag;
 	std::string cdata;
 };
 
 typedef std::map<std::string, std::string> attributes_t;
-typedef std::vector<ATXmlTag*> tags_stack_t;
-typedef std::list<ATXmlTag*> tags_list_t;
+typedef std::vector<XmlTag*> tags_stack_t;
+typedef std::list<XmlTag*> tags_list_t;
 typedef std::list<ATXmlNode*> nodes_list_t;
 
 #endif

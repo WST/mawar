@@ -93,7 +93,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		* @param aName имя хоста
 		* @param config конфигурация хоста
 		*/
-		VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *config);
+		VirtualHost(XMPPServer *srv, const std::string &aName, XmlTag *config);
 		
 		/**
 		* Деструктор виртуального хоста
@@ -413,7 +413,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		unsigned long int version_requests; // число запросов верси сервера
 		unsigned long int start_time; // момент запуска виртуального узл
 		
-		ATXmlTag *config;
+		XmlTag *config;
 };
 
 #endif // MAWAR_VIRTUALHOST_H

@@ -6,7 +6,7 @@
 #include <nanosoft/mutex.h>
 #include <xml_types.h>
 #include <tagbuilder.h>
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <stanza.h>
 
 /**

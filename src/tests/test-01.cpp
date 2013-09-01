@@ -9,7 +9,7 @@
 * With JID
 */
 void VirtualHost_sendRoster_1(Stanza stanza) {
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", stanza.from().full());
 	iq->setAttribute("to", stanza.to().full());
 	if(stanza->hasAttribute("id")) iq->setAttribute("id", stanza.id());
@@ -26,7 +26,7 @@ void VirtualHost_sendRoster_1(Stanza stanza) {
 * Without JID
 */
 void VirtualHost_sendRoster_2(Stanza stanza) {
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", stanza->getAttribute("from", ""));
 	iq->setAttribute("to", stanza->getAttribute("to", ""));
 	if(stanza->hasAttribute("id")) iq->setAttribute("id", stanza.id());
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	int count = argc > 1 ? atoi(argv[1]) : 100000;
 	printf("count: %d\n", count);
 	
-	Stanza test = new ATXmlTag("stanza");
+	Stanza test = new XmlTag("stanza");
 	test->setAttribute("from", "foo@example.com/FOO");
 	test->setAttribute("to", "bar@example.com/BAR");
 	

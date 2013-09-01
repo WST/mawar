@@ -2,12 +2,12 @@
 #define MAWAR_TAGHELPER_H
 
 #include <xml_types.h>
-#include <xml_tag.h>
+#include <xml-tag.h>
 
 /**
-* Вспомогательный класс упрощающий работу с XML-тегами (ATXmlTag)
+* Вспомогательный класс упрощающий работу с XML-тегами (XmlTag)
 *
-* Данный класс является умным "указателем" на ATXmlTag,
+* Данный класс является умным "указателем" на XmlTag,
 * реализующим специальные методы и операторы для модификации тегов
 *
 * @note Большиство методов достаточно тривиальные,
@@ -19,7 +19,7 @@ protected:
 	/**
 	* Собственно тег
 	*/
-	ATXmlTag *tag;
+	XmlTag *tag;
 public:
 	/**
 	* Конструктор по умолчанию - указатель на NULL
@@ -29,7 +29,7 @@ public:
 	/**
 	* Конструктор с инициализацией тега
 	*/
-	TagHelper(ATXmlTag *pTag): tag(pTag) { }
+	TagHelper(XmlTag *pTag): tag(pTag) { }
 	
 	/**
 	* Конструктор копии, только копируем указатель
@@ -56,13 +56,13 @@ public:
 	}
 	
 	/**
-	* Преобразование к ATXmlTag*
+	* Преобразование к XmlTag*
 	*
 	* Просто возвращаем тег:
-	*   TagHelper foo = new ATXmlTag("foo");
-	*   ATXmlTag *bar = foo; // здесь используется преобразование
+	*   TagHelper foo = new XmlTag("foo");
+	*   XmlTag *bar = foo; // здесь используется преобразование
 	*/
-	operator ATXmlTag* () {
+	operator XmlTag* () {
 		return tag;
 	}
 	
@@ -111,19 +111,19 @@ public:
 	* @param t добавляемый тег
 	* @return добавленный тег
 	*/
-	ATXmlTag* operator += (ATXmlTag *t);
+	XmlTag* operator += (XmlTag *t);
 	
 	/**
 	* Селектор
 	*
 	* Возращает указываемый тег
 	*
-	* Нужно обратиться к свойству ATXmlTag?
+	* Нужно обратиться к свойству XmlTag?
 	*  - нет ничего проще:
 	*     cout << tag["foo"]->getAttribute("bar");
 	*     tag->setAttribute("bar", "banana");
 	*/
-	ATXmlTag* operator -> () {
+	XmlTag* operator -> () {
 		return tag;
 	}
 	

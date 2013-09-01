@@ -20,7 +20,7 @@
 #include <nanosoft/object.h>
 #include <nanosoft/netdaemon.h>
 #include <logs.h>
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <configfile.h>
 #include <xmppserver.h>
 #include <xep0114listener.h>
@@ -184,7 +184,7 @@ int main(int argc, const char **argv)
 	
 	// добавляем виртуальные хосты
 	printf("[main] loading virtual hosts\n");
-	for(ATXmlTag *vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost)) {
+	for(XmlTag *vhost = config->firstHost(); vhost; vhost = config->nextHost(vhost)) {
 		printf("[main] load vhost: %s\n", vhost->getAttribute("name").c_str());
 		server->addHost(vhost->getAttribute("name"), vhost);
 	}

@@ -10,7 +10,7 @@
 class Command
 {
 	public:
-		Command(ATXmlTag *command);
+		Command(XmlTag *command);
 		Command();
 		~Command();
 		static Stanza commandCancelledStanza(std::string from, Stanza from_stanza);

@@ -2,7 +2,7 @@
 #ifndef MAWAR_ADHOCCOMMAND_H
 #define MAWAR_ADHOCCOMMAND_H
 
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <taghelper.h>
 #include <stanza.h>
 #include <string>
@@ -28,7 +28,7 @@ class AdHocCommand: public Stanza
 public:
 	AdHocCommand();
 	AdHocCommand(Stanza stanza);
-	AdHocCommand(ATXmlTag *tag);
+	AdHocCommand(XmlTag *tag);
 	
 	/**
 	* Создать заготовку-ответ на комманду

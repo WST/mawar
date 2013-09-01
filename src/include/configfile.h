@@ -2,7 +2,7 @@
 #ifndef MAWAR_CONFIGFILE_H
 #define MAWAR_CONFIGFILE_H
 
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <taghelper.h>
 #include <string>
 
@@ -35,22 +35,22 @@ class ConfigFile
 		/**
 		* Вернуть первый виртуальный хост
 		*/
-		ATXmlTag *firstHost();
+		XmlTag *firstHost();
 		
 		/**
 		* Вернуть следующий виртуальный хост
 		*/
-		ATXmlTag *nextHost(ATXmlTag *from);
+		XmlTag *nextHost(XmlTag *from);
 	
 		/**
 		* Вернуть первый сервер групповых сообщений
 		*/
-		ATXmlTag *firstGroupsHost();
+		XmlTag *firstGroupsHost();
 		
 		/**
 		* Вернуть следующий сервер групповых сообщений
 		*/
-		ATXmlTag *nextGroupsHost(ATXmlTag *from);
+		XmlTag *nextGroupsHost(XmlTag *from);
 	
 		/**
 		* Вернуть первый виртуальный хост
@@ -62,11 +62,11 @@ class ConfigFile
 		*/
 		TagHelper nextExternal(TagHelper from);
 	private:
-		ATXmlTag *config_tag;
-		ATXmlTag *listen;
-		ATXmlTag *limits;
-		ATXmlTag *system;
-		ATXmlTag *current;
+		XmlTag *config_tag;
+		XmlTag *listen;
+		XmlTag *limits;
+		XmlTag *system;
+		XmlTag *current;
 		std::string config_filename;
 };
 

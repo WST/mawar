@@ -122,7 +122,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	
 	if ( stanza->getCharacterData() == sha1(to + ":" + from + ":" + so->key) )
 	{
-		Stanza result = new ATXmlTag("db:verify");
+		Stanza result = new XmlTag("db:verify");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
 		result->setAttribute("id", stanza->getAttribute("id"));
@@ -132,7 +132,7 @@ void XMPPServerInput::onDBVerifyStanza(Stanza stanza)
 	}
 	else
 	{
-		Stanza result = new ATXmlTag("db:verify");
+		Stanza result = new XmlTag("db:verify");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
 		result->setAttribute("id", stanza->getAttribute("id"));
@@ -166,7 +166,7 @@ void XMPPServerInput::onDBResultStanza(Stanza stanza)
 		}
 	mutex.unlock();
 	
-	Stanza verify = new ATXmlTag("db:verify");
+	Stanza verify = new XmlTag("db:verify");
 	verify->setAttribute("from", to);
 	verify->setAttribute("to", from);
 	verify->setAttribute("id", id);

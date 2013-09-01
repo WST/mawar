@@ -39,12 +39,12 @@ Stanza Stanza::badRequest(JID server, JID reply_to, std::string id) {
 	//	<bad-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
 	//	</error>
 	// </iq>
-	ATXmlTag *iq = new ATXmlTag("iq");
+	XmlTag *iq = new XmlTag("iq");
 	return iq; // тег будет удалён в деструкторе станзы
 }
 
 Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", server.bare());
 	iq->setAttribute("to", reply_to.full());
 	iq->setAttribute("type", "result");
@@ -60,7 +60,7 @@ Stanza Stanza::serverVersion(JID server, JID reply_to, std::string id) {
 }
 
 Stanza Stanza::presence(JID from, JID to, ClientPresence p) {
-	Stanza presence = new ATXmlTag("presence");
+	Stanza presence = new XmlTag("presence");
 	presence->setAttribute("from", from.full());
 	presence->setAttribute("to", to.full());
 	presence["show"] = p.show;
@@ -78,7 +78,7 @@ Stanza Stanza::presence(JID from, JID to, ClientPresence p) {
 */
 Stanza Stanza::streamError(const std::string &condition, const std::string &message, const std::string &lang)
 {
-	Stanza error = new ATXmlTag("stream:error");
+	Stanza error = new XmlTag("stream:error");
 	error->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-streams");
 	error[condition];
 	
@@ -101,12 +101,12 @@ Stanza Stanza::streamError(const std::string &condition, const std::string &mess
 */
 Stanza Stanza::iqError(Stanza stanza, const std::string &condition, const std::string &type, const std::string &message, const std::string &lang)
 {
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", stanza.to().full());
 	iq->setAttribute("to", stanza.from().full());
 	iq->setAttribute("type", "error");
 	iq->setAttribute("id", stanza->getAttribute("id", ""));
-	//iq += (ATXmlTag*)stanza;
+	//iq += (XmlTag*)stanza;
 	
 	TagHelper error = iq["error"];
 	error->setAttribute("type", type);
@@ -126,12 +126,12 @@ Stanza Stanza::iqError(Stanza stanza, const std::string &condition, const std::s
 */
 Stanza Stanza::presenceError(Stanza stanza, const std::string &condition, const std::string &type, const std::string &message, const std::string &lang)
 {
-	Stanza iq = new ATXmlTag("presence");
+	Stanza iq = new XmlTag("presence");
 	iq->setAttribute("from", stanza.to().full());
 	iq->setAttribute("to", stanza.from().full());
 	iq->setAttribute("type", "error");
 	if ( stanza->hasAttribute("id") ) iq->setAttribute("id", stanza->getAttribute("id", ""));
-	//iq += (ATXmlTag*)stanza;
+	//iq += (XmlTag*)stanza;
 	
 	TagHelper error = iq["error"];
 	error->setAttribute("type", type);

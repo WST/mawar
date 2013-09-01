@@ -71,7 +71,7 @@ void XEP0114::onStanza(Stanza stanza)
 			if ( hash == stanza->getCharacterData() )
 			{
 				state = authorized;
-				reply = new ATXmlTag("handshake");
+				reply = new XmlTag("handshake");
 				sendStanza(reply);
 				delete reply;
 				XMPPStream::server->addDomain(this);
@@ -79,7 +79,7 @@ void XEP0114::onStanza(Stanza stanza)
 			}
 		}
 		
-		reply = new ATXmlTag("not-authorized");
+		reply = new XmlTag("not-authorized");
 		sendStanza(reply);
 		delete reply;
 		terminate();

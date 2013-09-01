@@ -1,6 +1,6 @@
 
 #include <tagbuilder.h>
-#include <xml_tag.h>
+#include <xml-tag.h>
 
 ATTagBuilder::ATTagBuilder(): presult(0) {
 
@@ -12,14 +12,14 @@ ATTagBuilder::~ATTagBuilder() {
 
 void ATTagBuilder::startElement(const std::string &name, const attributes_t &attributes, unsigned short int depth) {
 	if(stack.empty()) {
-		stack.push_back(new ATXmlTag(name, attributes, 0, depth));
+		stack.push_back(new XmlTag(name, attributes, 0, depth));
 	} else {
-		stack.push_back(new ATXmlTag(name, attributes, stack.back(), depth));
+		stack.push_back(new XmlTag(name, attributes, stack.back(), depth));
 	}
 }
 
 void ATTagBuilder::endElement(const std::string &name) {
-	ATXmlTag *current = stack.back();
+	XmlTag *current = stack.back();
 	stack.pop_back();
 	if(!stack.empty()) {
 		stack.back()->insertChildElement(current);
@@ -34,8 +34,8 @@ void ATTagBuilder::characterData(const std::string &cdata) {
 	}
 }
 
-ATXmlTag *ATTagBuilder::fetchResult() {
-	ATXmlTag *retval = presult;
+XmlTag *ATTagBuilder::fetchResult() {
+	XmlTag *retval = presult;
 	presult = 0;
 	return retval;
 }

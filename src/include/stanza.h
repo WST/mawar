@@ -2,7 +2,7 @@
 #ifndef MAWAR_STANZA_H
 #define MAWAR_STANZA_H
 
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <taghelper.h>
 #include <jid.h>
 #include <presence.h>
@@ -32,7 +32,7 @@ class Stanza: public TagHelper
 {
 	public:
 		Stanza() { }
-		Stanza(ATXmlTag *tag): TagHelper(tag) { }
+		Stanza(XmlTag *tag): TagHelper(tag) { }
 		Stanza(TagHelper tag): TagHelper(tag) { }
 		
 		JID from();

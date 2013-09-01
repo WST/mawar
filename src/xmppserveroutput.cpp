@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <attagparser.h>
+#include <xml-parser.h>
 #include <string>
 
 using namespace std;
@@ -195,7 +195,7 @@ void XMPPServerOutput::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns
 */
 void XMPPServerOutput::sendDBRequest(const std::string &from, const std::string &to)
 {
-	Stanza dbresult = new ATXmlTag("db:result");
+	Stanza dbresult = new XmlTag("db:result");
 	dbresult->setAttribute("from", from);
 	dbresult->setAttribute("to", to);
 	dbresult += sha1(from + ":" + to + ":" + key);
@@ -285,7 +285,7 @@ void XMPPServerOutput::onDBVerifyStanza(Stanza stanza)
 	{
 		// Шаг 4. вернуть результат в s2s-input
 		input->authorize(from, to, stanza->getAttribute("type") == "valid");
-		Stanza result = new ATXmlTag("db:result");
+		Stanza result = new XmlTag("db:result");
 		result->setAttribute("to", from);
 		result->setAttribute("from", to);
 		result->setAttribute("type", stanza->getAttribute("type"));

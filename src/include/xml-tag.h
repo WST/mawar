@@ -7,14 +7,14 @@
 
 // Mawar
 #include <xml_types.h>
-#include <attagparser.h>
+#include <xml-parser.h>
 
-class ATXmlTag
+class XmlTag
 {
 	public:
-		ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth);
-		ATXmlTag(std::string name);
-		~ATXmlTag();
+		XmlTag(std::string name, attributes_t tag_attributes, XmlTag *p, unsigned short int depth);
+		XmlTag(std::string name);
+		~XmlTag();
 		
 		// === потенциально устаревшие методы ===
 		// какие-то их них после ревизии перенесены в новые
@@ -25,10 +25,10 @@ class ATXmlTag
 		unsigned short int getDepth();
 		void insertCharacterData(std::string cdata);
 		std::string getCharacterData();
-		void insertChildElement(ATXmlTag *tag);
+		void insertChildElement(XmlTag *tag);
 		void insertAttribute(std::string name, std::string value);
 		tags_list_t getChildren();
-		ATXmlTag *getParent();
+		XmlTag *getParent();
 		void setNameSpace(std::string value);
 		void setNameSpace(std::string name, std::string value);
 		void setDefaultNameSpaceAttribute(std::string value);
@@ -36,11 +36,11 @@ class ATXmlTag
 		std::string getNameSpace();
 		std::string asString();
 		bool hasChild(std::string tag_name);
-		ATXmlTag *getChild(std::string tag_name);
-		ATXmlTag *getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value);
+		XmlTag *getChild(std::string tag_name);
+		XmlTag *getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value);
 		nodes_list_t getChildNodes();
 		attributes_t getAttributes();
-		ATXmlTag *clone();
+		XmlTag *clone();
 		
 		// === новые методы ===
 		
@@ -91,22 +91,22 @@ class ATXmlTag
 		* Вернуть первого потомка
 		* @return первый потомок или 0 если потомков нет
 		*/
-		ATXmlTag* firstChild();
+		XmlTag* firstChild();
 		
 		/**
 		* Вернуть следующего потомка следующего за тегом from
 		* @param from узел с которого нужно начать поиск
 		* @return найденый потомок или 0 если больше потомков нет
 		*/
-		ATXmlTag* nextChild(ATXmlTag *from);
+		XmlTag* nextChild(XmlTag *from);
 		
 		/**
 		* Вернуть первого потомка с именем name
 		* @param name имя искомого узла
 		* @return найденый узел или 0
 		*/
-		ATXmlTag* firstChild(const char *name);
-		ATXmlTag* firstChild(const std::string &name);
+		XmlTag* firstChild(const char *name);
+		XmlTag* firstChild(const std::string &name);
 		
 		/**
 		* Вернуть следующего потока с именем name следующего за тегом from
@@ -114,8 +114,8 @@ class ATXmlTag
 		* @param from узел с которого надо начать поиск
 		* @return найденый узел или 0 если больше потомков нет
 		*/
-		ATXmlTag* nextChild(const char *name, ATXmlTag *from);
-		ATXmlTag* nextChild(const std::string &name, ATXmlTag *from);
+		XmlTag* nextChild(const char *name, XmlTag *from);
+		XmlTag* nextChild(const std::string &name, XmlTag *from);
 		
 		/**
 		* Вернуть первый дочерний узел, какого бы типа он ни был
@@ -134,22 +134,22 @@ class ATXmlTag
 		* @param path путь к узлу
 		* @return найденый узел или 0 если узел не найден
 		*/
-		ATXmlTag* find(const char *path);
-		ATXmlTag* find(const std::string &path);
+		XmlTag* find(const char *path);
+		XmlTag* find(const std::string &path);
 		
 		/**
 		* Найти следующий узел
 		* @param path путь к узлу
 		* @return найденый узел или 0 если узлов больше нет
 		*/
-		ATXmlTag* findNext(const char *path, ATXmlTag *from);
-		ATXmlTag* findNext(const std::string &path, ATXmlTag *from);
+		XmlTag* findNext(const char *path, XmlTag *from);
+		XmlTag* findNext(const std::string &path, XmlTag *from);
 		
 		/**
 		* Проверить имеет ли потомка
 		* @note требуется для findNext
 		*/
-		bool hasChild(ATXmlTag *tag);
+		bool hasChild(XmlTag *tag);
 		
 		/**
 		* Удалить потомка с указанным именем
@@ -189,7 +189,7 @@ class ATXmlTag
 		attributes_t attributes;
 		tags_list_t children;
 		nodes_list_t childnodes;
-		ATXmlTag *parent;
+		XmlTag *parent;
 		std::string prefix;
 		
 		// ------- Статистика ------- //

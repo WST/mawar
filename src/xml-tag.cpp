@@ -1,5 +1,5 @@
 
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <iostream>
 #include <string.h>
 #include <nanosoft/xmlwriter.h>
@@ -10,19 +10,19 @@ using namespace nanosoft;
 /**
 * Текущее число выделенных тегов
 */
-unsigned ATXmlTag::tags_created = 0;
+unsigned XmlTag::tags_created = 0;
 
 /**
 * Текущее число освобожденных тегов
 */
-unsigned ATXmlTag::tags_destroyed = 0;
+unsigned XmlTag::tags_destroyed = 0;
 
 /**
 * Максимальное число выделенных тегов
 */
-unsigned ATXmlTag::tags_max_count;
+unsigned XmlTag::tags_max_count;
 
-ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, unsigned short int depth) {
+XmlTag::XmlTag(std::string name, attributes_t tag_attributes, XmlTag *p, unsigned short int depth) {
 	onTagCreate();
 	tag_cdata = "";
 	parent = p;
@@ -38,7 +38,7 @@ ATXmlTag::ATXmlTag(std::string name, attributes_t tag_attributes, ATXmlTag *p, u
 	}
 }
 
-ATXmlTag::ATXmlTag(std::string name) {
+XmlTag::XmlTag(std::string name) {
 	onTagCreate();
 	tag_cdata = "";
 	parent = 0;
@@ -46,7 +46,7 @@ ATXmlTag::ATXmlTag(std::string name) {
 	tag_name = name;
 }
 
-ATXmlTag::~ATXmlTag() {
+XmlTag::~XmlTag() {
 	onTagDestroy();
 	clear();
 }
@@ -54,7 +54,7 @@ ATXmlTag::~ATXmlTag() {
 /**
 * Вызывается при создании тега
 */
-void ATXmlTag::onTagCreate()
+void XmlTag::onTagCreate()
 {
 	tags_created++;
 	
@@ -65,64 +65,64 @@ void ATXmlTag::onTagCreate()
 /**
 * Вызывается при удалении тега
 */
-void ATXmlTag::onTagDestroy()
+void XmlTag::onTagDestroy()
 {
 	tags_destroyed++;
 }
 
-ATXmlTag *ATXmlTag::getParent() {
+XmlTag *XmlTag::getParent() {
 	return parent;
 }
 
-ATXmlTag *ATXmlTag::clone() {
+XmlTag *XmlTag::clone() {
 	return parse_xml_string(asString());
 }
 
-std::string ATXmlTag::getNameSpace() {
+std::string XmlTag::getNameSpace() {
 	return prefix;
 }
 
-std::string ATXmlTag::name() {
+std::string XmlTag::name() {
 	return tag_name;
 }
 
-unsigned short int ATXmlTag::getDepth() {
+unsigned short int XmlTag::getDepth() {
 	return tag_depth;
 }
 
-void ATXmlTag::insertChildElement(ATXmlTag *tag) {
+void XmlTag::insertChildElement(XmlTag *tag) {
 	ATXmlNode *node = new ATXmlNode(TTag, tag);
 	tag->parent = this;
 	children.push_back(tag);
 	childnodes.push_back(node);
 }
 
-tags_list_t ATXmlTag::getChildren() {
+tags_list_t XmlTag::getChildren() {
 	return children;
 }
 
-void ATXmlTag::insertAttribute(std::string name, std::string value) {
+void XmlTag::insertAttribute(std::string name, std::string value) {
 	attributes[name] = value;
 }
 
-void ATXmlTag::setNameSpace(std::string value) {
+void XmlTag::setNameSpace(std::string value) {
 	prefix = value;
 }
 
-void ATXmlTag::setNameSpaceAttribute(std::string name, std::string value) {
+void XmlTag::setNameSpaceAttribute(std::string name, std::string value) {
 	insertAttribute("xmlns:" + name, value);
 }
 
-void ATXmlTag::setDefaultNameSpaceAttribute(std::string value) {
+void XmlTag::setDefaultNameSpaceAttribute(std::string value) {
 	insertAttribute("xmlns", value);
 }
 
-void ATXmlTag::insertCharacterData(std::string cdata) {
+void XmlTag::insertCharacterData(std::string cdata) {
 	ATXmlNode *node = new ATXmlNode(TCharacterData, cdata);
 	childnodes.push_back(node);
 }
 
-std::string ATXmlTag::getCharacterData() {
+std::string XmlTag::getCharacterData() {
 	std::string cdata = "";
 	for(nodes_list_t::iterator it = childnodes.begin(); it != childnodes.end(); it++) {
 		if ( (*it)->type == TCharacterData ) {
@@ -132,7 +132,7 @@ std::string ATXmlTag::getCharacterData() {
 	return cdata;
 }
 
-std::string ATXmlTag::asString() {
+std::string XmlTag::asString() {
 	std::string xml = "<";
 	if(!prefix.empty()) {
 		xml += prefix + ":";
@@ -165,15 +165,15 @@ std::string ATXmlTag::asString() {
 	return xml;
 }
 
-attributes_t ATXmlTag::getAttributes() {
+attributes_t XmlTag::getAttributes() {
 	return attributes;
 }
 
-bool ATXmlTag::hasChild(std::string tag_name) {
+bool XmlTag::hasChild(std::string tag_name) {
 	return (bool) getChild(tag_name);
 }
 
-ATXmlTag *ATXmlTag::getChild(std::string tag_name) {
+XmlTag *XmlTag::getChild(std::string tag_name) {
 	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
 		if((*it)->name() == tag_name) {
 			return *it;
@@ -182,7 +182,7 @@ ATXmlTag *ATXmlTag::getChild(std::string tag_name) {
 	return 0;
 }
 
-ATXmlTag *ATXmlTag::getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value) {
+XmlTag *XmlTag::getChildByAttribute(std::string tag_name, std::string attribute, std::string attribute_value) {
 	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
 		if((*it)->name() == tag_name) {
 			if((*it)->hasAttribute(attribute) && (*it)->getAttribute(attribute) == attribute_value) {
@@ -195,11 +195,11 @@ ATXmlTag *ATXmlTag::getChildByAttribute(std::string tag_name, std::string attrib
 	return 0;
 }
 
-nodes_list_t ATXmlTag::getChildNodes() {
+nodes_list_t XmlTag::getChildNodes() {
 	return childnodes;
 }
 
-std::string ATXmlTag::getChildValue(std::string tag_name, std::string default_value) {
+std::string XmlTag::getChildValue(std::string tag_name, std::string default_value) {
   return hasChild(tag_name) ? getChild(tag_name)->getCharacterData() : default_value;
 }
 
@@ -208,7 +208,7 @@ std::string ATXmlTag::getChildValue(std::string tag_name, std::string default_va
 * @param name имя атрибута
 * @return TRUE - атрибут есть, FALSE - атрибута нет
 */
-bool ATXmlTag::hasAttribute(const std::string &name)
+bool XmlTag::hasAttribute(const std::string &name)
 {
 	return attributes.find(name) != attributes.end();
 }
@@ -219,7 +219,7 @@ bool ATXmlTag::hasAttribute(const std::string &name)
 * @param default_value значение по умолчанию если атрибута нет
 * @return значение атрибута
 */
-const std::string& ATXmlTag::getAttribute(const std::string &name, const std::string &default_value)
+const std::string& XmlTag::getAttribute(const std::string &name, const std::string &default_value)
 {
 	attributes_t::iterator attr = attributes.find(name);
 	return attr != attributes.end() ? attr->second : default_value;
@@ -234,7 +234,7 @@ const std::string& ATXmlTag::getAttribute(const std::string &name, const std::st
 * @param name имя атрибута
 * @param value новое значение атрибута
 */
-void ATXmlTag::setAttribute(const std::string &name, const std::string &value)
+void XmlTag::setAttribute(const std::string &name, const std::string &value)
 {
 	attributes[name] = value;
 }
@@ -246,7 +246,7 @@ void ATXmlTag::setAttribute(const std::string &name, const std::string &value)
 *
 * @param name имя удаляемого атрибута
 */
-void ATXmlTag::removeAttribute(const std::string &name)
+void XmlTag::removeAttribute(const std::string &name)
 {
 	attributes.erase(name);
 }
@@ -254,7 +254,7 @@ void ATXmlTag::removeAttribute(const std::string &name)
 /**
 * Вернуть первого потомка
 */
-ATXmlTag* ATXmlTag::firstChild()
+XmlTag* XmlTag::firstChild()
 {
 	tags_list_t::iterator iter = children.begin();
 	return iter != children.end() ? *iter : 0;
@@ -263,7 +263,7 @@ ATXmlTag* ATXmlTag::firstChild()
 /**
 * Вернуть следующего потомка следующего за тегом from
 */
-ATXmlTag* ATXmlTag::nextChild(ATXmlTag *from)
+XmlTag* XmlTag::nextChild(XmlTag *from)
 {
 	for(tags_list_t::iterator iter = children.begin(); iter != children.end(); ++iter)
 	{
@@ -279,7 +279,7 @@ ATXmlTag* ATXmlTag::nextChild(ATXmlTag *from)
 /**
 * Вернуть первого потомка с именем name
 */
-ATXmlTag* ATXmlTag::firstChild(const char *name)
+XmlTag* XmlTag::firstChild(const char *name)
 {
 	for(tags_list_t::iterator iter = children.begin(); iter != children.end(); ++iter)
 	{
@@ -291,7 +291,7 @@ ATXmlTag* ATXmlTag::firstChild(const char *name)
 /**
 * Вернуть первого потомка с именем name
 */
-ATXmlTag* ATXmlTag::firstChild(const std::string &name)
+XmlTag* XmlTag::firstChild(const std::string &name)
 {
 	return firstChild(name.c_str());
 }
@@ -299,7 +299,7 @@ ATXmlTag* ATXmlTag::firstChild(const std::string &name)
 /**
 * Вернуть следующего потока с именем name следующего за тегом from
 */
-ATXmlTag* ATXmlTag::nextChild(const char *name, ATXmlTag *from)
+XmlTag* XmlTag::nextChild(const char *name, XmlTag *from)
 {
 	for(tags_list_t::iterator iter = children.begin(); iter != children.end(); ++iter)
 	{
@@ -318,7 +318,7 @@ ATXmlTag* ATXmlTag::nextChild(const char *name, ATXmlTag *from)
 /**
 * Вернуть следующего потока с именем name следующего за тегом from
 */
-ATXmlTag* ATXmlTag::nextChild(const std::string &name, ATXmlTag *from)
+XmlTag* XmlTag::nextChild(const std::string &name, XmlTag *from)
 {
 	return nextChild(name.c_str(), from);
 }
@@ -326,7 +326,7 @@ ATXmlTag* ATXmlTag::nextChild(const std::string &name, ATXmlTag *from)
 /**
 * Вернуть первый дочерний узел, какого бы типа он ни был
 */
-ATXmlNode* ATXmlTag::firstChildNode()
+ATXmlNode* XmlTag::firstChildNode()
 {
 	nodes_list_t::iterator iter = childnodes.begin();
 	return iter != childnodes.end() ? *iter : 0;
@@ -335,7 +335,7 @@ ATXmlNode* ATXmlTag::firstChildNode()
 /**
 * Вернуть следующий дочерний узел, какого бы типа он ни был
 */
-ATXmlNode* ATXmlTag::nextChildNode(ATXmlNode* from)
+ATXmlNode* XmlTag::nextChildNode(ATXmlNode* from)
 {
 	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
 	{
@@ -351,7 +351,7 @@ ATXmlNode* ATXmlTag::nextChildNode(ATXmlNode* from)
 /**
 * Найти первого потомка по указанному пути
 */
-ATXmlTag* ATXmlTag::find(const char *path)
+XmlTag* XmlTag::find(const char *path)
 {
 	const char *remain = strchr(path, '/');
 	if ( remain == 0 ) return firstChild(path);
@@ -359,9 +359,9 @@ ATXmlTag* ATXmlTag::find(const char *path)
 	// TODO выделять строку во временном буфере
 	string name(path, remain++);
 	
-	for(ATXmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
+	for(XmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
 	{
-		ATXmlTag *result = child->find(remain);
+		XmlTag *result = child->find(remain);
 		if ( result ) return result;
 	}
 	
@@ -371,7 +371,7 @@ ATXmlTag* ATXmlTag::find(const char *path)
 /**
 * Найти первого потомка по указанному пути
 */
-ATXmlTag* ATXmlTag::find(const std::string &path)
+XmlTag* XmlTag::find(const std::string &path)
 {
 	return find(path.c_str());
 }
@@ -381,7 +381,7 @@ ATXmlTag* ATXmlTag::find(const std::string &path)
 * @param path путь к узлу
 * @return найденый узел или 0 если узлов больше нет
 */
-ATXmlTag* ATXmlTag::findNext(const char *path, ATXmlTag *from)
+XmlTag* XmlTag::findNext(const char *path, XmlTag *from)
 {
 	const char *remain = strchr(path, '/');
 	if ( remain == 0 ) return nextChild(path, from);
@@ -389,19 +389,19 @@ ATXmlTag* ATXmlTag::findNext(const char *path, ATXmlTag *from)
 	// TODO выделять строку во временном буфере
 	string name(path, remain++);
 	
-	ATXmlTag *parent = from->parent;
+	XmlTag *parent = from->parent;
 	
-	for(ATXmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
+	for(XmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
 	{
 		if ( child->hasChild(from) )
 		{
-			ATXmlTag *result = child->findNext(remain, from);
+			XmlTag *result = child->findNext(remain, from);
 			if ( result ) return result;
 			
 			child = nextChild(name.c_str(), child);
 			for(; child; child = nextChild(name.c_str(), child))
 			{
-				ATXmlTag *result = child->find(remain);
+				XmlTag *result = child->find(remain);
 				if ( result ) return result;
 			}
 			
@@ -417,7 +417,7 @@ ATXmlTag* ATXmlTag::findNext(const char *path, ATXmlTag *from)
 * @param path путь к узлу
 * @return найденый узел или 0 если узлов больше нет
 */
-ATXmlTag* ATXmlTag::findNext(const std::string &path, ATXmlTag *from)
+XmlTag* XmlTag::findNext(const std::string &path, XmlTag *from)
 {
 	return findNext(path.c_str(), from);
 }
@@ -426,7 +426,7 @@ ATXmlTag* ATXmlTag::findNext(const std::string &path, ATXmlTag *from)
 * Проверить имеет ли потомка
 * @note требуется для findNext
 */
-bool ATXmlTag::hasChild(ATXmlTag *tag)
+bool XmlTag::hasChild(XmlTag *tag)
 {
 	// тег не является своим родителем
 	if ( tag == this ) return false;
@@ -440,7 +440,7 @@ bool ATXmlTag::hasChild(ATXmlTag *tag)
 /**
 * Удалить потомка с указанным именем
 */
-void ATXmlTag::removeChild(const char *name)
+void XmlTag::removeChild(const char *name)
 {
 	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
 	{
@@ -458,7 +458,7 @@ void ATXmlTag::removeChild(const char *name)
 /**
 * Удалить потомка с указанным именем
 */
-void ATXmlTag::removeChild(const std::string &name)
+void XmlTag::removeChild(const std::string &name)
 {
 	for(nodes_list_t::iterator iter = childnodes.begin(); iter != childnodes.end(); ++iter)
 	{
@@ -476,7 +476,7 @@ void ATXmlTag::removeChild(const std::string &name)
 /**
 * Удалить всех потомков
 */
-void ATXmlTag::clear()
+void XmlTag::clear()
 {
 	for(tags_list_t::iterator it = children.begin(); it != children.end(); it++) {
 		delete *it;

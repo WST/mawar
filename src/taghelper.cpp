@@ -11,11 +11,11 @@
 * @param t добавляемый тег
 * @return добавленный тег
 */
-ATXmlTag* TagHelper::operator += (ATXmlTag *t)
+XmlTag* TagHelper::operator += (XmlTag *t)
 {
 	if ( t->getParent() != 0 )
 	{
-		fprintf(stderr, "[TagHelper::operator += (ATXmlTag *)] TODO Если у тега есть родитель, то добавляется его копия\n");
+		fprintf(stderr, "[TagHelper::operator += (XmlTag *)] TODO Если у тега есть родитель, то добавляется его копия\n");
 		return t;
 	}
 	tag->insertChildElement(t);
@@ -34,15 +34,15 @@ ATXmlTag* TagHelper::operator += (ATXmlTag *t)
 */
 TagHelper TagHelper::operator [] (const char *path)
 {
-	ATXmlTag *cur = tag;
-	ATXmlTag *child;
+	XmlTag *cur = tag;
+	XmlTag *child;
 	const char *remain = strchr(path, '/');
 	while ( remain ) {
 		std::string name(path, remain);
 		
 		child = cur->firstChild(name.c_str());
 		if ( child == 0 ) {
-			child = new ATXmlTag(name);
+			child = new XmlTag(name);
 			cur->insertChildElement(child);
 		}
 		cur = child;
@@ -53,7 +53,7 @@ TagHelper TagHelper::operator [] (const char *path)
 	
 	child = tag->firstChild(path);
 	if ( child == 0 ) {
-		child = new ATXmlTag(path);
+		child = new XmlTag(path);
 		cur->insertChildElement(child);
 	}
 	

@@ -1,7 +1,7 @@
 
 #include <configfile.h>
 #include <cstdlib>
-#include <attagparser.h>
+#include <xml-parser.h>
 #include <defaults.h>
 
 #include <stdio.h>
@@ -106,7 +106,7 @@ int ConfigFile::xep0114()
 /**
 * Вернуть первый виртуальный хост
 */
-ATXmlTag *ConfigFile::firstHost()
+XmlTag *ConfigFile::firstHost()
 {
 	return config_tag->find("hosts/host");
 }
@@ -114,7 +114,7 @@ ATXmlTag *ConfigFile::firstHost()
 /**
 * Вернуть следующий виртуальный хост
 */
-ATXmlTag *ConfigFile::nextHost(ATXmlTag *from)
+XmlTag *ConfigFile::nextHost(XmlTag *from)
 {
 	return config_tag->findNext("hosts/host", from);
 }

@@ -186,10 +186,10 @@ void XMPPStream::onParseError(const char *message)
 */
 void XMPPStream::onBeforeStanza()
 {
-	tags_created_before_stanza = ATXmlTag::getTagsCreated();
-	tags_destroyed_before_stanza = ATXmlTag::getTagsDestroyed();
+	tags_created_before_stanza = XmlTag::getTagsCreated();
+	tags_destroyed_before_stanza = XmlTag::getTagsDestroyed();
 	
-	//printf("onBeforeStanza: tag_count: %d, max_count: %d\n", ATXmlTag::getTagsCount(), ATXmlTag::getTagsMaxCount());
+	//printf("onBeforeStanza: tag_count: %d, max_count: %d\n", XmlTag::getTagsCount(), XmlTag::getTagsMaxCount());
 }
 
 /**
@@ -197,8 +197,8 @@ void XMPPStream::onBeforeStanza()
 */
 void XMPPStream::onAfterStanza()
 {
-	tags_created_for_stanza = ATXmlTag::getTagsCreated() - tags_created_before_stanza;
-	tags_destroyed_for_stanza = ATXmlTag::getTagsDestroyed() - tags_destroyed_before_stanza;
+	tags_created_for_stanza = XmlTag::getTagsCreated() - tags_created_before_stanza;
+	tags_destroyed_for_stanza = XmlTag::getTagsDestroyed() - tags_destroyed_before_stanza;
 	
 	if ( tags_created_for_stanza > tags_max_created_for_stanza )
 	{

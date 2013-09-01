@@ -1,51 +1,51 @@
-#ifndef MAWAR_ATTAGPARSER_H
-#define MAWAR_ATTAGPARSER_H
+#ifndef MAWAR_XML_PARSER_H
+#define MAWAR_XML_PARSER_H
 
 #include <nanosoft/xmlparser.h>
 #include <nanosoft/stream.h>
 #include <xml_types.h>
-#include <xml_tag.h>
+#include <xml-tag.h>
 #include <tagbuilder.h>
 
 /**
 * Паресер XML-файлов
 *
-* ATTagParser парсит файл целиком в один ATXmlTag
+* XmlParser парсит файл целиком в один XmlTag
 */
-class ATTagParser: protected nanosoft::XMLParser, protected ATTagBuilder
+class XmlParser: protected nanosoft::XMLParser, protected ATTagBuilder
 {
 public:
 	/**
 	* Конструктор парсера
 	*/
-	ATTagParser();
+	XmlParser();
 	
 	/**
 	* Деструктор парсера
 	*/
-	~ATTagParser();
+	~XmlParser();
 	
 	/**
 	* Парсинг файла
 	* @param path путь к файлу
 	* @return тег в случае успеха и NULL в случае ошибки
 	*/
-	ATXmlTag * parseFile(const char *path);
-	ATXmlTag * parseFile(const std::string &path);
+	XmlTag * parseFile(const char *path);
+	XmlTag * parseFile(const std::string &path);
 	
 	/**
 	* Парсинг произвольного потока
 	* @param s поток с данными
 	* @return тег в случае успеха и NULL в случае ошибки
 	*/
-	ATXmlTag * parseStream(nanosoft::stream &s);
+	XmlTag * parseStream(nanosoft::stream &s);
 	
 	/**
 	* Парсинг строки
 	* @param xml XML
 	* @return тег в случае успеха и NULL в случае ошибки
 	*/
-	ATXmlTag * parseString(const std::string &xml);
+	XmlTag * parseString(const std::string &xml);
 	
 protected:
 	/**
@@ -79,21 +79,21 @@ private:
 * @param path путь к файлу
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_file(const char *path);
-ATXmlTag * parse_xml_file(const std::string &path);
+XmlTag * parse_xml_file(const char *path);
+XmlTag * parse_xml_file(const std::string &path);
 
 /**
 * Парсинг произвольного потока
 * @param s поток с данными
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_stream(nanosoft::stream &s);
+XmlTag * parse_xml_stream(nanosoft::stream &s);
 
 /**
 * Парсинг произвольной строки
 * @param xml XML
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_string(const std::string &xml);
+XmlTag * parse_xml_string(const std::string &xml);
 
-#endif // MAWAR_ATTAGPARSER_H
+#endif // MAWAR_XML_PARSER_H

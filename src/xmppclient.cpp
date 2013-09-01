@@ -56,7 +56,7 @@ void XMPPClient::onTerminate()
 	{
 		if ( available )
 		{
-			Stanza presence = new ATXmlTag("presence");
+			Stanza presence = new XmlTag("presence");
 			presence->setAttribute("from", client_jid.full());
 			presence->setAttribute("type", "unavailable");
 			presence["status"] = "Connection was lost";
@@ -159,7 +159,7 @@ void XMPPClient::onSASLStep(const std::string &input)
 		client_jid.setUsername(vhost->getUsername(sasl));
 		user_id = vhost->getUserId(client_jid.username());
 		vhost->GSASLServer::close(sasl);
-		stanza = new ATXmlTag("success");
+		stanza = new XmlTag("success");
 		stanza->insertCharacterData(output);
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 		authorized = true;
@@ -170,7 +170,7 @@ void XMPPClient::onSASLStep(const std::string &input)
 		delete stanza;
 		break;
 	case SASLServer::next:
-		stanza = new ATXmlTag("challenge");
+		stanza = new XmlTag("challenge");
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
 		stanza->insertCharacterData(output);
 		sendStanza(stanza);
@@ -178,9 +178,9 @@ void XMPPClient::onSASLStep(const std::string &input)
 		break;
 	case SASLServer::error:
 		vhost->GSASLServer::close(sasl);
-		stanza = new ATXmlTag("failure");
+		stanza = new XmlTag("failure");
 		stanza->setAttribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl");
-		stanza += new ATXmlTag("temporary-auth-failure");
+		stanza += new XmlTag("temporary-auth-failure");
 		sendStanza(stanza);
 		delete stanza;
 		break;
@@ -206,7 +206,7 @@ void XMPPClient::handleCompress(Stanza stanza)
 {
 	if ( ! canCompression( stanza["method"]->getCharacterData().c_str() ) )
 	{
-		Stanza failure = new ATXmlTag("failure");
+		Stanza failure = new XmlTag("failure");
 		failure->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
 		failure["unsupported-method"];
 		sendStanza(failure);
@@ -215,7 +215,7 @@ void XMPPClient::handleCompress(Stanza stanza)
 	}
 	
 	compression = true;
-	Stanza compressed = new ATXmlTag("compressed");
+	Stanza compressed = new XmlTag("compressed");
 	compressed->setDefaultNameSpaceAttribute("http://jabber.org/protocol/compress");
 	sendStanza(compressed);
 	delete compressed;
@@ -243,7 +243,7 @@ void XMPPClient::handleStartTLS(Stanza stanza)
 	}
 	
 #ifdef HAVE_GNUTLS
-	Stanza proceed = new ATXmlTag("proceed");
+	Stanza proceed = new XmlTag("proceed");
 	proceed->setDefaultNameSpaceAttribute("urn:ietf:params:xml:ns:xmpp-tls");
 	sendStanza(proceed);
 	delete proceed;
@@ -301,7 +301,7 @@ void XMPPClient::onIqStanza(Stanza stanza)
 	{
 		//vhost->xmpp_error_queries++;
 		
-		Stanza result = new ATXmlTag("iq");
+		Stanza result = new XmlTag("iq");
 		result->setAttribute("from", vhost->hostname());
 		result->setAttribute("type", "error");
 		result->setAttribute("id", stanza->getAttribute("id"));
@@ -378,7 +378,7 @@ void XMPPClient::handlePresenceBroadcast(Stanza stanza)
 */
 void XMPPClient::handlePresenceProbes()
 {
-	Stanza probe = new ATXmlTag("presence");
+	Stanza probe = new XmlTag("presence");
 	probe->setAttribute("type", "probe");
 	probe->setAttribute("from", client_jid.full());
 	DB::result r = vhost->db.query("SELECT contact_jid FROM roster JOIN users ON roster.id_user = users.id_user WHERE user_login = %s AND contact_subscription IN ('T', 'B')", vhost->db.quote(client_jid.username()).c_str());
@@ -455,7 +455,7 @@ void XMPPClient::handlePresenceSubscribe(Stanza stanza)
 {
 	std::string to = stanza.to().bare();
 	
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("type", "set");
 	TagHelper query = iq["query"];
 	query->setDefaultNameSpaceAttribute("jabber:iq:roster");
@@ -490,7 +490,7 @@ void XMPPClient::handlePresenceSubscribed(Stanza stanza)
 {
 	std::string to = stanza.to().bare();
 	
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	TagHelper query = iq["query"];
 	query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 	TagHelper item = query["item"];
@@ -545,7 +545,7 @@ void XMPPClient::handlePresenceUnsubscribe(Stanza stanza)
 		);
 	if ( ! r.eof() )
 	{
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		TagHelper query = iq["query"];
 		query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 		TagHelper item = query["item"];
@@ -589,7 +589,7 @@ void XMPPClient::handlePresenceUnsubscribed(Stanza stanza)
 	{
 		if ( r["contact_subscription"] == "F" || r["contact_subscription"] == "B" )
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item = query["item"];
@@ -655,7 +655,7 @@ void XMPPClient::onPresenceStanza(Stanza stanza)
 		
 		//vhost->xmpp_error_queries++;
 		
-		Stanza result = new ATXmlTag("presence");
+		Stanza result = new XmlTag("presence");
 		result->setAttribute("from", stanza.to().full());
 		result->setAttribute("to", stanza.from().full());
 		result->setAttribute("type", "error");
@@ -729,7 +729,7 @@ void XMPPClient::onMessageStanza(Stanza stanza)
 	
 	//vhost->xmpp_error_queries++;
 	
-	Stanza result = new ATXmlTag("message");
+	Stanza result = new XmlTag("message");
 	result->setAttribute("from", stanza.to().full());
 	result->setAttribute("to", stanza.from().full());
 	result->setAttribute("type", "error");
@@ -752,7 +752,7 @@ void XMPPClient::handleRosterGet(Stanza stanza)
 {
 	use_roster = true;
 	
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("to", client_jid.full());
 	iq->setAttribute("type", "result");
 	if( stanza->hasAttribute("id") ) iq->setAttribute("id", stanza.id());
@@ -763,7 +763,7 @@ void XMPPClient::handleRosterGet(Stanza stanza)
 	// Впихнуть элементы ростера тут
 	// TODO: ожидание авторизации (pending)
 	const char *subscription;
-	ATXmlTag *item;
+	XmlTag *item;
 	
 	DB::result r = vhost->db.query(
 		"SELECT roster.* FROM roster"
@@ -779,7 +779,7 @@ void XMPPClient::handleRosterGet(Stanza stanza)
 		else if( r["contact_subscription"] == "B" ) subscription = "both";
 		else subscription = "none";
 		
-		item = new ATXmlTag("item");
+		item = new XmlTag("item");
 		item->setAttribute("subscription", subscription);
 		item->setAttribute("jid", r["contact_jid"]);
 		item->setAttribute("name", r["contact_nick"]);
@@ -824,7 +824,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 			vhost->db.quote(item["group"]).c_str() // contact_group
 		);
 		
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("type", "set");
 		TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
@@ -857,7 +857,7 @@ void XMPPClient::handleRosterItemSet(TagHelper item)
 			contact_id
 			);
 		
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("type", "set");
 		TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
@@ -895,7 +895,7 @@ void XMPPClient::handleRosterItemRemove(TagHelper item)
 	int contact_id = atoi(r["id_contact"].c_str());
 	r.free();
 	
-	Stanza presence = new ATXmlTag("presence");
+	Stanza presence = new XmlTag("presence");
 	presence->setAttribute("from", client_jid.bare());
 	presence->setAttribute("to", item->getAttribute("jid"));
 	
@@ -911,7 +911,7 @@ void XMPPClient::handleRosterItemRemove(TagHelper item)
 	
 	vhost->db.query("DELETE FROM roster WHERE id_contact = %d", contact_id);
 	
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("type", "set");
 	TagHelper query = iq["query"];
 		query->setDefaultNameSpaceAttribute("jabber:iq:roster");
@@ -976,7 +976,7 @@ void XMPPClient::handleRosterSet(Stanza stanza)
 		item = query->nextChild("item", item);
 	}
 	
-	Stanza result = new ATXmlTag("iq");
+	Stanza result = new XmlTag("iq");
 	result->setAttribute("to", client_jid.full());
 	result->setAttribute("type", "result");
 	if ( stanza->hasAttribute("to") ) result->setAttribute("id", stanza.id());
@@ -1029,7 +1029,7 @@ void XMPPClient::handleIQRegister(Stanza stanza)
 	
 	if ( stanza->getAttribute("type") == "get" )
 	{
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("from", vhost->hostname());
 		iq->setAttribute("type", "result");
 		iq->setAttribute("id", stanza->getAttribute("id"));
@@ -1066,7 +1066,7 @@ void XMPPClient::handleIQRegister(Stanza stanza)
 		
 		if ( vhost->addUser(username, password) )
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("type", "result");
 			iq->setAttribute("from", vhost->hostname());
 			iq->setAttribute("id", stanza->getAttribute("id"));
@@ -1118,7 +1118,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 	}
 	flush();
 	
-	Stanza features = new ATXmlTag("stream:features");
+	Stanza features = new XmlTag("stream:features");
 	if ( ! authorized )
 	{
 		client_jid.setHostname(vhost->hostname());
@@ -1136,7 +1136,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 				if ( *pos == "SECURID" ) continue;
 			}
 			
-			Stanza mechanism = new ATXmlTag("mechanism");
+			Stanza mechanism = new XmlTag("mechanism");
 			mechanism->insertCharacterData(*pos);
 			stanza->insertChildElement(mechanism);
 		}
@@ -1162,7 +1162,7 @@ void XMPPClient::onStartStream(const std::string &name, const attributes_t &attr
 			
 			while ( *methods )
 			{
-				ATXmlTag *method = new ATXmlTag("method");
+				XmlTag *method = new XmlTag("method");
 				method->insertCharacterData(*methods);
 				stanza += method;
 				methods++;

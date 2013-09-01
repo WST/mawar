@@ -5,11 +5,11 @@ AdHocCommand::AdHocCommand()
 {
 }
 
-AdHocCommand::AdHocCommand(Stanza stanza): Stanza((ATXmlTag*)stanza)
+AdHocCommand::AdHocCommand(Stanza stanza): Stanza((XmlTag*)stanza)
 {
 }
 
-AdHocCommand::AdHocCommand(ATXmlTag *tag): Stanza(tag)
+AdHocCommand::AdHocCommand(XmlTag *tag): Stanza(tag)
 {
 }
 
@@ -18,7 +18,7 @@ AdHocCommand::AdHocCommand(ATXmlTag *tag): Stanza(tag)
 */
 AdHocCommand AdHocCommand::reply(Stanza stanza)
 {
-	Stanza reply = new ATXmlTag("iq");
+	Stanza reply = new XmlTag("iq");
 	reply->setAttribute("from", stanza.to().full());
 	reply->setAttribute("to", stanza.from().full());
 	reply->setAttribute("id", stanza->getAttribute("id"));
@@ -272,9 +272,9 @@ TagHelper AdHocCommand::lookupField(const char *name)
 {
 	TagHelper field = findField(name);
 	if ( field ) return field;
-	field = new ATXmlTag("field");
+	field = new XmlTag("field");
 	field->setAttribute("var", name);
-	(*this)["command"]["x"] += (ATXmlTag*)field;
+	(*this)["command"]["x"] += (XmlTag*)field;
 	return field;
 }
 

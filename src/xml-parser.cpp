@@ -1,4 +1,4 @@
-#include <attagparser.h>
+#include <xml-parser.h>
 #include <nanosoft/fstream.h>
 #include <iostream>
 
@@ -8,14 +8,14 @@ using namespace nanosoft;
 /**
 * Конструктор парсера
 */
-ATTagParser::ATTagParser()
+XmlParser::XmlParser()
 {
 }
 
 /**
 * Деструктор потока
 */
-ATTagParser::~ATTagParser()
+XmlParser::~XmlParser()
 {
 }
 
@@ -24,11 +24,11 @@ ATTagParser::~ATTagParser()
 * @param path путь к файлу
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * ATTagParser::parseFile(const char *path)
+XmlTag * XmlParser::parseFile(const char *path)
 {
 	fstream file;
 	if ( ! file.open(path, fstream::ro) ) {
-		std::cerr << "[ATTagParser] file not found: " << path << std::endl;
+		std::cerr << "[XmlParser] file not found: " << path << std::endl;
 		return 0;
 	}
 	return parseStream(file);
@@ -39,7 +39,7 @@ ATXmlTag * ATTagParser::parseFile(const char *path)
 * @param path путь к файлу
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * ATTagParser::parseFile(const std::string &path)
+XmlTag * XmlParser::parseFile(const std::string &path)
 {
 	return parseFile(path.c_str());
 }
@@ -49,7 +49,7 @@ ATXmlTag * ATTagParser::parseFile(const std::string &path)
 * @param path путь к файлу
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * ATTagParser::parseStream(nanosoft::stream &s)
+XmlTag * XmlParser::parseStream(nanosoft::stream &s)
 {
 	depth = 0;
 	char buf[4096];
@@ -81,7 +81,7 @@ ATXmlTag * ATTagParser::parseStream(nanosoft::stream &s)
 * @param xml XML
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * ATTagParser::parseString(const std::string &xml)
+XmlTag * XmlParser::parseString(const std::string &xml)
 {
 	depth = 0;
 	if ( parseXML(xml.c_str(), xml.length(), true) )
@@ -95,7 +95,7 @@ ATXmlTag * ATTagParser::parseString(const std::string &xml)
 /**
 * Обработчик открытия тега
 */
-void ATTagParser::onStartElement(const std::string &name, const nanosoft::XMLParser::attributtes_t &attributes)
+void XmlParser::onStartElement(const std::string &name, const nanosoft::XMLParser::attributtes_t &attributes)
 {
 	depth ++;
 	startElement(name, attributes, depth);
@@ -104,7 +104,7 @@ void ATTagParser::onStartElement(const std::string &name, const nanosoft::XMLPar
 /**
 * Обработчик символьных данных
 */
-void ATTagParser::onCharacterData(const std::string &cdata)
+void XmlParser::onCharacterData(const std::string &cdata)
 {
 	characterData(cdata);
 }
@@ -112,7 +112,7 @@ void ATTagParser::onCharacterData(const std::string &cdata)
 /**
 * Обработчик закрытия тега
 */
-void ATTagParser::onEndElement(const std::string &name)
+void XmlParser::onEndElement(const std::string &name)
 {
 	endElement(name);
 	depth --;
@@ -121,9 +121,9 @@ void ATTagParser::onEndElement(const std::string &name)
 /**
 * Обработчик ошибок парсера
 */
-void ATTagParser::onParseError(const char *message)
+void XmlParser::onParseError(const char *message)
 {
-	std::cerr << "ATTagParser::onParseError: "<< message << std::endl;
+	std::cerr << "XmlParser::onParseError: "<< message << std::endl;
 }
 
 /**
@@ -131,9 +131,9 @@ void ATTagParser::onParseError(const char *message)
 * @param path путь к файлу
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_file(const char *path)
+XmlTag * parse_xml_file(const char *path)
 {
-	ATTagParser parser;
+	XmlParser parser;
 	return parser.parseFile(path);
 }
 
@@ -142,9 +142,9 @@ ATXmlTag * parse_xml_file(const char *path)
 * @param path путь к файлу
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_file(const std::string &path)
+XmlTag * parse_xml_file(const std::string &path)
 {
-	ATTagParser parser;
+	XmlParser parser;
 	return parser.parseFile(path);
 }
 
@@ -153,9 +153,9 @@ ATXmlTag * parse_xml_file(const std::string &path)
 * @param s поток с данными
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_stream(nanosoft::stream &s)
+XmlTag * parse_xml_stream(nanosoft::stream &s)
 {
-	ATTagParser parser;
+	XmlParser parser;
 	return parser.parseStream(s);
 }
 
@@ -164,8 +164,8 @@ ATXmlTag * parse_xml_stream(nanosoft::stream &s)
 * @param xml XML
 * @return тег в случае успеха и NULL в случае ошибки
 */
-ATXmlTag * parse_xml_string(const std::string &xml)
+XmlTag * parse_xml_string(const std::string &xml)
 {
-	ATTagParser parser;
+	XmlParser parser;
 	return parser.parseString(xml);
 }

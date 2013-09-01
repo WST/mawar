@@ -11,7 +11,7 @@ class ATTagBuilder
 		void startElement(const std::string &name, const attributes_t &attributes, unsigned short int depth);
 		void endElement(const std::string &name);
 		void characterData(const std::string &cdata);
-		ATXmlTag *fetchResult();
+		XmlTag *fetchResult();
 		
 		/**
 		* Сброс билдера
@@ -23,7 +23,7 @@ class ATTagBuilder
 		void reset();
 	private:
 		tags_stack_t stack;
-		ATXmlTag *presult;
+		XmlTag *presult;
 };
 
 #endif

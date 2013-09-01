@@ -4,7 +4,7 @@
 /*
 Конструктор команды на основе тега command
 */
-Command::Command(ATXmlTag *command) {
+Command::Command(XmlTag *command) {
 	_form = command->hasChild("x") ? new Form(command->getChild("x")) : 0;
 	cmdtag = command->clone();
 }
@@ -13,7 +13,7 @@ Command::Command(ATXmlTag *command) {
 Конструктор команды из ничего (для порождения ответов на команды)
 */
 Command::Command() {
-	cmdtag = new ATXmlTag("command");
+	cmdtag = new XmlTag("command");
 	cmdtag->setDefaultNameSpaceAttribute("http://jabber.org/protocol/commands");
 }
 
@@ -64,7 +64,7 @@ void Command::createForm(std::string x_type) {
 
 Stanza Command::asIqStanza(std::string from, std::string to, std::string type, std::string id) {
 	cmdtag->insertChildElement(_form->asTag()); // TODO: костыль!
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", from);
 	iq->setAttribute("to", to);
 	iq->setAttribute("type", type);
@@ -74,7 +74,7 @@ Stanza Command::asIqStanza(std::string from, std::string to, std::string type, s
 }
 
 Stanza Command::commandDoneStanza(std::string from, Stanza stanza) {
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", from);
 	iq->setAttribute("to", stanza.from().full());
 	iq->setAttribute("type", "result");
@@ -87,7 +87,7 @@ Stanza Command::commandDoneStanza(std::string from, Stanza stanza) {
 }
 
 Stanza Command::commandCancelledStanza(std::string from, Stanza stanza) {
-	Stanza iq = new ATXmlTag("iq");
+	Stanza iq = new XmlTag("iq");
 	iq->setAttribute("from", from);
 	iq->setAttribute("to", stanza.from().full());
 	iq->setAttribute("type", "result");

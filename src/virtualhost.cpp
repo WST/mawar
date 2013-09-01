@@ -2,7 +2,7 @@
 #include <virtualhost.h>
 #include <configfile.h>
 #include <taghelper.h>
-#include <attagparser.h>
+#include <xml-parser.h>
 #include <string>
 #include <iostream>
 #include <stdio.h>
@@ -22,7 +22,7 @@ using namespace nanosoft;
 * @param aName имя хоста
 * @param config конфигурация хоста
 */
-VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, ATXmlTag *cfg):
+VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, XmlTag *cfg):
 	XMPPDomain(srv, aName),
 	bind_conflict(bind_override),
 	tls_required(false)
@@ -221,7 +221,7 @@ void VirtualHost::handleVHostIq(Stanza stanza)
 		else
 		{
 			// TODO клиент не найден, надо отправить соответствующую станзу
-			Stanza result = new ATXmlTag("iq");
+			Stanza result = new XmlTag("iq");
 			result->setAttribute("from", stanza.to().full());
 			result->setAttribute("to", stanza.from().full());
 			result->setAttribute("type", "error");
@@ -296,7 +296,7 @@ void VirtualHost::broadcastUnavailable(const std::string &from, const std::strin
 	// какой-то из клиентов завершит сеанс и у нас в списке будет битая ссылка
 	// впрочем эта проблема могла быть и раньше
 	// (c) shade
-	Stanza p = new ATXmlTag("presence");
+	Stanza p = new XmlTag("presence");
 	p->setAttribute("to", from);
 	p->setAttribute("type", "unavailable");
 	for(reslist_t::iterator jt = res.begin(); jt != res.end(); ++jt)
@@ -363,7 +363,7 @@ void VirtualHost::servePresenceSubscribe(Stanza stanza)
 	{
 		if ( r["contact_subscription"] == "F" || r["contact_subscription"] == "B" )
 		{ // уже авторизован, просто повторно отправим подтвержение
-			Stanza presence = new ATXmlTag("presence");
+			Stanza presence = new XmlTag("presence");
 			presence->setAttribute("from", stanza.to().bare());
 			presence->setAttribute("to", from);
 			presence->setAttribute("type", "subscribed");
@@ -401,7 +401,7 @@ void VirtualHost::servePresenceSubscribed(Stanza stanza)
 	{
 		if ( r["contact_subscription"] == "N" || r["contact_subscription"] == "F" )
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item = query["item"];
@@ -466,7 +466,7 @@ void VirtualHost::servePresenceUnsubscribe(Stanza stanza)
 	{
 		if ( r["contact_subscription"] == "F" || r["contact_subscription"] == "B" )
 		{ // уже авторизован, просто повторно отправим подтвержение
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item = query["item"];
@@ -511,7 +511,7 @@ void VirtualHost::servePresenceUnsubscribed(Stanza stanza)
 	{
 		if ( r["contact_subscription"] == "T" || r["contact_subscription"] == "B" )
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("jabber:iq:roster");
 			TagHelper item = query["item"];
@@ -840,7 +840,7 @@ void VirtualHost::handleIQBind(Stanza stanza, XMPPClient *client)
 			
 			if ( bindResource(client->client_jid.resource().c_str(), client) )
 			{
-				Stanza iq = new ATXmlTag("iq");
+				Stanza iq = new XmlTag("iq");
 					iq->setAttribute("type", "result");
 					iq->setAttribute("id", stanza->getAttribute("id"));
 					TagHelper bind = iq["bind"];
@@ -851,7 +851,7 @@ void VirtualHost::handleIQBind(Stanza stanza, XMPPClient *client)
 			}
 			else
 			{
-				Stanza iq = new ATXmlTag("iq");
+				Stanza iq = new XmlTag("iq");
 					iq->setAttribute("type", "error");
 					iq->setAttribute("id", stanza->getAttribute("id"));
 					TagHelper error = iq["error"];
@@ -882,7 +882,7 @@ void VirtualHost::handleIQSession(Stanza stanza)
 {
 	if( stanza->getAttribute("type") == "set" )
 	{
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("from", hostname());
 		iq->setAttribute("id", stanza->getAttribute("id"));
@@ -907,7 +907,7 @@ void VirtualHost::handleIQLast(Stanza stanza)
 	{
 		unsigned long int uptime = time(0) - start_time;
 		
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("from", stanza.to().full());
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("id", stanza->getAttribute("id", ""));
@@ -937,7 +937,7 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 		std::string node = stanza["query"]->getAttribute("node", "");
 		if( node == "config" )
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("from", name);
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -945,18 +945,18 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
 			query->setAttribute("node", "config");
 			iq->setAttribute("id", stanza->getAttribute("id", ""));
-				ATXmlTag *identity = new ATXmlTag("identity");
+				XmlTag *identity = new XmlTag("identity");
 				identity->setAttribute("category", "automation");
 				identity->setAttribute("type", "command-node");
 				identity->setAttribute("name", "Configure Service");
 				query->insertChildElement(identity);
 			
-				ATXmlTag *feature;
-				feature = new ATXmlTag("feature");
+				XmlTag *feature;
+				feature = new XmlTag("feature");
 					feature->setAttribute("var", "http://jabber.org/protocol/commands");
 					query->insertChildElement(feature);
 				
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 					feature->setAttribute("var", "jabber:x:data");
 					query->insertChildElement(feature);
 				
@@ -965,53 +965,53 @@ void VirtualHost::handleIQServiceDiscoveryInfo(Stanza stanza)
 		}
 		else
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("from", name);
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
 			TagHelper query = iq["query"];
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#info");
 			iq->setAttribute("id", stanza->getAttribute("id", ""));
-				ATXmlTag *identity = new ATXmlTag("identity");
+				XmlTag *identity = new XmlTag("identity");
 				identity->setAttribute("category", "server");
 				identity->setAttribute("type", "im");
 				identity->setAttribute("name", "@}->--"); // TODO: макросы с именем, версией итп
 				query->insertChildElement(identity);
 			
-				ATXmlTag *feature;
+				XmlTag *feature;
 			
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "http://jabber.org/protocol/disco#info");
 				query->insertChildElement(feature);
 			
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "http://jabber.org/protocol/disco#items");
 				query->insertChildElement(feature);
 			
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "http://jabber.org/protocol/stats");
 				query->insertChildElement(feature);
 			
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "jabber:iq:version");
 				query->insertChildElement(feature);
 			
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "msgoffline");
 				query->insertChildElement(feature);
 			
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "vcard-temp");
 				query->insertChildElement(feature);
 			
 				// XEP-0050 ad-hoc commands
-				feature = new ATXmlTag("feature");
+				feature = new XmlTag("feature");
 				feature->setAttribute("var", "http://jabber.org/protocol/commands");
 				query->insertChildElement(feature);
 			
 				if( registration_allowed || isAdmin(stanza.from().bare()) )
 				{
-					feature = new ATXmlTag("feature");
+					feature = new XmlTag("feature");
 					feature->setAttribute("var", "jabber:iq:register");
 					query->insertChildElement(feature);
 				}
@@ -1039,7 +1039,7 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 		if( node == "http://jabber.org/protocol/commands" )
 		{
 			// Нода команд ad-hoc
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("from", name);
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -1048,47 +1048,47 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 			query->setAttribute("node", "http://jabber.org/protocol/commands");
 		
-			ATXmlTag *item;
+			XmlTag *item;
 			// здесь можно засунуть команды, доступные простым юзерам
 			if(isAdmin(stanza.from().bare()))
 			{
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "enable_registration");
 					item->setAttribute("name", "Enable/disable user's registation");
 					query->insertChildElement(item);
 				
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "stop");
 					item->setAttribute("name", "Stop Mawar daemon");
 					query->insertChildElement(item);
 				
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "stop-vhost");
 					item->setAttribute("name", "Stop a virtual host");
 					query->insertChildElement(item);
 				
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "start-vhost");
 					item->setAttribute("name", "Start a virtual host");
 					query->insertChildElement(item);
 				
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "create-vhost");
 					item->setAttribute("name", "Create a new virtual host");
 					query->insertChildElement(item);
 				
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "drop-vhost");
 					item->setAttribute("name", "Delete virtual host");
 					query->insertChildElement(item);
 				
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 					item->setAttribute("jid", name);
 					item->setAttribute("node", "route-stanza");
 					item->setAttribute("name", "Push stanza to the router");
@@ -1102,7 +1102,7 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 		else
 		{
 			// Нода не указана или неизвестна
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("from", name);
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -1110,10 +1110,10 @@ void VirtualHost::handleIQServiceDiscoveryItems(Stanza stanza)
 			query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/disco#items");
 			iq->setAttribute("id", stanza->getAttribute("id", ""));
 			
-			ATXmlTag *item;
-			for(ATXmlTag *i = config->find("disco/item"); i; i = config->findNext("disco/item", i))
+			XmlTag *item;
+			for(XmlTag *i = config->find("disco/item"); i; i = config->findNext("disco/item", i))
 			{
-				item = new ATXmlTag("item");
+				item = new XmlTag("item");
 				item->setAttribute("jid", i->getAttribute("jid", name));
 				item->setAttribute("node", i->getAttribute("node"));
 				item->setAttribute("name", i->getCharacterData());
@@ -1141,7 +1141,7 @@ void VirtualHost::handleIQStats(Stanza stanza)
 	{
 		stats_queries++;
 		mawarWarning("Served incoming stats request");
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("from", name);
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("type", "result");
@@ -1149,13 +1149,13 @@ void VirtualHost::handleIQStats(Stanza stanza)
 		query->setDefaultNameSpaceAttribute("http://jabber.org/protocol/stats");
 		iq->setAttribute("id", stanza->getAttribute("id", ""));
 		
-		ATXmlTag *stat = new ATXmlTag("stat");
+		XmlTag *stat = new XmlTag("stat");
 			stat->setAttribute("name", "users/online");
 			stat->setAttribute("value", mawarPrintInteger(onliners_number));
 			stat->setAttribute("units", "users");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "users/total");
 			DB::result r = db.query("SELECT count(*) AS cnt FROM users");
 			stat->setAttribute("value", r["cnt"]);
@@ -1163,61 +1163,61 @@ void VirtualHost::handleIQStats(Stanza stanza)
 			stat->setAttribute("units", "users");
 			query->insertChildElement(stat);
 			
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/stanzas");
 			stat->setAttribute("value", mawarPrintInteger(XMPPStream::getStanzaCount()));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/max-tags-per-stanza");
 			stat->setAttribute("value", mawarPrintInteger(XMPPStream::getMaxTagsPerStanza()));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/tags-leak");
 			stat->setAttribute("value", mawarPrintInteger(XMPPStream::getTagsLeak()));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/vcard");
 			stat->setAttribute("value", mawarPrintInteger(vcard_queries));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/stats");
 			stat->setAttribute("value", mawarPrintInteger(stats_queries));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 			
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/xmpp-pings");
 			stat->setAttribute("value", mawarPrintInteger(xmpp_ping_queries));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/xmpp-errors");
 			stat->setAttribute("value", mawarPrintInteger(xmpp_error_queries));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "queries/version");
 			stat->setAttribute("value", mawarPrintInteger(version_requests));
 			stat->setAttribute("units", "queries");
 			query->insertChildElement(stat);
 			
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "misc/registration_allowed");
 			stat->setAttribute("value", registration_allowed ? "yes," : "no,");
 			stat->setAttribute("units", registration_allowed ? "allowed" : "not allowed");
 			query->insertChildElement(stat);
 		
-		stat = new ATXmlTag("stat");
+		stat = new XmlTag("stat");
 			stat->setAttribute("name", "misc/uptime");
 			stat->setAttribute("value", mawarPrintInteger(time(0) - start_time));
 			stat->setAttribute("units", "seconds");
@@ -1242,7 +1242,7 @@ void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 	if(stanza->getAttribute("type") == "get") {
 		TagHelper block = stanza["query"]->firstChild(); // запрашиваемый блок
 		if(block) {
-			ATXmlTag *data = 0;
+			XmlTag *data = 0;
 			
 			DB::result r = db.query("SELECT block_data FROM private_storage WHERE username = %s AND block_xmlns = %s", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str());
 			if(r) {
@@ -1252,7 +1252,7 @@ void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 				r.free();
 			}
 			
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("from", hostname());
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -1282,7 +1282,7 @@ void VirtualHost::handleIQPrivateStorage(Stanza stanza)
 		if ( block )
 		{
 			db.query("REPLACE INTO private_storage (username, block_xmlns, block_data) VALUES (%s, %s, %s)", db.quote(stanza.from().username()).c_str(), db.quote(block->getAttribute("xmlns")).c_str(), db.quote(block->asString()).c_str());
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("from", hostname());
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
@@ -1444,7 +1444,7 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 		if( cmd->form() )
 		{
 			// parse_xml_string должно возвращать 0 при ошибках парсинга, что возвращается я ХЗ © WST
-			ATXmlTag *custom_tag = parse_xml_string("<?xml version=\"1.0\" ?>\n" + cmd->form()->getFieldValue("rawxml", ""));
+			XmlTag *custom_tag = parse_xml_string("<?xml version=\"1.0\" ?>\n" + cmd->form()->getFieldValue("rawxml", ""));
 			if ( custom_tag )
 			{
 				Stanza custom_stanza = custom_tag;
@@ -1499,7 +1499,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
 			// or an IQ-result containing an empty <vCard/> element.
 			vcard_queries++;
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
 			if(!stanza.id().empty()) iq->setAttribute("id", stanza.id());
@@ -1508,7 +1508,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			if( r.eof() )
 			{
 				// Вернуть пустой vcard
-				ATXmlTag *vCard = new ATXmlTag("vCard");
+				XmlTag *vCard = new XmlTag("vCard");
 				vCard->setDefaultNameSpaceAttribute("vcard-temp");
 				iq->insertChildElement(vCard);
 			}
@@ -1534,11 +1534,11 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 				return;
 			}
 			db.query("REPLACE INTO vcard (id_user, vcard_data) VALUES (%d, %s)", getUserId(stanza.from().username()), db.quote(data).c_str());
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("to", stanza.from().full());
 			iq->setAttribute("type", "result");
 			iq->setAttribute("id", stanza->getAttribute("id", ""));
-			ATXmlTag *vCard = new ATXmlTag("vCard");
+			XmlTag *vCard = new XmlTag("vCard");
 			vCard->setDefaultNameSpaceAttribute("vcard-temp");
 			iq->insertChildElement(vCard);
 			server->routeStanza(iq);
@@ -1552,7 +1552,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 		// If no vCard exists, the server MUST return a stanza error (which SHOULD be <item-not-found/>)
 		// or an IQ-result containing an empty <vCard/> element.
 		vcard_queries++;
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("from", stanza.to().bare());
 		iq->setAttribute("type", "result");
@@ -1569,7 +1569,7 @@ void VirtualHost::handleIQVCardTemp(Stanza stanza)
 			if( r.eof() )
 			{
 				// Вернуть пустой vcard
-				ATXmlTag *vCard = new ATXmlTag("vCard");
+				XmlTag *vCard = new XmlTag("vCard");
 				vCard->setDefaultNameSpaceAttribute("vcard-temp");
 				iq->insertChildElement(vCard);
 			}
@@ -1605,7 +1605,7 @@ void VirtualHost::handleIQRegister(Stanza stanza)
 	
 	if ( stanza->getAttribute("type") == "get" )
 	{
-		Stanza iq = new ATXmlTag("iq");
+		Stanza iq = new XmlTag("iq");
 		iq->setAttribute("to", stanza.from().full());
 		iq->setAttribute("from", hostname());
 		iq->setAttribute("type", "result");
@@ -1622,7 +1622,7 @@ void VirtualHost::handleIQRegister(Stanza stanza)
 	
 	if ( stanza->getAttribute("type") == "set" )
 	{
-		ATXmlTag *remove = stanza->find("query/remove");
+		XmlTag *remove = stanza->find("query/remove");
 		if( remove )
 		{
 			JID from = stanza.from();
@@ -1634,7 +1634,7 @@ void VirtualHost::handleIQRegister(Stanza stanza)
 			
 			if ( removeUser(from.username()) )
 			{
-				Stanza iq = new ATXmlTag("iq");
+				Stanza iq = new XmlTag("iq");
 				iq->setAttribute("to", stanza.from().full());
 				iq->setAttribute("from", hostname());
 				iq->setAttribute("type", "result");
@@ -1674,7 +1674,7 @@ void VirtualHost::handleIQRegister(Stanza stanza)
 		
 		if ( addUser(username, password) )
 		{
-			Stanza iq = new ATXmlTag("iq");
+			Stanza iq = new XmlTag("iq");
 			iq->setAttribute("type", "result");
 			iq->setAttribute("from", hostname());
 			iq->setAttribute("to", stanza.from().full());
@@ -1721,7 +1721,7 @@ void VirtualHost::handleIQPing(Stanza stanza)
 	if ( stanza->getAttribute("type") == "get" )
 	{
 		xmpp_ping_queries++;
-		Stanza result = new ATXmlTag("iq");
+		Stanza result = new XmlTag("iq");
 		result->setAttribute("from", stanza.to().full());
 		result->setAttribute("to", stanza.from().full());
 		result->setAttribute("type", "result");
@@ -1744,7 +1744,7 @@ void VirtualHost::handleIQForbidden(Stanza stanza)
 	
 	xmpp_error_queries++;
 	
-	Stanza result = new ATXmlTag("iq");
+	Stanza result = new XmlTag("iq");
 	result->setAttribute("from", stanza.to().full());
 	result->setAttribute("to", stanza.from().full());
 	result->setAttribute("type", "error");
@@ -1768,7 +1768,7 @@ void VirtualHost::handleIQUnknown(Stanza stanza)
 	
 	xmpp_error_queries++;
 	
-	Stanza result = new ATXmlTag("iq");
+	Stanza result = new XmlTag("iq");
 	result->setAttribute("from", stanza.to().full());
 	result->setAttribute("to", stanza.from().full());
 	result->setAttribute("type", "error");
@@ -1902,7 +1902,7 @@ bool VirtualHost::bindResource(const char *resource, XMPPClient *client)
 		else if ( bind_conflict == bind_remove_old )
 		{
 			// выкинуть старого клиента
-			Stanza presence = new ATXmlTag("presence");
+			Stanza presence = new XmlTag("presence");
 			presence->setAttribute("type", "unavailable");
 			presence["status"] = "Replaced by new connection";
 			old->handleUnavailablePresence(presence);
@@ -1976,7 +1976,7 @@ void VirtualHost::unavailableDirectedPresence(XMPPClient *client)
 		);
 	if ( r )
 	{
-		Stanza presence = new ATXmlTag("presence");
+		Stanza presence = new XmlTag("presence");
 		presence->setAttribute("type", "unavailable");
 		presence->setAttribute("from", client->jid().full());
 		while ( ! r.eof() )

@@ -108,7 +108,7 @@ public:
 	*
 	* thread-safe
 	*/
-	void addHost(const std::string &name, ATXmlTag *config);
+	void addHost(const std::string &name, XmlTag *config);
 	
 	/**
 	* Роутер исходящих станз (thread-safe)
