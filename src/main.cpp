@@ -28,6 +28,10 @@
 #include <serverstatus.h>
 #include <functions.h>
 
+// TODO: make this configurable
+#define PATH_VAR "/var"
+#define PATH_ETC "/etc"
+
 #define PATH_PID (PATH_VAR "/run/maward.pid")
 #define PATH_STATUS (PATH_VAR "/run/maward.status")
 

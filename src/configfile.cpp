@@ -2,7 +2,7 @@
 #include <configfile.h>
 #include <cstdlib>
 #include <attagparser.h>
-#include <config.h>
+#include <defaults.h>
 
 #include <stdio.h>
 

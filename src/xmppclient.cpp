@@ -5,7 +5,6 @@
 #include <functions.h>
 #include <db.h>
 #include <tagbuilder.h>
-#include <config.h>
 
 // for debug only
 #include <string>
