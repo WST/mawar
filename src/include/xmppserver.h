@@ -111,13 +111,6 @@ public:
 	void addHost(const std::string &name, ATXmlTag *config);
 	
 	/**
-	* Добавить сервер групповых сообщений
-	*
-	* thread-safe
-	*/
-	void addXMPPGroups(const std::string &name, ATXmlTag *config);
-	
-	/**
 	* Роутер исходящих станз (thread-safe)
 	*
 	* Роутер передает станзу нужному потоку.
