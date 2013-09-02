@@ -7,6 +7,7 @@
 #include <configfile.h>
 #include <string>
 #include <stanza.h>
+#include <command.h>
 #include <jid.h>
 #include <nanosoft/object.h>
 #include <nanosoft/gsaslserver.h>
@@ -206,7 +207,7 @@ class VirtualHost: public XMPPDomain, public GSASLServer
 		*
 		* XEP-0050: Ad-Hoc Commands
 		*/
-		void handleIQAdHocEnableRegistration(Stanza stanza);
+		void handleIQAdHocEnableRegistration(Stanza stanza, Command *command);
 		
 		/**
 		* Обслуживание обычного презенса

@@ -11,7 +11,6 @@
 #include <db.h>
 #include <time.h>
 #include <functions.h>
-#include <command.h>
 
 using namespace std;
 using namespace nanosoft;
@@ -1316,7 +1315,7 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 	
 	if ( node == "enable_registration" )
 	{
-		handleIQAdHocEnableRegistration(stanza);
+		handleIQAdHocEnableRegistration(stanza, cmd);
 		return;
 	}
 	
@@ -1355,6 +1354,7 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 			
 			return;
 		}
+		
 		Command *reply = new Command();
 		reply->setNode(node);
 		reply->setStatus("executing");
@@ -1679,24 +1679,21 @@ void VirtualHost::handleIQUnknown(Stanza stanza)
 *
 * XEP-0050: Ad-Hoc Commands
 */
-void VirtualHost::handleIQAdHocEnableRegistration(Stanza stanza)
-{
-	Stanza form = stanza["command"]->firstChild("x");
-	if ( form && form->getAttribute("xmlns") == "jabber:x:data" )
-	{
-		string value = form["field"]["value"]->getCharacterData();
-		if ( value == "yes" )
-		{
+void VirtualHost::handleIQAdHocEnableRegistration(Stanza stanza, Command *command) {
+	Form *form = command->form();
+	
+	if(form) {
+		if(form->getFieldValue("enable-registration", "0") == "1") {
 			registration_allowed = true;
+			mawarWarning("Enabling public registration");
 			
 			Stanza reply = Command::commandDoneStanza(name, stanza);
 			server->routeStanza(reply);
 			delete reply;
 			return;
-		}
-		else if ( value == "no" )
-		{
+		} else {
 			registration_allowed = false;
+			mawarWarning("Disabling public registration");
 			
 			Stanza reply = Command::commandDoneStanza(name, stanza);
 			server->routeStanza(reply);
@@ -1710,7 +1707,7 @@ void VirtualHost::handleIQAdHocEnableRegistration(Stanza stanza)
 	reply->setStatus("executing");
 	reply->createForm("form");
 	reply->form()->setTitle("Enable/disable user registation");
-	reply->form()->insertLineEdit("enabe-registation", "Enable registation (yes/no)", registration_allowed ? "yes" : "no", true);
+	reply->form()->insertCheckbox("enabe-registation", "Enable registation", registration_allowed, true);
 	server->routeStanza(reply->asIqStanza(name, stanza.from().full(), "result", stanza.id()));
 	delete reply;
 }
