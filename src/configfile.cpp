@@ -8,7 +8,7 @@
 
 using namespace std;
 
-ConfigFile::ConfigFile(const std::string &filename): config_filename(filename), config_tag(0) {
+ConfigFile::ConfigFile(const std::string &filename): config_tag(0), config_filename(filename) {
 	reload();
 }
 

@@ -18,8 +18,8 @@ using namespace nanosoft;
 * Конструктор потока
 */
 XMPPClient::XMPPClient(XMPPServer *srv, int sock):
-	XMPPStream(srv, sock), vhost(0), compression(false),
-	authorized(false), connected(false), available(false), use_roster(false)
+	XMPPStream(srv, sock), vhost(0), use_roster(false), compression(false),
+	 authorized(false), connected(false), available(false)
 {
 	lock();
 }

@@ -23,8 +23,8 @@ using namespace nanosoft;
 */
 VirtualHost::VirtualHost(XMPPServer *srv, const std::string &aName, XmlTag *cfg):
 	XMPPDomain(srv, aName),
-	bind_conflict(bind_override),
-	tls_required(false)
+	tls_required(false),
+	bind_conflict(bind_override)
 {
 	TagHelper registration = cfg->getChild("registration");
 	registration_allowed = registration->getAttribute("enabled", "no") == "yes";

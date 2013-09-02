@@ -110,7 +110,7 @@ int main(int argc, const char **argv)
 			rl.rlim_cur = config->filesLimit();
 			if ( config->filesLimit() > rl.rlim_max )
 			{
-				fprintf(stderr, "only root can increase over hard limit (RLIMIT_NOFILE)\ntry to increase up to hard limit (%d)\n", rl.rlim_max);
+				fprintf(stderr, "only root can increase over hard limit (RLIMIT_NOFILE)\ntry to increase up to hard limit (%lu)\n", rl.rlim_max);
 				rl.rlim_cur = rl.rlim_max;
 			}
 			if ( setrlimit(RLIMIT_NOFILE, &rl) == -1 )
@@ -121,7 +121,7 @@ int main(int argc, const char **argv)
 	}
 	
 	// если запущены под root, то сменить пользователя
-	if ( getuid() == 0 && config->user() != "" )
+	if ( getuid() == 0 && strcmp(config->user(), "") != 0 )
 	{
 		fprintf(stderr, "Trying to switch to user: ");
 		fprintf(stderr, config->user());
@@ -166,7 +166,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "getrlimit fault: %s\n", strerror(errno));
 		return 1;
 	}
-	printf("files limit: %d\n", rl.rlim_cur);
+	printf("files limit: %lu\n", rl.rlim_cur);
 	NetDaemon daemon(rl.rlim_cur, config->getOutputBuffers());
 	
 	// устанавливаем скорректированное число воркеров

@@ -389,7 +389,7 @@ XmlTag* XmlTag::findNext(const char *path, XmlTag *from)
 	// TODO выделять строку во временном буфере
 	string name(path, remain++);
 	
-	XmlTag *parent = from->parent;
+	//XmlTag *parent = from->parent;
 	
 	for(XmlTag *child = firstChild(name.c_str()); child; child = nextChild(name.c_str(), child))
 	{

@@ -221,6 +221,7 @@ void XMPPStream::onAfterStanza()
 * Отправить станзу в поток (thread-safe)
 * @param stanza станза
 * @return TRUE - станза отправлена (или буферизована для отправки), FALSE что-то не получилось
+* TODO: asString() тут очень накладен и не нужен
 */
 bool XMPPStream::sendStanza(Stanza stanza)
 {
@@ -229,5 +230,7 @@ bool XMPPStream::sendStanza(Stanza stanza)
 	if ( ! put(data.c_str(), data.length()) )
 	{
 		onError("[XMPPStream: %d] sendStanza() fault");
+		return false;
 	}
+	return true;
 }

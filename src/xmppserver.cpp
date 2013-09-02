@@ -115,7 +115,7 @@ void XMPPServer::addDomain(XMPPDomain *domain)
 void XMPPServer::removeDomain(XMPPDomain *domain)
 {
 	mutex.lock();
-		printf("removeDomain(%s) = %d\n", domain->hostname().c_str(), domains.erase(domain->hostname()));
+		printf("removeDomain(%s) = %lu\n", domain->hostname().c_str(), domains.erase(domain->hostname()));
 	mutex.unlock();
 }
 

@@ -17,13 +17,13 @@ std::string getUniqueId() {
 bool verifyUsername(const std::string &username)
 {
 	if(username.empty()) return false;
-	if(username.find("\"") != -1) return false;
-	if(username.find("\'") != -1) return false;
-	if(username.find("&") != -1) return false;
-	if(username.find("<") != -1) return false;
-	if(username.find(">") != -1) return false;
-	if(username.find("@") != -1) return false;
-	if(username.find(" ") != -1) return false;
+	if(username.find("\"") != std::string::npos) return false;
+	if(username.find("\'") != std::string::npos) return false;
+	if(username.find("&") != std::string::npos) return false;
+	if(username.find("<") != std::string::npos) return false;
+	if(username.find(">") != std::string::npos) return false;
+	if(username.find("@") != std::string::npos) return false;
+	if(username.find(" ") != std::string::npos) return false;
 	return true;
 }
 
@@ -33,13 +33,13 @@ bool verifyUsername(const std::string &username)
 bool verifyHostname(const std::string &hostname)
 {
 	if(hostname.empty()) return false;
-	if(hostname.find("\"") != -1) return false;
-	if(hostname.find("\'") != -1) return false;
-	if(hostname.find("&") != -1) return false;
-	if(hostname.find("<") != -1) return false;
-	if(hostname.find(">") != -1) return false;
-	if(hostname.find("@") != -1) return false;
-	if(hostname.find(" ") != -1) return false;
+	if(hostname.find("\"") != std::string::npos) return false;
+	if(hostname.find("\'") != std::string::npos) return false;
+	if(hostname.find("&") != std::string::npos) return false;
+	if(hostname.find("<") != std::string::npos) return false;
+	if(hostname.find(">") != std::string::npos) return false;
+	if(hostname.find("@") != std::string::npos) return false;
+	if(hostname.find(" ") != std::string::npos) return false;
 	return true;
 }
 

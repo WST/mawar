@@ -215,7 +215,7 @@ void XMPPServerOutput::onStartStream(const std::string &name, const attributes_t
 */
 void XMPPServerOutput::onEndStream()
 {
-	printf("% s2s-output(%s): end of stream\n", logtime().c_str(), hostname().c_str());
+	printf("%s s2s-output(%s): end of stream\n", logtime().c_str(), hostname().c_str());
 	terminate();
 }
 
@@ -417,4 +417,6 @@ bool XMPPServerOutput::routeStanza(Stanza stanza)
 	}
 	
 	release();
+	
+	return true;
 }

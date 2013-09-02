@@ -28,7 +28,7 @@ void ServerStatus::handleStatus(FILE *status)
 	fprintf(status, "maward status\n");
 	fprintf(status, "workers:  %d\n", server->daemon->getWorkerCount()+1);
 	fprintf(status, "sockets:  %d / %d\n", server->daemon->getObjectCount(), server->daemon->getObjectLimit());
-	fprintf(status, "outbuf:   %d / %d\n", server->daemon->getFreeSize(), server->daemon->getBufferSize());
+	fprintf(status, "outbuf:   %lu / %d\n", server->daemon->getFreeSize(), server->daemon->getBufferSize());
 }
 
 /**
