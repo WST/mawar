@@ -121,11 +121,11 @@ int main(int argc, const char **argv)
 	}
 	
 	// если запущены под root, то сменить пользователя
-	if ( getuid() == 0 && strcmp(config->user(), "") != 0 )
+	if ( getuid() == 0 )
 	{
-		fprintf(stderr, "Trying to switch to user: ");
-		fprintf(stderr, config->user());
-		fprintf(stderr, "\n");
+		fprintf(stdout, "Trying to switch to user: ");
+		fprintf(stdout, config->user());
+		fprintf(stdout, "\n");
 		struct passwd *pw = getpwnam(config->user());
 		if(pw)
 		{
