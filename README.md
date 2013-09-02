@@ -10,6 +10,7 @@ Installing Mawar should not be hard. First, you have to install the following de
 * libgsasl or gsasl — GNU SASL library
 * libmysqlclient — MySQL client library
 * uDNS — an asyncronous DNS resolver library
+* GeoIP — IP geolocation library
 
 Compile and install nanosoft libraries:
 
