@@ -7,7 +7,8 @@ Mawar can be built only under Linux. It will certainly *not* work under Windows 
 Installing Mawar should not be hard. First, you have to install the following dependencies using your Linux distribution’s package system:
 
 * expat — an XML parser
-* libgsasl or gsasl — GNU SASL library
+* GnuTLS — transport layer security
+* libgsasl — GNU SASL library
 * libmysqlclient — MySQL client library
 * uDNS — an asyncronous DNS resolver library
 * GeoIP — IP geolocation library
