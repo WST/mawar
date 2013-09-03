@@ -1316,6 +1316,7 @@ void VirtualHost::handleIQAdHocCommands(Stanza stanza)
 	if ( node == "enable_registration" )
 	{
 		handleIQAdHocEnableRegistration(stanza, cmd);
+		delete cmd;
 		return;
 	}
 	
