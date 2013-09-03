@@ -18,9 +18,9 @@ Compile and install nanosoft libraries:
 ```bash
 git clone https://github.com/WST/nanosoft.git
 cd nanosoft
-./configure --prefix=/usr
+cmake .
 make
-make install
+sudo make install
 ```
 
 Compile the XMPP server itself:
