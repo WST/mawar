@@ -1760,7 +1760,7 @@ std::string VirtualHost::genResource(const char *username)
 	do
 	{
 		char buf[80];
-		sprintf(buf, "%4X-%4X-%4X-%4X", random() % 0x10000, random() % 0x10000, random() % 0x10000, random() % 0x10000);
+		sprintf(buf, "%4lX-%4lX-%4lX-%4lX", random() % 0x10000, random() % 0x10000, random() % 0x10000, random() % 0x10000);
 		jid.setResource(buf);
 	}
 	while ( getClientByJid(jid) );

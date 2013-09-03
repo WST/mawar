@@ -21,7 +21,7 @@ using namespace std;
 XMPPServerOutput::XMPPServerOutput(XMPPServer *srv, const char *host):
 	XMPPDomain(srv, host), XMPPStream(srv, 0)
 {
-	sprintf(key, "%06X-%06X-%06X-%06X", random() % 0x1000000, random() % 0x1000000, random() % 0x1000000, random() % 0x1000000);
+	sprintf(key, "%06lX-%06lX-%06lX-%06lX", random() % 0x1000000, random() % 0x1000000, random() % 0x1000000, random() % 0x1000000);
 	lock();
 	
 	// Резолвим DNS записи сервера
@@ -138,7 +138,7 @@ void XMPPServerOutput::on_s2s_output_jabber(struct dns_ctx *ctx, struct dns_rr_s
 	{
 		for(int i = 0; i < result->dnssrv_nrr; i++)
 		{
-			char buf[40];
+			//char buf[40];
 			printf("%s SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
 			logtime().c_str(),
 			p->hostname().c_str(),
@@ -169,7 +169,7 @@ void XMPPServerOutput::on_s2s_output_xmpp_server(struct dns_ctx *ctx, struct dns
 	{
 		for(int i = 0; i < result->dnssrv_nrr; i++)
 		{
-			char buf[40];
+			//char buf[40];
 			printf("%s SRV(%s) priority: %d, weight: %d, port: %d, name: %s\n",
 			logtime().c_str(),
 			p->hostname().c_str(),

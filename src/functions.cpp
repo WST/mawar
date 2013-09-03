@@ -7,7 +7,7 @@ unsigned long int id_counter;
 
 std::string getUniqueId() {
 	char buf[40];
-	sprintf(buf, "mawar_%x", id_counter++);
+	sprintf(buf, "mawar_%lx", id_counter++);
 	return std::string(buf);
 }
 
